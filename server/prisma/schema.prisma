@@ -1,0 +1,86 @@
+// Prisma schema for Smart Order Restaurant System
+// Uses PostgreSQL as the database provider
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Kitchen/Admin users
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(KITCHEN)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  KITCHEN
+}
+
+// Menu items displayed to customers
+model MenuItem {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  category    String
+  imageUrl    String?
+  available   Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderItems  OrderItem[]
+}
+
+// Customer orders
+model Order {
+  id           String      @id @default(cuid())
+  customerName String
+  phone        String
+  tableNumber  Int
+  status       OrderStatus @default(PENDING)
+  totalPrice   Float
+  items        OrderItem[]
+  otp          OTP?
+  estimatedMinutes Int?    @default(15)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  PREPARING
+  COMPLETED
+  CANCELLED
+}
+
+// Items within an order (junction between Order and MenuItem)
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  menuItemId String
+  quantity   Int
+  price      Float    // captured price at time of order
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+}
+
+// OTP linked to an order for delivery verification
+model OTP {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  code      String
+  verified  Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
