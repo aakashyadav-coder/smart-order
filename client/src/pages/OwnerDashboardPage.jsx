@@ -465,12 +465,18 @@ function MenuTab({ restaurantId, onDeleteItem }) {
 }
 
 // ── QR Tab ───────────────────────────────────────────────────────────────────
-function QRTab() {
+function QRTab({ restaurantId }) {
   const [baseUrl, setBaseUrl] = useState(window.location.origin)
   const [tables, setTables]   = useState(10)
+
+  const qrUrl = (table) =>
+    restaurantId
+      ? `${baseUrl}/menu?table=${table}&rid=${restaurantId}`
+      : `${baseUrl}/menu?table=${table}`
+
   return (
     <div>
-      <div className="flex flex-wrap gap-4 mb-6 items-end">
+      <div className="flex flex-wrap gap-4 mb-4 items-end">
         <div><label className="label text-sm text-gray-300">Base URL</label>
           <input className="input bg-gray-800 border-gray-700 text-white w-72 text-sm" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} /></div>
         <div><label className="label text-sm text-gray-300">Tables</label>
@@ -478,12 +484,15 @@ function QRTab() {
             value={tables} onChange={e => setTables(parseInt(e.target.value) || 1)} /></div>
         <button onClick={() => window.print()} className="btn-primary px-5 py-2.5 text-sm print:hidden">🖨️ Print All</button>
       </div>
+      <p className="text-gray-600 text-xs mb-4">
+        Each QR includes your restaurant ID — customers see your logo, name and table number automatically.
+      </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
         {Array.from({ length: tables }, (_, i) => i + 1).map(t => (
           <div key={t} className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col items-center gap-2 hover:border-gray-700 transition-colors">
             <p className="text-white font-extrabold text-sm">Table {t}</p>
-            <div className="bg-white p-2 rounded-xl"><QRCodeSVG value={`${baseUrl}/menu?table=${t}`} size={96} /></div>
-            <p className="text-gray-600 text-[9px]">/menu?table={t}</p>
+            <div className="bg-white p-2 rounded-xl"><QRCodeSVG value={qrUrl(t)} size={96} /></div>
+            <p className="text-gray-600 text-[9px] text-center break-all">/menu?table={t}&rid=…</p>
           </div>
         ))}
       </div>
@@ -647,7 +656,7 @@ export default function OwnerDashboardPage() {
         {activeTab === 'analytics' && <AnalyticsTab />}
         {activeTab === 'history'   && <OrderHistoryTab orders={orders} loading={loading} />}
         {activeTab === 'menu'      && <MenuTab restaurantId={user?.restaurantId} onDeleteItem={askDeleteItem} />}
-        {activeTab === 'qr'        && <QRTab />}
+        {activeTab === 'qr'        && <QRTab restaurantId={user?.restaurantId} />}
         {activeTab === 'staff'     && <StaffTab restaurantId={user?.restaurantId} />}
       </main>
 

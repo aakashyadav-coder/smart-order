@@ -11,6 +11,7 @@ const router = Router();
 const prisma = new PrismaClient();
 
 // ── GET /api/restaurant/mine ─────────────────────────────────────────────────
+// ── GET /api/restaurant/mine (authenticated) ────────────────────────────────
 router.get("/mine", authenticate, async (req, res, next) => {
   try {
     const { restaurantId } = req.user;
@@ -23,6 +24,19 @@ router.get("/mine", authenticate, async (req, res, next) => {
     res.json(restaurant);
   } catch (err) { next(err); }
 });
+
+// ── GET /api/restaurant/info/:id (public — for customer menu page) ───────────
+router.get("/info/:id", async (req, res, next) => {
+  try {
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, name: true, logoUrl: true, address: true, phone: true },
+    });
+    if (!restaurant) return res.status(404).json({ message: "Restaurant not found." });
+    res.json(restaurant);
+  } catch (err) { next(err); }
+});
+
 
 // ── GET /api/restaurant/analytics?range=24h|30d|6m ──────────────────────────
 router.get("/analytics", authenticate, async (req, res, next) => {
