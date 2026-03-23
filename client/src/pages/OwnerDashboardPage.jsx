@@ -28,6 +28,22 @@ const STATUS_CFG = {
   CANCELLED: { border: 'border-l-red-500',    bg: 'bg-red-500/10',    text: 'text-red-500',    dot: 'bg-red-500'    },
 }
 
+// ── CSV Export Utility ────────────────────────────────────────────────────────
+function downloadCSV(filename, rows) {
+  const escape = (v) => {
+    const s = String(v ?? '')
+    return s.includes(',') || s.includes('"') || s.includes('\n')
+      ? `"${s.replace(/"/g, '""')}"`
+      : s
+  }
+  const csv = rows.map(r => r.map(escape).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = Object.assign(document.createElement('a'), { href: url, download: filename })
+  document.body.appendChild(a); a.click()
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url) }, 100)
+}
+
 // ── SVG Bar Chart ────────────────────────────────────────────────────────────
 function BarChart({ data, labels, color = '#f97316', unit = 'Rs.' }) {
   const max = Math.max(...data, 1)
@@ -89,16 +105,35 @@ function AnalyticsTab() {
     { id: '6m',  label: 'Last 6 Months' },
   ]
 
+  const exportAnalytics = () => {
+    if (!data) return
+    const label = RANGES.find(r => r.id === range)?.label || range
+    const rows  = [
+      [`Smart Order — Analytics Export (${label})`, '', ''],
+      ['Period', 'Revenue (Rs.)', 'Orders'],
+      ...data.labels.map((l, i) => [l, (data.revenue[i] || 0).toFixed(2), data.counts[i] || 0]),
+      [],
+      ['TOTAL', (data.totalRevenue || 0).toFixed(2), data.totalOrders],
+    ]
+    downloadCSV(`analytics_${range}_${new Date().toISOString().slice(0,10)}.csv`, rows)
+  }
+
   return (
     <div>
-      {/* Range selector */}
-      <div className="flex gap-2 mb-6">
+      {/* Range selector + export */}
+      <div className="flex flex-wrap items-center gap-2 mb-6">
         {RANGES.map(r => (
           <button key={r.id} onClick={() => setRange(r.id)}
             className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${range === r.id ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/25' : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white'}`}>
             {r.label}
           </button>
         ))}
+        {data && (
+          <button onClick={exportAnalytics}
+            className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-green-900/40 border border-green-700/50 text-green-400 hover:bg-green-900/70 transition-colors">
+            ⬇ Export CSV
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -234,9 +269,31 @@ function OrderHistoryTab({ orders, loading }) {
 
   const fmt = (d) => new Date(d).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })
 
+  const exportOrders = () => {
+    const rows = [
+      ['Smart Order — Order History Export', '', '', '', '', '', ''],
+      ['Order ID', 'Date', 'Customer', 'Phone', 'Table', 'Items', 'Total (Rs.)', 'Status'],
+      ...filtered.map(o => [
+        o.id,
+        new Date(o.createdAt).toLocaleString('en-IN'),
+        o.customerName,
+        o.phone,
+        o.tableNumber,
+        o.items?.map(i => `${i.menuItem?.name} x${i.quantity}`).join(' | '),
+        o.totalPrice,
+        o.status,
+      ]),
+      [],
+      ['', '', '', '', '', 'TOTAL REVENUE',
+        filtered.filter(o => o.status !== 'CANCELLED').reduce((s, o) => s + o.totalPrice, 0).toFixed(2),
+      ],
+    ]
+    downloadCSV(`orders_${new Date().toISOString().slice(0,10)}.csv`, rows)
+  }
+
   return (
     <div>
-      {/* Search + filter row */}
+      {/* Search + filter + export row */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
@@ -257,6 +314,11 @@ function OrderHistoryTab({ orders, loading }) {
             <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s}</option>
           ))}
         </select>
+        <button onClick={exportOrders}
+          disabled={filtered.length === 0}
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-green-900/40 border border-green-700/50 text-green-400 hover:bg-green-900/70 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
+          ⬇ Export CSV
+        </button>
       </div>
 
       {/* Stats row */}
