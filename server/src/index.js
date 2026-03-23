@@ -22,13 +22,37 @@ const { errorHandler }  = require("./middleware/errorHandler");
 const app = express();
 const server = http.createServer(app);
 
+// ── CORS origins ───────────────────────────────────────────────────────────────
+// Accept comma-separated origins from CLIENT_URL env var (e.g. "https://foo.vercel.app,http://localhost:5173")
+const ALLOWED_ORIGINS = [
+  "http://localhost:5173",
+  "http://localhost:4173",
+  ...(process.env.CLIENT_URL
+    ? process.env.CLIENT_URL.split(",").map((o) => o.trim())
+    : []),
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes("*") || ALLOWED_ORIGINS.includes(origin)) {
+      return callback(null, true);
+    }
+    // In production allow all vercel.app and railway.app domains as fallback
+    if (origin.endsWith(".vercel.app") || origin.endsWith(".railway.app")) {
+      return callback(null, true);
+    }
+    callback(new Error(`CORS: Origin ${origin} not allowed`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
 // ── Socket.io ────────────────────────────────────────────────────────────────
 const io = new Server(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
+  cors: corsOptions,
 });
 
 // Attach io to app so controllers can emit events
@@ -38,12 +62,8 @@ app.set("io", io);
 initSocket(io);
 
 // ── Middleware ────────────────────────────────────────────────────────────────
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    credentials: true,
-  })
-);
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // Handle preflight OPTIONS for all routes
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
