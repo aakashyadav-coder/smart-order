@@ -80,17 +80,17 @@ async function main() {
   console.log("✅ Feature toggles created");
 
   // ── Owner ──────────────────────────────────────────────────────────────────
-  const ownerHash = await bcrypt.hash("admin123", 10);
+  const ownerHash = await bcrypt.hash("owner123", 10);
   await prisma.user.create({
     data: {
       name: "Restaurant Owner",
-      email: "admin@restaurant.com",
+      email: "owner@restaurant.com",
       passwordHash: ownerHash,
       role: "OWNER",
       restaurantId: restaurant.id,
     },
   });
-  console.log("✅ Owner: admin@restaurant.com");
+  console.log("✅ Owner: owner@restaurant.com");
 
   // ── Kitchen Staff ──────────────────────────────────────────────────────────
   const kitchenHash = await bcrypt.hash("kitchen123", 10);
@@ -124,7 +124,7 @@ async function main() {
   console.log("\n🎉 Seed complete!");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("Super Admin: superadmin@smartorder.dev  /  super123");
-  console.log("Owner:       admin@restaurant.com       /  admin123");
+  console.log("Owner:       owner@restaurant.com       /  owner123");
   console.log("Kitchen:     kitchen@restaurant.com     /  kitchen123");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 }

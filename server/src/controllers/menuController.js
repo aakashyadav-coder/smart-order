@@ -1,25 +1,23 @@
 /**
- * Menu Controller — returns menu items scoped to a restaurant
- * GET /api/menu?restaurantId=xxx  — uses first restaurant as fallback
+ * Menu Controller — CRUD menu items (with restaurant scoping)
  */
 const { PrismaClient } = require("@prisma/client");
+const { logActivity } = require("../services/activityLogService");
 
 const prisma = new PrismaClient();
 
+// GET /api/menu?restaurantId=xxx
 const getMenu = async (req, res, next) => {
   try {
     let { restaurantId } = req.query;
 
-    // Fallback: use the first active restaurant if none specified
     if (!restaurantId) {
-      const firstRestaurant = await prisma.restaurant.findFirst({
+      const first = await prisma.restaurant.findFirst({
         where: { active: true },
         orderBy: { createdAt: "asc" },
       });
-      if (!firstRestaurant) {
-        return res.status(404).json({ message: "No restaurants found." });
-      }
-      restaurantId = firstRestaurant.id;
+      if (!first) return res.status(404).json({ message: "No restaurants found." });
+      restaurantId = first.id;
     }
 
     const items = await prisma.menuItem.findMany({
@@ -34,9 +32,51 @@ const getMenu = async (req, res, next) => {
     }, {});
 
     res.json({ restaurantId, categories: grouped, items });
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
-module.exports = { getMenu };
+// POST /api/menu  — create a menu item (owner+)
+const createMenuItem = async (req, res, next) => {
+  try {
+    const { name, description, price, category, imageUrl, restaurantId, available } = req.body;
+    if (!name || !price || !category || !restaurantId) {
+      return res.status(400).json({ message: "name, price, category, restaurantId are required." });
+    }
+    const item = await prisma.menuItem.create({
+      data: { name, description, price: parseFloat(price), category, imageUrl, restaurantId, available: available ?? true },
+    });
+    await logActivity({ userId: req.user?.id, action: "MENU_ITEM_CREATED", entity: "MenuItem", entityId: item.id, metadata: { name } });
+    res.status(201).json(item);
+  } catch (err) { next(err); }
+};
+
+// PUT /api/menu/:id — update a menu item (owner+)
+const updateMenuItem = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, description, price, category, imageUrl, available } = req.body;
+    const data = {};
+    if (name        !== undefined) data.name = name;
+    if (description !== undefined) data.description = description;
+    if (price       !== undefined) data.price = parseFloat(price);
+    if (category    !== undefined) data.category = category;
+    if (imageUrl    !== undefined) data.imageUrl = imageUrl;
+    if (available   !== undefined) data.available = available;
+
+    const item = await prisma.menuItem.update({ where: { id }, data });
+    await logActivity({ userId: req.user?.id, action: "MENU_ITEM_UPDATED", entity: "MenuItem", entityId: id });
+    res.json(item);
+  } catch (err) { next(err); }
+};
+
+// DELETE /api/menu/:id — delete a menu item (owner+)
+const deleteMenuItem = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await prisma.menuItem.delete({ where: { id } });
+    await logActivity({ userId: req.user?.id, action: "MENU_ITEM_DELETED", entity: "MenuItem", entityId: id });
+    res.json({ message: "Menu item deleted." });
+  } catch (err) { next(err); }
+};
+
+module.exports = { getMenu, createMenuItem, updateMenuItem, deleteMenuItem };
