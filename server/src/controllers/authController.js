@@ -27,15 +27,19 @@ const login = async (req, res, next) => {
       return res.status(401).json({ message: "Invalid email or password." });
     }
 
+    if (!user.active) {
+      return res.status(403).json({ message: "Account is deactivated. Contact the administrator." });
+    }
+
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name },
+      { id: user.id, email: user.email, role: user.role, name: user.name, restaurantId: user.restaurantId },
       process.env.JWT_SECRET,
       { expiresIn: "8h" }
     );
 
     res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, restaurantId: user.restaurantId },
     });
   } catch (err) {
     if (err.name === "ZodError") {

@@ -1,5 +1,5 @@
-// Prisma schema for Smart Order Restaurant System
-// Uses PostgreSQL as the database provider
+// Prisma schema — Smart Order (Multi-tenant SaaS)
+// 4-tier roles: SUPER_ADMIN → OWNER → KITCHEN → Customer (no login)
 
 generator client {
   provider = "prisma-client-js"
@@ -10,49 +10,100 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Kitchen/Admin users
-model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         Role     @default(KITCHEN)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
+// ── Roles ─────────────────────────────────────────────────────────────────────
 enum Role {
-  ADMIN
-  KITCHEN
+  SUPER_ADMIN  // Platform developer — controls everything
+  OWNER        // Restaurant owner — manages their restaurant
+  KITCHEN      // Kitchen staff — views/updates orders
+  ADMIN        // Legacy alias for OWNER (backward compat)
 }
 
-// Menu items displayed to customers
-model MenuItem {
-  id          String      @id @default(cuid())
-  name        String
-  description String?
-  price       Float
-  category    String
-  imageUrl    String?
-  available   Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  orderItems  OrderItem[]
-}
-
-// Customer orders
-model Order {
+// ── Users ─────────────────────────────────────────────────────────────────────
+model User {
   id           String      @id @default(cuid())
-  customerName String
-  phone        String
-  tableNumber  Int
-  status       OrderStatus @default(PENDING)
-  totalPrice   Float
-  items        OrderItem[]
-  otp          OTP?
-  estimatedMinutes Int?    @default(15)
+  name         String
+  email        String      @unique
+  passwordHash String
+  role         Role        @default(KITCHEN)
+  active       Boolean     @default(true)
+  restaurantId String?
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  activityLogs ActivityLog[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+}
+
+// ── Restaurant ────────────────────────────────────────────────────────────────
+model Restaurant {
+  id          String          @id @default(cuid())
+  name        String
+  address     String?
+  phone       String?
+  logoUrl     String?
+  active      Boolean         @default(true)
+  users       User[]
+  menuItems   MenuItem[]
+  orders      Order[]
+  features    FeatureToggle?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+// ── Feature Toggles (per restaurant) ─────────────────────────────────────────
+model FeatureToggle {
+  id             String     @id @default(cuid())
+  restaurantId   String     @unique
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  otpEnabled     Boolean    @default(true)
+  paymentsEnabled Boolean   @default(false)
+  notificationsEnabled Boolean @default(true)
+  updatedAt      DateTime   @updatedAt
+}
+
+// ── Activity Log (audit trail) ────────────────────────────────────────────────
+model ActivityLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action       String   // e.g. "ORDER_STATUS_UPDATE", "USER_CREATED"
+  entity       String?  // e.g. "Order", "User"
+  entityId     String?  // ID of affected record
+  metadata     Json?    // extra context
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+}
+
+// ── Menu Item ─────────────────────────────────────────────────────────────────
+model MenuItem {
+  id           String      @id @default(cuid())
+  name         String
+  description  String?
+  price        Float
+  category     String
+  imageUrl     String?
+  available    Boolean     @default(true)
+  restaurantId String
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orderItems   OrderItem[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+// ── Order ─────────────────────────────────────────────────────────────────────
+model Order {
+  id               String      @id @default(cuid())
+  customerName     String
+  phone            String
+  tableNumber      Int
+  status           OrderStatus @default(PENDING)
+  totalPrice       Float
+  estimatedMinutes Int?        @default(15)
+  restaurantId     String
+  restaurant       Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items            OrderItem[]
+  otp              OTP?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 }
 
 enum OrderStatus {
@@ -63,18 +114,18 @@ enum OrderStatus {
   CANCELLED
 }
 
-// Items within an order (junction between Order and MenuItem)
+// ── Order Item ────────────────────────────────────────────────────────────────
 model OrderItem {
   id         String   @id @default(cuid())
   orderId    String
   menuItemId String
   quantity   Int
-  price      Float    // captured price at time of order
+  price      Float
   order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
 }
 
-// OTP linked to an order for delivery verification
+// ── OTP ──────────────────────────────────────────────────────────────────────
 model OTP {
   id        String   @id @default(cuid())
   orderId   String   @unique

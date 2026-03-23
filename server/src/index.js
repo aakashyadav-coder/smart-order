@@ -10,10 +10,12 @@ const cors = require("cors");
 const { Server } = require("socket.io");
 const { initSocket } = require("./socket");
 
-const authRoutes = require("./routes/auth");
-const menuRoutes = require("./routes/menu");
-const orderRoutes = require("./routes/order");
-const otpRoutes = require("./routes/otp");
+const authRoutes       = require("./routes/auth");
+const menuRoutes       = require("./routes/menu");
+const orderRoutes      = require("./routes/order");
+const otpRoutes        = require("./routes/otp");
+const superAdminRoutes = require("./routes/superAdmin");
+const featuresRoutes   = require("./routes/features");
 const { errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
@@ -53,10 +55,12 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-app.use("/api/auth", authRoutes);
-app.use("/api/menu", menuRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/otp", otpRoutes);
+app.use("/api/auth",    authRoutes);
+app.use("/api/menu",    menuRoutes);
+app.use("/api/orders",  orderRoutes);
+app.use("/api/otp",     otpRoutes);
+app.use("/api/super",   superAdminRoutes);
+app.use("/api/features", featuresRoutes);
 
 // Health check
 app.get("/health", (_req, res) => {

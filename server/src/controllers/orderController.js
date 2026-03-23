@@ -13,11 +13,19 @@ const prisma = new PrismaClient();
  */
 const createOrder = async (req, res, next) => {
   try {
-    const { customerName, phone, tableNumber, items } = req.body;
+    const { customerName, phone, tableNumber, items, restaurantId } = req.body;
 
     // Basic validation
     if (!customerName || !phone || !tableNumber || !items || items.length === 0) {
       return res.status(400).json({ message: "Missing required order fields." });
+    }
+
+    // Determine restaurant — fall back to first active restaurant
+    let resolvedRestaurantId = restaurantId;
+    if (!resolvedRestaurantId) {
+      const first = await prisma.restaurant.findFirst({ where: { active: true }, orderBy: { createdAt: "asc" } });
+      if (!first) return res.status(400).json({ message: "No active restaurant found." });
+      resolvedRestaurantId = first.id;
     }
 
     // Calculate total price from DB prices (don't trust client-sent prices)
@@ -49,15 +57,10 @@ const createOrder = async (req, res, next) => {
         phone: phone.trim(),
         tableNumber: parseInt(tableNumber),
         totalPrice,
-        items: {
-          create: orderItemsData,
-        },
+        restaurantId: resolvedRestaurantId,
+        items: { create: orderItemsData },
       },
-      include: {
-        items: {
-          include: { menuItem: true },
-        },
-      },
+      include: { items: { include: { menuItem: true } } },
     });
 
     // Notify kitchen in real-time
@@ -79,7 +82,11 @@ const getOrders = async (req, res, next) => {
   try {
     const { status, limit = 50 } = req.query;
 
+    // Scope to user's restaurant (kitchen/owner) unless super admin
     const where = {};
+    if (req.user?.role !== "SUPER_ADMIN" && req.user?.restaurantId) {
+      where.restaurantId = req.user.restaurantId;
+    }
     if (status) where.status = status.toUpperCase();
 
     const orders = await prisma.order.findMany({

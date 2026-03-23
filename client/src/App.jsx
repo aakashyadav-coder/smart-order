@@ -1,47 +1,75 @@
 /**
- * App.jsx — Root router
- * Defines all client-side routes
+ * App.jsx — main router
+ * Customer: /menu, /order/:id
+ * Kitchen: /kitchen/login, /kitchen
+ * Admin: /admin/qr
+ * Super Admin: /super/login, /super, /super/restaurants, /super/users,
+ *              /super/orders, /super/features, /super/logs
  */
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import MenuPage from './pages/MenuPage'
-import OrderConfirmationPage from './pages/OrderConfirmationPage'
-import KitchenLoginPage from './pages/KitchenLoginPage'
+
+// Customer pages
+import MenuPage               from './pages/MenuPage'
+import OrderConfirmationPage  from './pages/OrderConfirmationPage'
+
+// Kitchen pages
+import KitchenLoginPage     from './pages/KitchenLoginPage'
 import KitchenDashboardPage from './pages/KitchenDashboardPage'
-import QRGeneratorPage from './pages/QRGeneratorPage'
-import ProtectedRoute from './components/ProtectedRoute'
+import QRGeneratorPage      from './pages/QRGeneratorPage'
+
+// Super Admin pages
+import SuperLoginPage      from './pages/super/SuperLoginPage'
+import SuperDashboardPage  from './pages/super/SuperDashboardPage'
+import RestaurantsPage     from './pages/super/RestaurantsPage'
+import UsersPage           from './pages/super/UsersPage'
+import FeaturesPage        from './pages/super/FeaturesPage'
+import GlobalOrdersPage    from './pages/super/GlobalOrdersPage'
+import ActivityLogsPage    from './pages/super/ActivityLogsPage'
+
+// Route guards & layout
+import ProtectedRoute   from './components/ProtectedRoute'
+import SuperAdminRoute  from './components/SuperAdminRoute'
+import SuperLayout      from './components/SuperLayout'
 
 export default function App() {
   return (
     <Routes>
-      {/* Customer routes */}
-      <Route path="/menu" element={<MenuPage />} />
+      {/* ── Customer ─────────────────────────────────── */}
+      <Route path="/"        element={<Navigate to="/menu" replace />} />
+      <Route path="/menu"    element={<MenuPage />} />
       <Route path="/order/:id" element={<OrderConfirmationPage />} />
 
-      {/* Kitchen staff */}
+      {/* ── Kitchen / Owner ───────────────────────────── */}
       <Route path="/kitchen/login" element={<KitchenLoginPage />} />
-      <Route
-        path="/kitchen"
-        element={
-          <ProtectedRoute>
-            <KitchenDashboardPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/kitchen" element={
+        <ProtectedRoute><KitchenDashboardPage /></ProtectedRoute>
+      } />
+      <Route path="/admin/qr" element={
+        <ProtectedRoute><QRGeneratorPage /></ProtectedRoute>
+      } />
 
-      {/* Admin — QR code generator */}
-      <Route
-        path="/admin/qr"
-        element={
-          <ProtectedRoute>
-            <QRGeneratorPage />
-          </ProtectedRoute>
-        }
-      />
+      {/* ── Super Admin ───────────────────────────────── */}
+      <Route path="/super/login" element={<SuperLoginPage />} />
+      <Route path="/super" element={
+        <SuperAdminRoute><SuperLayout /></SuperAdminRoute>
+      }>
+        <Route index             element={<SuperDashboardPage />} />
+        <Route path="restaurants" element={<RestaurantsPage />} />
+        <Route path="users"       element={<UsersPage />} />
+        <Route path="orders"      element={<GlobalOrdersPage />} />
+        <Route path="features"    element={<FeaturesPage />} />
+        <Route path="logs"        element={<ActivityLogsPage />} />
+      </Route>
 
-      {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/menu?table=1" replace />} />
-      <Route path="*" element={<Navigate to="/menu?table=1" replace />} />
+      {/* ── 404 ──────────────────────────────────────── */}
+      <Route path="*" element={
+        <div className="min-h-screen bg-gray-950 flex items-center justify-center flex-col gap-4">
+          <div className="text-6xl">404</div>
+          <p className="text-gray-400">Page not found</p>
+          <a href="/" className="text-brand-500 hover:underline text-sm">Go home →</a>
+        </div>
+      } />
     </Routes>
   )
 }
