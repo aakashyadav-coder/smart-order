@@ -537,21 +537,33 @@ export default function OwnerDashboardPage() {
   const [activeTab, setActiveTab]       = useState('analytics')
   const [orders, setOrders]             = useState([])
   const [loading, setLoading]           = useState(true)
+  const [fetchError, setFetchError]     = useState(null)
   const [restaurant, setRestaurant]     = useState({ name: 'Restaurant', logoUrl: null })
   const [confirm, setConfirm]           = useState(null)
   const [pendingCount, setPendingCount] = useState(0)
   const badgeRef = useRef(null)
 
+  // Load orders with retry support
+  const fetchOrders = useCallback(async () => {
+    try {
+      setFetchError(null)
+      const res = await api.get('/orders')
+      setOrders(res.data)
+      setPendingCount(res.data.filter(o => o.status === 'PENDING').length)
+    } catch (err) {
+      setFetchError(err.message || 'Failed to load orders')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   // Load orders + restaurant branding
   useEffect(() => {
-    api.get('/orders').then(r => { setOrders(r.data); setPendingCount(r.data.filter(o => o.status === 'PENDING').length) })
-      .catch(err => toast.error(err.message))
-      .finally(() => setLoading(false))
-
+    fetchOrders()
     if (user?.restaurantId) {
       api.get('/restaurant/mine').then(r => setRestaurant({ name: r.data.name, logoUrl: r.data.logoUrl })).catch(() => {})
     }
-  }, [user])
+  }, [user, fetchOrders])
 
   // Socket
   useEffect(() => {
@@ -653,6 +665,18 @@ export default function OwnerDashboardPage() {
 
       {/* ── Content ─────────────────────────────────────────────────────────── */}
       <main className="flex-1 max-w-screen-xl mx-auto w-full px-4 sm:px-6 py-5">
+        {/* Error banner */}
+        {fetchError && (
+          <div className="mb-4 bg-red-900/30 border border-red-700/50 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-red-300 text-sm">
+              <span>⚠️</span>
+              <span>{fetchError}</span>
+            </div>
+            <button onClick={fetchOrders} className="text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0">
+              Retry
+            </button>
+          </div>
+        )}
         {activeTab === 'analytics' && <AnalyticsTab />}
         {activeTab === 'history'   && <OrderHistoryTab orders={orders} loading={loading} />}
         {activeTab === 'menu'      && <MenuTab restaurantId={user?.restaurantId} onDeleteItem={askDeleteItem} />}

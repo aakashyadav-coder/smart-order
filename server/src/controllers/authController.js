@@ -49,18 +49,17 @@ const login = async (req, res, next) => {
   }
 };
 
-// Return current user info from token
+// Return current user info from token — verified from DB
 const me = async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { id: true, name: true, email: true, role: true },
+      select: { id: true, name: true, email: true, role: true, restaurantId: true, active: true },
     });
     if (!user) return res.status(404).json({ message: "User not found." });
+    if (!user.active) return res.status(403).json({ message: "Account is deactivated." });
     res.json(user);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 module.exports = { login, me };

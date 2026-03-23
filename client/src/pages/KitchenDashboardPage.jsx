@@ -136,10 +136,11 @@ export default function KitchenDashboardPage() {
 
   const [orders, setOrders]           = useState([])
   const [loading, setLoading]         = useState(true)
+  const [fetchError, setFetchError]   = useState(null)
   const [filter, setFilter]           = useState('ALL')
   const [connected, setConnected]     = useState(socket.connected)
   const [restaurant, setRestaurant]   = useState({ name: 'Kitchen', logoUrl: null })
-  const [confirm, setConfirm]         = useState(null)  // { title, message, onConfirm, type }
+  const [confirm, setConfirm]         = useState(null)
   const [newBadge, setNewBadge]       = useState(0)
   const badgeTimerRef                 = useRef(null)
 
@@ -150,23 +151,28 @@ export default function KitchenDashboardPage() {
     badgeTimerRef.current = setTimeout(() => setNewBadge(0), 8000)
   }, [])
 
+  // Fetch orders (with retry support)
+  const fetchOrders = useCallback(async () => {
+    try {
+      setFetchError(null)
+      const res = await api.get('/orders')
+      setOrders(res.data)
+    } catch (err) {
+      setFetchError(err.message || 'Failed to load orders')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   // Initial load
   useEffect(() => {
-    Promise.all([
-      api.get('/orders'),
-      api.get('/menu').catch(() => null),
-    ]).then(([ordersRes]) => {
-      setOrders(ordersRes.data)
-    }).catch(err => toast.error(err.message))
-      .finally(() => setLoading(false))
-
-    // Load restaurant branding from user's own restaurant
+    fetchOrders()
     if (user?.restaurantId) {
       api.get('/restaurant/mine').then(r => {
         setRestaurant({ name: r.data.name, logoUrl: r.data.logoUrl })
       }).catch(() => {})
     }
-  }, [user])
+  }, [user, fetchOrders])
 
   // Socket listeners
   useEffect(() => {
@@ -314,6 +320,18 @@ export default function KitchenDashboardPage() {
 
       {/* ── Main Grid ──────────────────────────────────────────────────────────── */}
       <main className="flex-1 max-w-screen-2xl mx-auto w-full px-4 sm:px-6 py-5">
+        {/* Error banner */}
+        {fetchError && (
+          <div className="mb-4 bg-red-900/30 border border-red-700/50 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-red-300 text-sm">
+              <span>⚠️</span>
+              <span>{fetchError}</span>
+            </div>
+            <button onClick={fetchOrders} className="text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0">
+              Retry
+            </button>
+          </div>
+        )}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />

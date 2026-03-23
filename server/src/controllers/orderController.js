@@ -80,13 +80,24 @@ const createOrder = async (req, res, next) => {
  */
 const getOrders = async (req, res, next) => {
   try {
-    const { status, limit = 50 } = req.query;
+    const { status, limit = 500 } = req.query;
 
-    // Scope to user's restaurant (kitchen/owner) unless super admin
     const where = {};
-    if (req.user?.role !== "SUPER_ADMIN" && req.user?.restaurantId) {
-      where.restaurantId = req.user.restaurantId;
+
+    // Scope to user's restaurant
+    if (req.user?.role !== "SUPER_ADMIN") {
+      const restaurantId = req.user?.restaurantId;
+      if (restaurantId) {
+        where.restaurantId = restaurantId;
+      } else {
+        // Fallback: fetch from DB to get restaurantId from user record
+        const { PrismaClient: PC } = require("@prisma/client");
+        const p = new PC();
+        const dbUser = await p.user.findUnique({ where: { id: req.user.id }, select: { restaurantId: true } });
+        if (dbUser?.restaurantId) where.restaurantId = dbUser.restaurantId;
+      }
     }
+
     if (status) where.status = status.toUpperCase();
 
     const orders = await prisma.order.findMany({
@@ -100,9 +111,7 @@ const getOrders = async (req, res, next) => {
     });
 
     res.json(orders);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 /**
