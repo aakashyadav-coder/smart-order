@@ -1,16 +1,24 @@
 /**
  * Socket.io event handler initialization
- * Manages kitchen room and customer order rooms
+ * Manages kitchen room, owner room, customer order rooms
  */
 
 const initSocket = (io) => {
   io.on("connection", (socket) => {
     console.log(`[Socket] Client connected: ${socket.id}`);
 
-    // Kitchen staff join a dedicated room to receive all new orders
+    // Kitchen staff join the kitchen room
     socket.on("join_kitchen", () => {
       socket.join("kitchen");
       console.log(`[Socket] ${socket.id} joined kitchen room`);
+    });
+
+    // Owner joins their restaurant room (for restaurant branding updates)
+    socket.on("join_restaurant", ({ restaurantId }) => {
+      if (restaurantId) {
+        socket.join(`restaurant_${restaurantId}`);
+        console.log(`[Socket] ${socket.id} joined restaurant_${restaurantId}`);
+      }
     });
 
     // Customer joins a specific order room to track their order status
@@ -27,25 +35,27 @@ const initSocket = (io) => {
   });
 };
 
-/**
- * Emit a new order event to the kitchen room
- * @param {object} io - Socket.io server instance
- * @param {object} order - The newly created order object
- */
+/** Emit new order to the kitchen room */
 const emitNewOrder = (io, order) => {
   io.to("kitchen").emit("new_order", order);
-  console.log(`[Socket] Emitted new_order to kitchen (Order #${order.id})`);
+  console.log(`[Socket] new_order → kitchen (Order #${order.id})`);
+};
+
+/** Emit order status update to a specific order room (customer tracking) */
+const emitOrderStatusUpdate = (io, orderId, status) => {
+  io.to(`order_${orderId}`).emit("order_status_update", { orderId, status });
+  console.log(`[Socket] order_status_update → order_${orderId}: ${status}`);
 };
 
 /**
- * Emit order status update to a specific order room (customer)
- * @param {object} io - Socket.io server instance
- * @param {string} orderId - The order ID
- * @param {string} status - New status string
+ * Emit restaurant branding update to kitchen + all restaurant members
+ * Called when super admin changes restaurant name or logo
  */
-const emitOrderStatusUpdate = (io, orderId, status) => {
-  io.to(`order_${orderId}`).emit("order_status_update", { orderId, status });
-  console.log(`[Socket] Emitted order_status_update to order_${orderId}: ${status}`);
+const emitRestaurantUpdate = (io, restaurant) => {
+  const payload = { id: restaurant.id, name: restaurant.name, logoUrl: restaurant.logoUrl };
+  io.to("kitchen").emit("restaurant_updated", payload);
+  io.to(`restaurant_${restaurant.id}`).emit("restaurant_updated", payload);
+  console.log(`[Socket] restaurant_updated → kitchen + restaurant_${restaurant.id}: "${restaurant.name}"`);
 };
 
-module.exports = { initSocket, emitNewOrder, emitOrderStatusUpdate };
+module.exports = { initSocket, emitNewOrder, emitOrderStatusUpdate, emitRestaurantUpdate };

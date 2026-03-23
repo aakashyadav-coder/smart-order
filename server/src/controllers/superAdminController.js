@@ -5,6 +5,7 @@
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 const { logActivity } = require("../services/activityLogService");
+const { emitRestaurantUpdate } = require("../socket");
 
 const prisma = new PrismaClient();
 
@@ -95,6 +96,13 @@ const updateRestaurant = async (req, res, next) => {
     });
 
     await logActivity({ userId: req.user.id, action: "RESTAURANT_UPDATED", entity: "Restaurant", entityId: id, metadata: req.body });
+
+    // Emit real-time branding update to kitchen and owner dashboards
+    try {
+      const io = req.app.get("io");
+      if (io) emitRestaurantUpdate(io, restaurant);
+    } catch (_) {}
+
     res.json(restaurant);
   } catch (err) { next(err); }
 };
