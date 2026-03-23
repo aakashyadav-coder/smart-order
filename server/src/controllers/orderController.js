@@ -161,7 +161,7 @@ const updateOrderStatus = async (req, res, next) => {
 
     // Notify customer in real-time
     const io = req.app.get("io");
-    emitOrderStatusUpdate(io, id, status);
+    emitOrderStatusUpdate(io, id, status, order.restaurantId);
 
     res.json(order);
   } catch (err) {

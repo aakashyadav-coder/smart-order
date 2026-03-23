@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useCart } from '../context/CartContext'
 
-export default function CheckoutModal({ tableNumber, onClose }) {
+export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
   const navigate = useNavigate()
   const { items, totalPrice, clearCart } = useCart()
 
@@ -39,6 +39,7 @@ export default function CheckoutModal({ tableNumber, onClose }) {
         phone: form.phone.trim(),
         tableNumber: parseInt(tableNumber),
         items: items.map(i => ({ menuItemId: i.menuItemId, quantity: i.quantity })),
+        ...(restaurantId && { restaurantId }),
       }
 
       const res = await api.post('/orders', payload)

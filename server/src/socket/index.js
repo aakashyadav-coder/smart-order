@@ -41,10 +41,18 @@ const emitNewOrder = (io, order) => {
   console.log(`[Socket] new_order → kitchen (Order #${order.id})`);
 };
 
-/** Emit order status update to a specific order room (customer tracking) */
-const emitOrderStatusUpdate = (io, orderId, status) => {
-  io.to(`order_${orderId}`).emit("order_status_update", { orderId, status });
-  console.log(`[Socket] order_status_update → order_${orderId}: ${status}`);
+/** Emit order status update to kitchen room + specific order room */
+const emitOrderStatusUpdate = (io, orderId, status, restaurantId) => {
+  const payload = { orderId, status };
+  // Broadcast to kitchen dashboard (kitchen staff + owner)
+  io.to("kitchen").emit("order_status_update", payload);
+  // Broadcast to restaurant-specific room (owner who joined via join_restaurant)
+  if (restaurantId) {
+    io.to(`restaurant_${restaurantId}`).emit("order_status_update", payload);
+  }
+  // Broadcast to customer's order tracking room
+  io.to(`order_${orderId}`).emit("order_status_update", payload);
+  console.log(`[Socket] order_status_update → kitchen + order_${orderId}: ${status}`);
 };
 
 /**
