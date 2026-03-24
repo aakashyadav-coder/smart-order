@@ -2,9 +2,10 @@
  * KitchenDashboardPage — Ultra-professional real-time order management
  * Features:
  *  - Live restaurant name/logo via socket
- *  - No QR link (removed)
- *  - Animated red notification badge on PENDING count
- *  - Confirmation modals before status changes and logout
+ *  - Animated red notification badge on each status column change
+ *  - Confirmation modal ONLY for PENDING → ACCEPTED (accept/cancel)
+ *  - Direct status change (no modal) for ACCEPTED → PREPARING and PREPARING → SERVED
+ *  - Audio notification on every new order (reuses single AudioContext)
  *  - Premium dark split-panel UI
  */
 import React, { useEffect, useState, useRef, useCallback } from 'react'
@@ -15,38 +16,50 @@ import socket from '../lib/socket'
 import { useAuth } from '../context/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
 
-// ── Notification sound ──────────────────────────────────────────────────────
+// ── Notification sound (reuse single AudioContext to avoid browser blocking) ──
+let _audioCtx = null
+const getAudioCtx = () => {
+  if (!_audioCtx || _audioCtx.state === 'closed') {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+  }
+  return _audioCtx
+}
 const playDing = () => {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)()
-    const osc = ctx.createOscillator(), gain = ctx.createGain()
-    osc.connect(gain); gain.connect(ctx.destination)
+    const ctx = getAudioCtx()
+    if (ctx.state === 'suspended') ctx.resume()
+    const osc  = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
     osc.frequency.setValueAtTime(1047, ctx.currentTime)
-    osc.frequency.setValueAtTime(784, ctx.currentTime + 0.12)
+    osc.frequency.setValueAtTime(784,  ctx.currentTime + 0.12)
     gain.gain.setValueAtTime(0.35, ctx.currentTime)
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6)
-    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.6)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.6)
   } catch (_) {}
 }
 
 // ── Status config ───────────────────────────────────────────────────────────
 const STATUS_CFG = {
-  PENDING:   { color: 'border-l-yellow-400',  bg: 'bg-yellow-400/10', text: 'text-yellow-400',  dot: 'bg-yellow-400',  label: 'Pending'   },
-  ACCEPTED:  { color: 'border-l-blue-400',    bg: 'bg-blue-400/10',   text: 'text-blue-400',    dot: 'bg-blue-400',    label: 'Accepted'  },
-  PREPARING: { color: 'border-l-orange-400',  bg: 'bg-orange-400/10', text: 'text-orange-400',  dot: 'bg-orange-400',  label: 'Preparing' },
-  COMPLETED: { color: 'border-l-green-400',   bg: 'bg-green-400/10',  text: 'text-green-400',   dot: 'bg-green-400',   label: 'Completed' },
-  CANCELLED: { color: 'border-l-red-500',     bg: 'bg-red-500/10',    text: 'text-red-500',     dot: 'bg-red-500',     label: 'Cancelled' },
+  PENDING:   { color: 'border-l-yellow-400',  bg: 'bg-yellow-400/10', text: 'text-yellow-400',  dot: 'bg-yellow-400',  label: 'Pending'  },
+  ACCEPTED:  { color: 'border-l-blue-400',    bg: 'bg-blue-400/10',   text: 'text-blue-400',    dot: 'bg-blue-400',    label: 'Accepted' },
+  PREPARING: { color: 'border-l-orange-400',  bg: 'bg-orange-400/10', text: 'text-orange-400',  dot: 'bg-orange-400',  label: 'Preparing'},
+  SERVED:    { color: 'border-l-green-400',   bg: 'bg-green-400/10',  text: 'text-green-400',   dot: 'bg-green-400',   label: 'Served'   },
+  CANCELLED: { color: 'border-l-red-500',     bg: 'bg-red-500/10',    text: 'text-red-500',     dot: 'bg-red-500',     label: 'Cancelled'},
+  PAID:      { color: 'border-l-emerald-500', bg: 'bg-emerald-500/10',text: 'text-emerald-400', dot: 'bg-emerald-500', label: 'Paid'     },
 }
 
-const FILTERS = ['ALL', 'PENDING', 'ACCEPTED', 'PREPARING', 'COMPLETED']
+const FILTERS = ['ALL', 'PENDING', 'ACCEPTED', 'PREPARING', 'SERVED']
 
 // ── Single Order Card ───────────────────────────────────────────────────────
-function OrderCard({ order, onAccept, onPrepare, onComplete, onCancel }) {
-  const cfg = STATUS_CFG[order.status] || STATUS_CFG.PENDING
+function OrderCard({ order, onAccept, onPrepare, onServe, onCancel }) {
+  const cfg     = STATUS_CFG[order.status] || STATUS_CFG.PENDING
   const elapsed = Math.floor((Date.now() - new Date(order.createdAt)) / 60000)
 
   return (
-    <div className={`relative bg-gray-900 rounded-2xl border border-gray-800 border-l-4 ${cfg.color} overflow-hidden group hover:border-gray-700 transition-all duration-200`}>
+    <div className={`relative bg-gray-900 rounded-2xl border border-gray-800 border-l-4 ${cfg.color} overflow-hidden hover:border-gray-700 transition-all duration-200`}>
       {/* Header */}
       <div className={`px-4 py-3 ${cfg.bg} flex items-center justify-between`}>
         <div className="flex items-center gap-2">
@@ -86,31 +99,35 @@ function OrderCard({ order, onAccept, onPrepare, onComplete, onCancel }) {
         ))}
       </div>
 
-      {/* Actions */}
+      {/* Actions — only PENDING needs confirm modal, rest are direct */}
       <div className="px-4 py-3 border-t border-gray-800 flex gap-2">
         {order.status === 'PENDING' && (
           <>
-            <button onClick={() => onAccept(order)} className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5">
+            <button onClick={() => onAccept(order)}
+              className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5">
               ✓ Accept
             </button>
-            <button onClick={() => onCancel(order)} className="py-2 px-3 rounded-xl text-xs font-bold text-red-400 bg-red-900/30 hover:bg-red-900/60 transition-colors">
+            <button onClick={() => onCancel(order)}
+              className="py-2 px-3 rounded-xl text-xs font-bold text-red-400 bg-red-900/30 hover:bg-red-900/60 transition-colors">
               ✕
             </button>
           </>
         )}
         {order.status === 'ACCEPTED' && (
-          <button onClick={() => onPrepare(order)} className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 transition-colors">
+          <button onClick={() => onPrepare(order.id)}
+            className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 transition-colors">
             🔥 Start Preparing
           </button>
         )}
         {order.status === 'PREPARING' && (
-          <button onClick={() => onComplete(order)} className="flex-1 py-2 rounded-xl text-xs font-bold text-black bg-green-400 hover:bg-green-300 transition-colors">
-            ✓ Mark Complete
+          <button onClick={() => onServe(order.id)}
+            className="flex-1 py-2 rounded-xl text-xs font-bold text-black bg-green-400 hover:bg-green-300 transition-colors">
+            ✓ Mark Served
           </button>
         )}
-        {(order.status === 'COMPLETED' || order.status === 'CANCELLED') && (
+        {(order.status === 'SERVED' || order.status === 'PAID' || order.status === 'CANCELLED') && (
           <div className={`flex-1 py-2 rounded-xl text-xs font-bold text-center ${cfg.text} ${cfg.bg}`}>
-            {order.status === 'COMPLETED' ? '✓ Done' : '✕ Cancelled'}
+            {order.status === 'SERVED' ? '✓ Served' : order.status === 'PAID' ? '💳 Paid' : '✕ Cancelled'}
           </div>
         )}
       </div>
@@ -121,42 +138,41 @@ function OrderCard({ order, onAccept, onPrepare, onComplete, onCancel }) {
   )
 }
 
-// ── Stat Pill ────────────────────────────────────────────────────────────────
-const Pill = ({ label, value, color }) => (
-  <div className="bg-gray-800/60 rounded-xl px-3 py-2 text-center">
-    <p className={`font-extrabold text-xl leading-none ${color}`}>{value}</p>
-    <p className="text-gray-500 text-[10px] mt-0.5 uppercase tracking-wider">{label}</p>
-  </div>
-)
-
 // ── Main Page ────────────────────────────────────────────────────────────────
 export default function KitchenDashboardPage() {
   const navigate = useNavigate()
   const { user, logout, loading: authLoading } = useAuth()
 
-  const [orders, setOrders]           = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [fetchError, setFetchError]   = useState(null)
-  const [filter, setFilter]           = useState('ALL')
-  const [connected, setConnected]     = useState(socket.connected)
-  // Instantly show cached branding — updates after API responds
-  const [restaurant, setRestaurant]   = useState(() => {
+  const [orders, setOrders]         = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [fetchError, setFetchError] = useState(null)
+  const [filter, setFilter]         = useState('ALL')
+  const [connected, setConnected]   = useState(socket.connected)
+  const [restaurant, setRestaurant] = useState(() => {
     try { return JSON.parse(localStorage.getItem('kitchen_restaurant') || 'null') || { name: 'Kitchen', logoUrl: null } }
     catch { return { name: 'Kitchen', logoUrl: null } }
   })
-  const [confirm, setConfirm]         = useState(null)
-  const [newBadge, setNewBadge]       = useState(0)
-  const badgeTimerRef                 = useRef(null)
-  const [logoError, setLogoError]     = useState(false)
+  const [confirm, setConfirm]       = useState(null)
+  const [logoError, setLogoError]   = useState(false)
+  // Per-status badge counts — cleared when user clicks that filter
+  const [statusBadges, setStatusBadges] = useState({})
+  const badgeTimersRef = useRef({})
 
-  // Flash new badge for 8s then fade
-  const flashBadge = useCallback(() => {
-    setNewBadge(n => n + 1)
-    clearTimeout(badgeTimerRef.current)
-    badgeTimerRef.current = setTimeout(() => setNewBadge(0), 8000)
+  // Add badge for a given status, auto-clear after 10s
+  const addBadge = useCallback((status) => {
+    setStatusBadges(prev => ({ ...prev, [status]: (prev[status] || 0) + 1 }))
+    clearTimeout(badgeTimersRef.current[status])
+    badgeTimersRef.current[status] = setTimeout(() => {
+      setStatusBadges(prev => { const n = { ...prev }; delete n[status]; return n })
+    }, 10000)
   }, [])
 
-  // Fetch orders (with retry support)
+  const clearBadge = (status) => {
+    setStatusBadges(prev => { const n = { ...prev }; delete n[status]; return n })
+    clearTimeout(badgeTimersRef.current[status])
+  }
+
+  // Fetch orders
   const fetchOrders = useCallback(async () => {
     try {
       setFetchError(null)
@@ -169,18 +185,16 @@ export default function KitchenDashboardPage() {
     }
   }, [])
 
-  // Single fetch — runs only after auth is fully resolved
+  // Single fetch after auth resolves
   useEffect(() => {
-    if (authLoading) return // wait for auth verification to complete
+    if (authLoading) return
     fetchOrders()
-    // Load + cache restaurant branding for instant display on next load
     api.get('/restaurant/mine').then(r => {
       const data = { name: r.data.name, logoUrl: r.data.logoUrl }
       setRestaurant(data)
       setLogoError(false)
       localStorage.setItem('kitchen_restaurant', JSON.stringify(data))
     }).catch(() => {})
-    // Join socket rooms immediately
     socket.emit('join_kitchen')
     if (user?.restaurantId) socket.emit('join_restaurant', { restaurantId: user.restaurantId })
   }, [authLoading, fetchOrders, user?.restaurantId])
@@ -190,11 +204,13 @@ export default function KitchenDashboardPage() {
     const onNewOrder = (order) => {
       setOrders(prev => prev.find(o => o.id === order.id) ? prev : [order, ...prev])
       playDing()
-      flashBadge()
+      addBadge('PENDING')
       toast.success(`🆕 New order — Table #${order.tableNumber}!`, { duration: 6000 })
     }
     const onStatusUpdate = ({ orderId, status }) => {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o))
+      // Badge on the destination status column
+      if (STATUS_CFG[status]) addBadge(status)
     }
     const onRestaurantUpdated = (data) => {
       const branding = { name: data.name, logoUrl: data.logoUrl }
@@ -206,56 +222,75 @@ export default function KitchenDashboardPage() {
     const onConnect    = () => setConnected(true)
     const onDisconnect = () => setConnected(false)
 
-    socket.on('new_order', onNewOrder)
+    socket.on('new_order',           onNewOrder)
     socket.on('order_status_update', onStatusUpdate)
-    socket.on('restaurant_updated', onRestaurantUpdated)
-    socket.on('connect', onConnect)
-    socket.on('disconnect', onDisconnect)
+    socket.on('restaurant_updated',  onRestaurantUpdated)
+    socket.on('connect',             onConnect)
+    socket.on('disconnect',          onDisconnect)
 
     return () => {
-      socket.off('new_order', onNewOrder)
+      socket.off('new_order',           onNewOrder)
       socket.off('order_status_update', onStatusUpdate)
-      socket.off('restaurant_updated', onRestaurantUpdated)
-      socket.off('connect', onConnect)
-      socket.off('disconnect', onDisconnect)
+      socket.off('restaurant_updated',  onRestaurantUpdated)
+      socket.off('connect',             onConnect)
+      socket.off('disconnect',          onDisconnect)
     }
-  }, [user, flashBadge])
+  }, [addBadge])
 
-  // Status update executor
+  // Direct status update (no confirmation modal)
   const doStatusUpdate = async (orderId, status) => {
     try {
       const res = await api.put(`/orders/${orderId}/status`, { status })
       setOrders(prev => prev.map(o => o.id === orderId ? res.data : o))
-      toast.success(`Marked as ${status.toLowerCase()}`)
+      const label = STATUS_CFG[status]?.label || status
+      toast.success(`Marked as ${label}`)
       if (status === 'ACCEPTED') {
         api.post('/otp/send', { orderId }).catch(() => {})
       }
     } catch (err) { toast.error(err.message) }
-    finally { setConfirm(null) }
   }
 
-  // Confirmation helpers
-  const askAccept   = (order) => setConfirm({ title: 'Accept Order?', message: `Accept order from ${order.customerName} (Table #${order.tableNumber})? OTP will be sent to customer.`, onConfirm: () => doStatusUpdate(order.id, 'ACCEPTED'), type: 'info', confirmLabel: '✓ Accept', confirmStyle: 'bg-blue-600 hover:bg-blue-700' })
-  const askPrepare  = (order) => setConfirm({ title: 'Start Preparing?', message: `Mark Table #${order.tableNumber} order as preparing?`, onConfirm: () => doStatusUpdate(order.id, 'PREPARING'), type: 'warning', confirmLabel: '🔥 Start Preparing' })
-  const askComplete = (order) => setConfirm({ title: 'Mark Complete?', message: `Mark this order from ${order.customerName} as completed and served?`, onConfirm: () => doStatusUpdate(order.id, 'COMPLETED'), type: 'info', confirmLabel: '✓ Complete' })
-  const askCancel   = (order) => setConfirm({ title: 'Cancel Order?', message: `Cancel order from ${order.customerName}? This cannot be undone.`, onConfirm: () => doStatusUpdate(order.id, 'CANCELLED'), type: 'danger', confirmLabel: 'Cancel Order' })
-  const askLogout   = () => setConfirm({ title: 'Sign Out?', message: 'Are you sure you want to sign out of Kitchen Dashboard?', onConfirm: () => { logout(); navigate('/kitchen/login') }, type: 'danger', confirmLabel: 'Sign Out' })
+  // Only PENDING → ACCEPTED and Cancel need confirmation modals
+  const askAccept = (order) => setConfirm({
+    title: 'Accept Order?',
+    message: `Accept order from ${order.customerName} (Table #${order.tableNumber})? An OTP will be sent to the customer.`,
+    onConfirm: () => { doStatusUpdate(order.id, 'ACCEPTED'); setConfirm(null) },
+    type: 'info',
+    confirmLabel: '✓ Accept',
+    confirmStyle: 'bg-blue-600 hover:bg-blue-700',
+  })
+  const askCancel = (order) => setConfirm({
+    title: 'Cancel Order?',
+    message: `Cancel order from ${order.customerName}? This cannot be undone.`,
+    onConfirm: () => { doStatusUpdate(order.id, 'CANCELLED'); setConfirm(null) },
+    type: 'danger',
+    confirmLabel: 'Cancel Order',
+  })
+  const askLogout = () => setConfirm({
+    title: 'Sign Out?',
+    message: 'Are you sure you want to sign out of Kitchen Dashboard?',
+    onConfirm: () => { logout(); navigate('/kitchen/login') },
+    type: 'danger',
+    confirmLabel: 'Sign Out',
+  })
 
-  const filteredOrders = filter === 'ALL' ? orders : orders.filter(o => o.status === filter)
+  const filteredOrders = filter === 'ALL'
+    ? orders.filter(o => o.status !== 'PAID') // hide PAID from ALL view in kitchen
+    : orders.filter(o => o.status === filter)
 
   const counts = {
-    pending:   orders.filter(o => o.status === 'PENDING').length,
-    accepted:  orders.filter(o => o.status === 'ACCEPTED').length,
-    preparing: orders.filter(o => o.status === 'PREPARING').length,
-    completed: orders.filter(o => o.status === 'COMPLETED').length,
+    PENDING:   orders.filter(o => o.status === 'PENDING').length,
+    ACCEPTED:  orders.filter(o => o.status === 'ACCEPTED').length,
+    PREPARING: orders.filter(o => o.status === 'PREPARING').length,
+    SERVED:    orders.filter(o => o.status === 'SERVED').length,
   }
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">
-      {/* ── Top Header ─────────────────────────────────────────────────────────── */}
+      {/* ── Top Header ──────────────────────────────────────────────────────────── */}
       <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-30 flex-shrink-0">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          {/* Logo + Restaurant name (real-time) */}
+          {/* Logo */}
           <div className="flex items-center gap-3 min-w-0">
             {restaurant.logoUrl && !logoError
               ? <img src={restaurant.logoUrl} alt="logo"
@@ -269,20 +304,15 @@ export default function KitchenDashboardPage() {
             </div>
           </div>
 
-          {/* Center — pending badge */}
+          {/* Pending alert */}
           <div className="flex items-center gap-3">
-            {counts.pending > 0 && (
+            {counts.PENDING > 0 && (
               <div className="relative flex items-center gap-2 bg-red-900/30 border border-red-700/50 rounded-full px-3 py-1.5">
                 <span className="relative flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
                 </span>
-                <span className="text-red-300 text-xs font-bold">{counts.pending} new order{counts.pending > 1 ? 's' : ''}</span>
-              </div>
-            )}
-            {newBadge > 0 && counts.pending === 0 && (
-              <div className="bg-green-900/30 border border-green-700/50 rounded-full px-3 py-1.5 text-green-300 text-xs font-bold">
-                ✓ Orders incoming
+                <span className="text-red-300 text-xs font-bold">{counts.PENDING} pending order{counts.PENDING > 1 ? 's' : ''}</span>
               </div>
             )}
           </div>
@@ -304,26 +334,24 @@ export default function KitchenDashboardPage() {
           </div>
         </div>
 
-        {/* Stats strip */}
+        {/* Filter strip — each tab shows its own red badge when orders shift into it */}
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 pb-3 flex gap-2 overflow-x-auto">
           {FILTERS.map(f => {
-            const count = f === 'ALL' ? orders.length : counts[f.toLowerCase()] ?? orders.filter(o => o.status === f).length
+            const count   = f === 'ALL' ? orders.filter(o => o.status !== 'PAID').length : (counts[f] ?? 0)
             const isActive = filter === f
-            const isPending = f === 'PENDING' && counts.pending > 0
+            const badge   = f !== 'ALL' && statusBadges[f] ? statusBadges[f] : 0
             return (
-              <button
-                key={f}
-                onClick={() => { setFilter(f); if(f === 'PENDING') setNewBadge(0) }}
+              <button key={f}
+                onClick={() => { setFilter(f); if (f !== 'ALL') clearBadge(f) }}
                 className={`relative flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-150 ${
                   isActive ? 'bg-white text-gray-900' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
-                }`}
-              >
-                {isPending && (
+                }`}>
+                {badge > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] text-white flex items-center justify-center animate-bounce">
-                    {counts.pending}
+                    {badge}
                   </span>
                 )}
-                {f === 'ALL' ? 'All' : f.charAt(0) + f.slice(1).toLowerCase()}
+                {f === 'ALL' ? 'All' : STATUS_CFG[f]?.label || f}
                 <span className={`${isActive ? 'bg-gray-200 text-gray-700' : 'bg-gray-700 text-gray-400'} rounded-full px-1.5 py-0.5 text-[10px] font-bold`}>{count}</span>
               </button>
             )
@@ -331,14 +359,12 @@ export default function KitchenDashboardPage() {
         </div>
       </header>
 
-      {/* ── Main Grid ──────────────────────────────────────────────────────────── */}
+      {/* ── Main ────────────────────────────────────────────────────────────────── */}
       <main className="flex-1 max-w-screen-2xl mx-auto w-full px-4 sm:px-6 py-5">
-        {/* Error banner */}
         {fetchError && (
           <div className="mb-4 bg-red-900/30 border border-red-700/50 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-red-300 text-sm">
-              <span>⚠️</span>
-              <span>{fetchError}</span>
+              <span>⚠️</span><span>{fetchError}</span>
             </div>
             <button onClick={fetchOrders} className="text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0">
               Retry
@@ -353,7 +379,7 @@ export default function KitchenDashboardPage() {
         ) : filteredOrders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <div className="w-24 h-24 bg-gray-900 rounded-full flex items-center justify-center text-5xl mb-6 border border-gray-800">🍳</div>
-            <p className="text-white font-bold text-lg">No {filter !== 'ALL' ? filter.toLowerCase() : ''} orders</p>
+            <p className="text-white font-bold text-lg">No {filter !== 'ALL' ? (STATUS_CFG[filter]?.label?.toLowerCase() || filter.toLowerCase()) : ''} orders</p>
             <p className="text-gray-600 text-sm mt-1">Orders will appear here in real-time</p>
           </div>
         ) : (
@@ -363,8 +389,8 @@ export default function KitchenDashboardPage() {
                 <OrderCard
                   order={order}
                   onAccept={askAccept}
-                  onPrepare={askPrepare}
-                  onComplete={askComplete}
+                  onPrepare={(id) => doStatusUpdate(id, 'PREPARING')}
+                  onServe={(id) => doStatusUpdate(id, 'SERVED')}
                   onCancel={askCancel}
                 />
               </div>
@@ -373,7 +399,7 @@ export default function KitchenDashboardPage() {
         )}
       </main>
 
-      {/* ── Confirmation Modal ─────────────────────────────────────────────────── */}
+      {/* Confirmation Modal — only for Accept and Cancel */}
       {confirm && (
         <ConfirmModal
           open

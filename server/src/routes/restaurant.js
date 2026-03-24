@@ -82,24 +82,21 @@ router.get("/analytics", authenticate, async (req, res, next) => {
     for (const o of orders) {
       const idx = bucketFn(o.createdAt);
       if (idx >= 0 && idx < buckets) {
-        // Use discountedTotal for PAID orders, otherwise totalPrice
-        const amount = o.status === "PAID"
-          ? (o.discountedTotal ?? o.totalPrice)
-          : o.totalPrice;
-        revenue[idx] += amount;
-        counts[idx]  += 1;
-      }
-      if (o.status === "PAID") {
-        totalPaidRevenue += (o.discountedTotal ?? o.totalPrice);
-        paidOrders++;
+        counts[idx] += 1;  // count all non-cancelled
+        if (o.status === "PAID") {
+          // Only PAID orders contribute to revenue chart
+          const amount = o.discountedTotal ?? o.totalPrice;
+          revenue[idx] += amount;
+          totalPaidRevenue += amount;
+          paidOrders++;
+        }
       }
     }
 
     const labels = Array.from({ length: buckets }, (_, i) => labelFn(i));
-    const totalRevenue = revenue.reduce((a, b) => a + b, 0);
     const totalOrders  = counts.reduce((a, b) => a + b, 0);
 
-    res.json({ range, labels, revenue, counts, totalRevenue, totalOrders, totalPaidRevenue, paidOrders });
+    res.json({ range, labels, revenue, counts, totalRevenue: totalPaidRevenue, totalOrders, totalPaidRevenue, paidOrders });
   } catch (err) { next(err); }
 });
 

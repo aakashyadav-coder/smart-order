@@ -143,7 +143,7 @@ const updateOrderStatus = async (req, res, next) => {
     const { id } = req.params;
     const { status, estimatedMinutes, discount, discountedTotal } = req.body;
 
-    const validStatuses = ["PENDING", "ACCEPTED", "PREPARING", "COMPLETED", "CANCELLED", "PAID"];
+    const validStatuses = ["PENDING", "ACCEPTED", "PREPARING", "SERVED", "CANCELLED", "PAID"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: `Invalid status. Must be one of: ${validStatuses.join(", ")}` });
     }

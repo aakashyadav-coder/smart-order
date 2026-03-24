@@ -24,7 +24,7 @@ const STATUS_CFG = {
   PENDING:   { border: 'border-l-yellow-400', bg: 'bg-yellow-400/10', text: 'text-yellow-400', dot: 'bg-yellow-400' },
   ACCEPTED:  { border: 'border-l-blue-400',   bg: 'bg-blue-400/10',   text: 'text-blue-400',   dot: 'bg-blue-400'   },
   PREPARING: { border: 'border-l-orange-400', bg: 'bg-orange-400/10', text: 'text-orange-400', dot: 'bg-orange-400' },
-  COMPLETED: { border: 'border-l-green-400',  bg: 'bg-green-400/10',  text: 'text-green-400',  dot: 'bg-green-400'  },
+  SERVED:    { border: 'border-l-green-400',  bg: 'bg-green-400/10',  text: 'text-green-400',  dot: 'bg-green-400'  },
   CANCELLED: { border: 'border-l-red-500',    bg: 'bg-red-500/10',    text: 'text-red-500',    dot: 'bg-red-500'    },
   PAID:      { border: 'border-l-emerald-500',bg: 'bg-emerald-500/10',text: 'text-emerald-400',dot: 'bg-emerald-500'},
 }
@@ -160,14 +160,13 @@ function AnalyticsTab() {
             ))}
           </div>
 
-          {/* Revenue chart */}
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5 mb-4">
+        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5 mb-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-white font-bold">Revenue</h3>
-                <p className="text-gray-500 text-xs mt-0.5">{RANGES.find(r => r.id === range)?.label}</p>
+                <h3 className="text-white font-bold">Paid Revenue</h3>
+                <p className="text-gray-500 text-xs mt-0.5">{RANGES.find(r => r.id === range)?.label} — PAID orders only</p>
               </div>
-              <p className="text-green-400 font-extrabold text-lg">Rs. {(data.totalRevenue||0).toFixed(0)}</p>
+              <p className="text-green-400 font-extrabold text-lg">Rs. {(data.totalPaidRevenue||0).toFixed(0)}</p>
             </div>
             <BarChart data={data.revenue} labels={data.labels} color="#22c55e" unit="Rs." />
           </div>
@@ -449,8 +448,8 @@ function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
         >
-          {['ALL','PENDING','ACCEPTED','PREPARING','COMPLETED','CANCELLED'].map(s => (
-            <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s}</option>
+          {['ALL','PENDING','ACCEPTED','PREPARING','SERVED','PAID','CANCELLED'].map(s => (
+            <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s.charAt(0) + s.slice(1).toLowerCase()}</option>
           ))}
         </select>
         <button onClick={exportOrders}
@@ -482,16 +481,12 @@ function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
         <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
           {filtered.map((o, i) => {
             const cfg = STATUS_CFG[o.status] || STATUS_CFG.PENDING
-            return (
-              <button
-                key={o.id}
-                onClick={() => setSelectedOrder(o)}
-                className={`w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-gray-800/60 transition-colors border-l-4 ${cfg.border} ${i > 0 ? 'border-t border-gray-800' : ''}`}
-              >
-                {/* Status dot */}
+            const canOpenBill = o.status === 'SERVED' || o.status === 'PAID'
+            const statusLabel = o.status.charAt(0) + o.status.slice(1).toLowerCase()
+            const sharedCls = `w-full flex items-center gap-3 px-5 py-4 text-left border-l-4 ${cfg.border} ${i > 0 ? 'border-t border-gray-800' : ''}`
+            const inner = (
+              <>
                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
-
-                {/* Main info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-white font-semibold text-sm">{o.customerName}</p>
@@ -502,15 +497,22 @@ function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
                   </div>
                   <p className="text-gray-600 text-xs mt-0.5">{fmt(o.createdAt)}</p>
                 </div>
-
-                {/* Right side */}
                 <div className="flex-shrink-0 text-right">
                   <p className="text-white font-bold text-sm">Rs. {o.totalPrice}</p>
-                  <span className={`text-xs font-semibold ${cfg.text}`}>{o.status}</span>
+                  <span className={`text-xs font-semibold ${cfg.text}`}>{statusLabel}</span>
                 </div>
-
-                <span className="text-gray-700 text-xs flex-shrink-0">›</span>
+                {canOpenBill && <span className="text-gray-500 text-xs flex-shrink-0">💳›</span>}
+              </>
+            )
+            return canOpenBill ? (
+              <button key={o.id} onClick={() => setSelectedOrder(o)}
+                className={`${sharedCls} hover:bg-gray-800/60 transition-colors`}>
+                {inner}
               </button>
+            ) : (
+              <div key={o.id} className={`${sharedCls} opacity-80`}>
+                {inner}
+              </div>
             )
           })}
         </div>
