@@ -26,6 +26,7 @@ const STATUS_CFG = {
   PREPARING: { border: 'border-l-orange-400', bg: 'bg-orange-400/10', text: 'text-orange-400', dot: 'bg-orange-400' },
   COMPLETED: { border: 'border-l-green-400',  bg: 'bg-green-400/10',  text: 'text-green-400',  dot: 'bg-green-400'  },
   CANCELLED: { border: 'border-l-red-500',    bg: 'bg-red-500/10',    text: 'text-red-500',    dot: 'bg-red-500'    },
+  PAID:      { border: 'border-l-emerald-500',bg: 'bg-emerald-500/10',text: 'text-emerald-400',dot: 'bg-emerald-500'},
 }
 
 // ── CSV Export Utility ────────────────────────────────────────────────────────
@@ -114,6 +115,7 @@ function AnalyticsTab() {
       ...data.labels.map((l, i) => [l, (data.revenue[i] || 0).toFixed(2), data.counts[i] || 0]),
       [],
       ['TOTAL', (data.totalRevenue || 0).toFixed(2), data.totalOrders],
+      ['PAID REVENUE', (data.totalPaidRevenue || 0).toFixed(2), data.paidOrders],
     ]
     downloadCSV(`analytics_${range}_${new Date().toISOString().slice(0,10)}.csv`, rows)
   }
@@ -145,9 +147,9 @@ function AnalyticsTab() {
           {/* Summary cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             {[
-              { label: 'Total Orders',  value: data.totalOrders,                     color: 'text-blue-400',  icon: '📋' },
-              { label: 'Total Revenue', value: `Rs. ${(data.totalRevenue||0).toFixed(0)}`, color: 'text-green-400', icon: '💰' },
-              { label: 'Avg Order',     value: data.totalOrders ? `Rs. ${(data.totalRevenue/data.totalOrders).toFixed(0)}` : '—', color: 'text-brand-400', icon: '📊' },
+              { label: 'Total Orders',  value: data.totalOrders,                     color: 'text-blue-400',   icon: '📋' },
+              { label: 'Total Revenue', value: `Rs. ${(data.totalRevenue||0).toFixed(0)}`,  color: 'text-brand-400',  icon: '💳' },
+              { label: 'Paid Revenue',  value: `Rs. ${(data.totalPaidRevenue||0).toFixed(0)}`, color: 'text-green-400', icon: '✅' },
               { label: 'Peak',          value: (() => { const mx = Math.max(...data.revenue); const idx = data.revenue.indexOf(mx); return data.labels[idx] || '—' })(), color: 'text-purple-400', icon: '⚡' },
             ].map(s => (
               <div key={s.label} className="bg-gray-900 rounded-2xl border border-gray-800 p-4">
@@ -187,18 +189,92 @@ function AnalyticsTab() {
   )
 }
 
-// ── Order Detail Modal ────────────────────────────────────────────────────────
-function OrderDetailModal({ order, onClose }) {
+// ── Order Detail + Billing Modal ───────────────────────────────────────────────────
+function OrderDetailModal({ order, restaurant, onClose, onPaid }) {
   if (!order) return null
   const cfg = STATUS_CFG[order.status] || STATUS_CFG.PENDING
   const fmt = (d) => new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
 
+  const [discount, setDiscount] = useState(order.discount || 0)
+  const [paying, setPaying]     = useState(false)
+  const alreadyPaid = order.status === 'PAID'
+
+  const subtotal  = order.totalPrice
+  const discAmt   = parseFloat(((subtotal * discount) / 100).toFixed(2))
+  const finalAmt  = parseFloat((subtotal - discAmt).toFixed(2))
+
+  const handleMarkPaid = async () => {
+    setPaying(true)
+    try {
+      const res = await api.put(`/orders/${order.id}/status`, {
+        status: 'PAID',
+        discount,
+        discountedTotal: finalAmt,
+      })
+      onPaid(res.data)
+      toast.success('✅ Order marked as PAID!')
+      onClose()
+    } catch (err) { toast.error(err.message) }
+    finally { setPaying(false) }
+  }
+
+  const handlePrint = () => {
+    const logoHtml = (restaurant?.logoUrl)
+      ? `<img src="${restaurant.logoUrl}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;margin-bottom:8px" />`
+      : `<div style="font-size:36px;margin-bottom:8px">🏔️</div>`
+    const itemRows = order.items?.map(i =>
+      `<tr><td style="padding:4px 0">${i.menuItem?.name}</td><td style="text-align:center;padding:4px 8px">×${i.quantity}</td><td style="text-align:right;padding:4px 0">Rs. ${(i.price * i.quantity).toFixed(0)}</td></tr>`
+    ).join('')
+    const discountRow = discount > 0
+      ? `<tr style="color:#ef4444"><td colspan="2">Discount (${discount}%)</td><td style="text-align:right">- Rs. ${discAmt.toFixed(0)}</td></tr>`
+      : ''
+    const win = window.open('', '_blank', 'width=400,height=600')
+    win.document.write(`
+      <!DOCTYPE html><html><head><title>Bill - ${order.customerName}</title>
+      <style>body{font-family:'Segoe UI',Arial,sans-serif;max-width:380px;margin:0 auto;padding:20px;color:#111}
+        h2{margin:0;font-size:18px} p{margin:4px 0;font-size:13px;color:#555}
+        table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+        th{border-bottom:2px solid #ddd;padding:6px 0;text-align:left;font-size:12px;color:#888;text-transform:uppercase}
+        tfoot td{border-top:2px solid #ddd;padding:6px 0;font-weight:700;font-size:14px}
+        .total{font-size:18px;color:#111} .paid-badge{display:inline-block;background:#dcfce7;color:#166534;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-top:8px}
+        .footer{margin-top:20px;text-align:center;font-size:11px;color:#999;border-top:1px dashed #ddd;padding-top:12px}
+      </style></head><body>
+      <div style="text-align:center;margin-bottom:16px">
+        ${logoHtml}
+        <h2>${restaurant?.name || 'Smart Order'}</h2>
+        ${restaurant?.address ? `<p>📍 ${restaurant.address}</p>` : ''}
+        ${restaurant?.phone   ? `<p>📞 ${restaurant.phone}</p>`   : ''}
+      </div>
+      <hr style="border:none;border-top:1px dashed #ddd;margin:12px 0">
+      <p><strong>Customer:</strong> ${order.customerName}</p>
+      <p><strong>Phone:</strong> ${order.phone}</p>
+      <p><strong>Table:</strong> #${order.tableNumber}</p>
+      <p><strong>Date:</strong> ${fmt(order.createdAt)}</p>
+      <p><strong>Order #:</strong> ${order.id.slice(-8).toUpperCase()}</p>
+      <table>
+        <thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Amount</th></tr></thead>
+        <tbody>${itemRows}</tbody>
+        <tfoot>
+          <tr style="color:#555;font-weight:400"><td colspan="2">Subtotal</td><td style="text-align:right">Rs. ${subtotal.toFixed(0)}</td></tr>
+          ${discountRow}
+          <tr><td colspan="2" class="total">TOTAL</td><td style="text-align:right" class="total">Rs. ${finalAmt.toFixed(0)}</td></tr>
+        </tfoot>
+      </table>
+      <div style="text-align:center"><span class="paid-badge">✅ PAID</span></div>
+      <div class="footer">Thank you for dining with us!<br>Powered by Smart Order</div>
+      <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),1000)}<\/script>
+    </body></html>`)
+    win.document.close()
+  }
+
+  const DISC_PRESETS = [0, 5, 10, 15, 20]
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="relative bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className={`px-5 py-4 ${cfg.bg} flex items-center justify-between border-b border-gray-800`}>
+        <div className={`px-5 py-4 ${cfg.bg} flex items-center justify-between border-b border-gray-800 flex-shrink-0`}>
           <div className="flex items-center gap-2">
             <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
             <span className={`font-extrabold text-sm ${cfg.text}`}>{order.status}</span>
@@ -241,13 +317,6 @@ function OrderDetailModal({ order, onClose }) {
             </div>
           </div>
 
-          {/* Total */}
-          <div className="px-5 py-4">
-            <div className="flex items-center justify-between">
-              <p className="text-gray-400 font-semibold">Total</p>
-              <p className="text-white font-extrabold text-xl">Rs. {order.totalPrice}</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -255,7 +324,7 @@ function OrderDetailModal({ order, onClose }) {
 }
 
 // ── Order History Tab ─────────────────────────────────────────────────────────
-function OrderHistoryTab({ orders, loading }) {
+function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [selectedOrder, setSelectedOrder] = useState(null)
@@ -377,7 +446,7 @@ function OrderHistoryTab({ orders, loading }) {
         </div>
       )}
 
-      {selectedOrder && <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
+      {selectedOrder && <OrderDetailModal order={selectedOrder} restaurant={restaurant} onClose={() => setSelectedOrder(null)} onPaid={(updated) => { onPaid(updated); setSelectedOrder(null) }} />}
     </div>
   )
 }
@@ -563,15 +632,29 @@ function QRTab({ restaurantId }) {
 }
 
 // ── Staff Tab ────────────────────────────────────────────────────────────────
-function StaffTab({ restaurantId }) {
-  const [users, setUsers] = useState([])
-  useEffect(() => { api.get(`/super/users?restaurantId=${restaurantId}`).then(r => setUsers(r.data)).catch(() => {}) }, [restaurantId])
+function StaffTab() {
+  const [users, setUsers]   = useState([])
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    api.get('/restaurant/staff')
+      .then(r => setUsers(r.data))
+      .catch(() => setUsers([]))
+      .finally(() => setLoading(false))
+  }, [])
   const COLORS = { OWNER: 'text-brand-400 bg-brand-400/10', KITCHEN: 'text-blue-400 bg-blue-400/10', ADMIN: 'text-purple-400 bg-purple-400/10' }
   return (
     <div className="max-w-2xl">
-      {users.length === 0
-        ? <div className="text-center py-16 text-gray-500">No staff found</div>
-        : <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : users.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center text-3xl border border-gray-800 mb-4">👥</div>
+          <p className="text-white font-bold">No staff assigned yet</p>
+          <p className="text-gray-600 text-sm mt-1">Add staff from the Super Admin portal</p>
+        </div>
+      ) : <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
             {users.map(u => (
               <div key={u.id} className="flex items-center gap-4 px-5 py-4 border-b border-gray-800 last:border-0 hover:bg-gray-800/40 transition-colors">
                 <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">{u.name[0].toUpperCase()}</div>
@@ -586,7 +669,7 @@ function StaffTab({ restaurantId }) {
               </div>
             ))}
           </div>
-      }
+      )}
     </div>
   )
 }
@@ -759,10 +842,10 @@ export default function OwnerDashboardPage() {
           </div>
         )}
         {activeTab === 'analytics' && <AnalyticsTab />}
-        {activeTab === 'history'   && <OrderHistoryTab orders={orders} loading={loading} />}
+        {activeTab === 'history'   && <OrderHistoryTab orders={orders} loading={loading} restaurant={restaurant} onPaid={(updated) => setOrders(prev => prev.map(o => o.id === updated.id ? updated : o))} />}
         {activeTab === 'menu'      && <MenuTab restaurantId={user?.restaurantId} onDeleteItem={askDeleteItem} />}
         {activeTab === 'qr'        && <QRTab restaurantId={user?.restaurantId} />}
-        {activeTab === 'staff'     && <StaffTab restaurantId={user?.restaurantId} />}
+        {activeTab === 'staff'     && <StaffTab />}
       </main>
 
       {confirm && (

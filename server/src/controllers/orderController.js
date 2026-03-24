@@ -141,17 +141,17 @@ const getOrderById = async (req, res, next) => {
 const updateOrderStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status, estimatedMinutes } = req.body;
+    const { status, estimatedMinutes, discount, discountedTotal } = req.body;
 
-    const validStatuses = ["PENDING", "ACCEPTED", "PREPARING", "COMPLETED", "CANCELLED"];
+    const validStatuses = ["PENDING", "ACCEPTED", "PREPARING", "COMPLETED", "CANCELLED", "PAID"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: `Invalid status. Must be one of: ${validStatuses.join(", ")}` });
     }
 
     const updateData = { status };
-    if (estimatedMinutes !== undefined) {
-      updateData.estimatedMinutes = parseInt(estimatedMinutes);
-    }
+    if (estimatedMinutes !== undefined) updateData.estimatedMinutes = parseInt(estimatedMinutes);
+    if (discount       !== undefined) updateData.discount        = parseFloat(discount);
+    if (discountedTotal !== undefined) updateData.discountedTotal = parseFloat(discountedTotal);
 
     const order = await prisma.order.update({
       where: { id },
@@ -159,14 +159,11 @@ const updateOrderStatus = async (req, res, next) => {
       include: { items: { include: { menuItem: true } }, otp: true },
     });
 
-    // Notify customer in real-time
     const io = req.app.get("io");
     emitOrderStatusUpdate(io, id, status, order.restaurantId);
 
     res.json(order);
-  } catch (err) {
-    next(err);
-  }
+  } catch (err) { next(err); }
 };
 
 module.exports = { createOrder, getOrders, getOrderById, updateOrderStatus };
