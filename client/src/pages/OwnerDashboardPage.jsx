@@ -633,7 +633,7 @@ function QRTab({ restaurantId }) {
 
 // ── Staff Tab ────────────────────────────────────────────────────────────────
 function StaffTab() {
-  const [users, setUsers]   = useState([])
+  const [users, setUsers]     = useState([])
   const [loading, setLoading] = useState(true)
   useEffect(() => {
     api.get('/restaurant/staff')
@@ -644,31 +644,34 @@ function StaffTab() {
   const COLORS = { OWNER: 'text-brand-400 bg-brand-400/10', KITCHEN: 'text-blue-400 bg-blue-400/10', ADMIN: 'text-purple-400 bg-purple-400/10' }
   return (
     <div className="max-w-2xl">
-      {loading ? (
+      {loading && (
         <div className="flex justify-center py-16">
           <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : users.length === 0 ? (
+      )}
+      {!loading && users.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center text-3xl border border-gray-800 mb-4">👥</div>
           <p className="text-white font-bold">No staff assigned yet</p>
           <p className="text-gray-600 text-sm mt-1">Add staff from the Super Admin portal</p>
         </div>
-      ) : <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
-            {users.map(u => (
-              <div key={u.id} className="flex items-center gap-4 px-5 py-4 border-b border-gray-800 last:border-0 hover:bg-gray-800/40 transition-colors">
-                <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">{u.name[0].toUpperCase()}</div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-semibold text-sm">{u.name}</p>
-                  <p className="text-gray-500 text-xs truncate">{u.email}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${COLORS[u.role] || 'text-gray-400 bg-gray-800'}`}>{u.role}</span>
-                  <span className={`text-xs px-2 py-1 rounded-full ${u.active ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10'}`}>{u.active ? 'Active' : 'Inactive'}</span>
-                </div>
+      )}
+      {!loading && users.length > 0 && (
+        <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+          {users.map(u => (
+            <div key={u.id} className="flex items-center gap-4 px-5 py-4 border-b border-gray-800 last:border-0 hover:bg-gray-800/40 transition-colors">
+              <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">{u.name[0].toUpperCase()}</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-semibold text-sm">{u.name}</p>
+                <p className="text-gray-500 text-xs truncate">{u.email}</p>
               </div>
-            ))}
-          </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${COLORS[u.role] || 'text-gray-400 bg-gray-800'}`}>{u.role}</span>
+                <span className={`text-xs px-2 py-1 rounded-full ${u.active ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10'}`}>{u.active ? 'Active' : 'Inactive'}</span>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )
