@@ -317,6 +317,76 @@ function OrderDetailModal({ order, restaurant, onClose, onPaid }) {
             </div>
           </div>
 
+          {/* Discount + Billing */}
+          <div className="px-5 py-4 border-b border-gray-800">
+            <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Billing</p>
+
+            {!alreadyPaid && (
+              <div className="mb-4">
+                <p className="text-gray-300 text-sm font-semibold mb-2">Apply Discount</p>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {DISC_PRESETS.map(p => (
+                    <button key={p} onClick={() => setDiscount(p)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        discount === p ? 'bg-brand-500 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
+                      }`}>
+                      {p === 0 ? 'No discount' : `${p}%`}
+                    </button>
+                  ))}
+                  <input type="number" min={0} max={100} step={1}
+                    placeholder="Custom %"
+                    className="w-24 px-2 py-1.5 rounded-xl text-xs bg-gray-800 border border-gray-700 text-white"
+                    value={DISC_PRESETS.includes(discount) ? '' : discount}
+                    onChange={e => setDiscount(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))} />
+                </div>
+              </div>
+            )}
+
+            {/* Amount breakdown */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Subtotal</span>
+                <span className="text-white font-medium">Rs. {subtotal.toFixed(0)}</span>
+              </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-green-400">Discount ({discount}%)</span>
+                  <span className="text-green-400 font-medium">- Rs. {discAmt.toFixed(0)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-2 border-t border-gray-800">
+                <span className="text-white font-bold text-base">Total</span>
+                <span className="text-white font-extrabold text-xl">Rs. {finalAmt.toFixed(0)}</span>
+              </div>
+              {alreadyPaid && order.discountedTotal && (
+                <div className="mt-2 bg-green-900/30 border border-green-700/40 rounded-xl px-3 py-1.5 text-center text-green-400 text-xs font-bold">
+                  ✅ Paid: Rs. {order.discountedTotal.toFixed(0)}
+                  {order.discount > 0 && ` (${order.discount}% discount applied)`}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="px-5 py-4 flex gap-3 flex-shrink-0 border-t border-gray-800">
+          {!alreadyPaid ? (
+            <>
+              <button onClick={handleMarkPaid} disabled={paying}
+                className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50">
+                {paying ? 'Processing…' : '✅ Mark as Paid'}
+              </button>
+              <button onClick={handlePrint}
+                className="px-4 py-3 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors">
+                🖨 Print &amp; Pay
+              </button>
+            </>
+          ) : (
+            <button onClick={handlePrint}
+              className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors">
+              🖨 Reprint Bill
+            </button>
+          )}
         </div>
       </div>
     </div>
