@@ -593,14 +593,21 @@ function StaffTab({ restaurantId }) {
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function OwnerDashboardPage() {
-  const { user, logout } = useAuth()
+  const { user, logout, loading: authLoading } = useAuth()
   const navigate          = useNavigate()
 
-  const [activeTab, setActiveTab]       = useState('analytics')
+  // Tab persisted across refresh
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('owner_active_tab') || 'analytics')
+  const changeTab = (id) => { setActiveTab(id); localStorage.setItem('owner_active_tab', id) }
   const [orders, setOrders]             = useState([])
   const [loading, setLoading]           = useState(true)
   const [fetchError, setFetchError]     = useState(null)
-  const [restaurant, setRestaurant]     = useState({ name: 'Restaurant', logoUrl: null })
+  // Instantly show cached branding from localStorage
+  const [restaurant, setRestaurant]     = useState(() => {
+    try { return JSON.parse(localStorage.getItem('owner_restaurant') || 'null') || { name: 'Restaurant', logoUrl: null } }
+    catch { return { name: 'Restaurant', logoUrl: null } }
+  })
+  const [logoError, setLogoError]       = useState(false)
   const [confirm, setConfirm]           = useState(null)
   const [pendingCount, setPendingCount] = useState(0)
   const badgeRef = useRef(null)
@@ -619,13 +626,17 @@ export default function OwnerDashboardPage() {
     }
   }, [])
 
-  // Load orders + restaurant branding
+  // Single stable load — runs once after auth fully resolves
   useEffect(() => {
+    if (authLoading) return
     fetchOrders()
-    if (user?.restaurantId) {
-      api.get('/restaurant/mine').then(r => setRestaurant({ name: r.data.name, logoUrl: r.data.logoUrl })).catch(() => {})
-    }
-  }, [user, fetchOrders])
+    api.get('/restaurant/mine').then(r => {
+      const data = { name: r.data.name, logoUrl: r.data.logoUrl }
+      setRestaurant(data)
+      setLogoError(false)
+      localStorage.setItem('owner_restaurant', JSON.stringify(data))
+    }).catch(() => {})
+  }, [authLoading, fetchOrders])
 
   // Socket
   useEffect(() => {
@@ -642,7 +653,13 @@ export default function OwnerDashboardPage() {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o))
       if (status !== 'PENDING') setPendingCount(n => Math.max(0, n - 1))
     }
-    const onBranding  = (data) => { setRestaurant({ name: data.name, logoUrl: data.logoUrl }); toast.success(`Branding updated: "${data.name}"`, { icon: '✨' }) }
+    const onBranding  = (data) => {
+      const branding = { name: data.name, logoUrl: data.logoUrl }
+      setRestaurant(branding)
+      setLogoError(false)
+      localStorage.setItem('owner_restaurant', JSON.stringify(branding))
+      toast.success(`Branding updated: "${data.name}"`, { icon: '✨' })
+    }
 
     socket.on('new_order', onNewOrder)
     socket.on('order_status_update', onStatus)
@@ -672,8 +689,10 @@ export default function OwnerDashboardPage() {
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           {/* Logo (real-time) */}
           <div className="flex items-center gap-3 min-w-0">
-            {restaurant.logoUrl
-              ? <img src={restaurant.logoUrl} alt="logo" className="w-9 h-9 rounded-xl object-cover ring-2 ring-gray-700 flex-shrink-0" />
+            {restaurant.logoUrl && !logoError
+              ? <img src={restaurant.logoUrl} alt="logo"
+                  className="w-9 h-9 rounded-xl object-cover ring-2 ring-gray-700 flex-shrink-0"
+                  onError={() => setLogoError(true)} />
               : <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-orange-600 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🏢</div>
             }
             <div className="min-w-0">
@@ -709,7 +728,7 @@ export default function OwnerDashboardPage() {
           {TABS.map(t => {
             const showBadge = t.id === 'history' && pendingCount > 0
             return (
-              <button key={t.id} onClick={() => { setActiveTab(t.id); if (t.id === 'history') setPendingCount(0) }}
+              <button key={t.id} onClick={() => { changeTab(t.id); if (t.id === 'history') setPendingCount(0) }}
                 className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeTab === t.id ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}>
                 {showBadge && (
                   <span className="absolute -top-1.5 -right-1 flex h-5 w-5 items-center justify-center">

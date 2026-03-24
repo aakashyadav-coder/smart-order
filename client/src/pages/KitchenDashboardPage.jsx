@@ -132,17 +132,22 @@ const Pill = ({ label, value, color }) => (
 // ── Main Page ────────────────────────────────────────────────────────────────
 export default function KitchenDashboardPage() {
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, logout, loading: authLoading } = useAuth()
 
   const [orders, setOrders]           = useState([])
   const [loading, setLoading]         = useState(true)
   const [fetchError, setFetchError]   = useState(null)
   const [filter, setFilter]           = useState('ALL')
   const [connected, setConnected]     = useState(socket.connected)
-  const [restaurant, setRestaurant]   = useState({ name: 'Kitchen', logoUrl: null })
+  // Instantly show cached branding — updates after API responds
+  const [restaurant, setRestaurant]   = useState(() => {
+    try { return JSON.parse(localStorage.getItem('kitchen_restaurant') || 'null') || { name: 'Kitchen', logoUrl: null } }
+    catch { return { name: 'Kitchen', logoUrl: null } }
+  })
   const [confirm, setConfirm]         = useState(null)
   const [newBadge, setNewBadge]       = useState(0)
   const badgeTimerRef                 = useRef(null)
+  const [logoError, setLogoError]     = useState(false)
 
   // Flash new badge for 8s then fade
   const flashBadge = useCallback(() => {
@@ -164,21 +169,24 @@ export default function KitchenDashboardPage() {
     }
   }, [])
 
-  // Initial load
+  // Single fetch — runs only after auth is fully resolved
   useEffect(() => {
+    if (authLoading) return // wait for auth verification to complete
     fetchOrders()
-    if (user?.restaurantId) {
-      api.get('/restaurant/mine').then(r => {
-        setRestaurant({ name: r.data.name, logoUrl: r.data.logoUrl })
-      }).catch(() => {})
-    }
-  }, [user, fetchOrders])
+    // Load + cache restaurant branding for instant display on next load
+    api.get('/restaurant/mine').then(r => {
+      const data = { name: r.data.name, logoUrl: r.data.logoUrl }
+      setRestaurant(data)
+      setLogoError(false)
+      localStorage.setItem('kitchen_restaurant', JSON.stringify(data))
+    }).catch(() => {})
+    // Join socket rooms immediately
+    socket.emit('join_kitchen')
+    if (user?.restaurantId) socket.emit('join_restaurant', { restaurantId: user.restaurantId })
+  }, [authLoading, fetchOrders, user?.restaurantId])
 
   // Socket listeners
   useEffect(() => {
-    socket.emit('join_kitchen')
-    if (user?.restaurantId) socket.emit('join_restaurant', { restaurantId: user.restaurantId })
-
     const onNewOrder = (order) => {
       setOrders(prev => prev.find(o => o.id === order.id) ? prev : [order, ...prev])
       playDing()
@@ -189,7 +197,10 @@ export default function KitchenDashboardPage() {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o))
     }
     const onRestaurantUpdated = (data) => {
-      setRestaurant({ name: data.name, logoUrl: data.logoUrl })
+      const branding = { name: data.name, logoUrl: data.logoUrl }
+      setRestaurant(branding)
+      setLogoError(false)
+      localStorage.setItem('kitchen_restaurant', JSON.stringify(branding))
       toast.success(`Restaurant updated: "${data.name}"`, { icon: '🏢' })
     }
     const onConnect    = () => setConnected(true)
@@ -246,8 +257,10 @@ export default function KitchenDashboardPage() {
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           {/* Logo + Restaurant name (real-time) */}
           <div className="flex items-center gap-3 min-w-0">
-            {restaurant.logoUrl
-              ? <img src={restaurant.logoUrl} alt="logo" className="w-9 h-9 rounded-xl object-cover ring-2 ring-gray-700 flex-shrink-0" />
+            {restaurant.logoUrl && !logoError
+              ? <img src={restaurant.logoUrl} alt="logo"
+                  className="w-9 h-9 rounded-xl object-cover ring-2 ring-gray-700 flex-shrink-0"
+                  onError={() => setLogoError(true)} />
               : <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-orange-600 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🍽️</div>
             }
             <div className="min-w-0">
