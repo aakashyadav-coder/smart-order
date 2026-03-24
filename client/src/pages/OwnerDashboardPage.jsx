@@ -21,12 +21,12 @@ const TABS = [
 const CATEGORIES = ['Drinks', 'Starters', 'Main Course', 'Desserts']
 const EMPTY_ITEM = { name: '', description: '', price: '', category: 'Main Course', imageUrl: '', available: true }
 const STATUS_CFG = {
-  PENDING:   { border: 'border-l-yellow-400', bg: 'bg-yellow-400/10', text: 'text-yellow-400', dot: 'bg-yellow-400' },
-  ACCEPTED:  { border: 'border-l-blue-400',   bg: 'bg-blue-400/10',   text: 'text-blue-400',   dot: 'bg-blue-400'   },
-  PREPARING: { border: 'border-l-orange-400', bg: 'bg-orange-400/10', text: 'text-orange-400', dot: 'bg-orange-400' },
-  SERVED:    { border: 'border-l-green-400',  bg: 'bg-green-400/10',  text: 'text-green-400',  dot: 'bg-green-400'  },
-  CANCELLED: { border: 'border-l-red-500',    bg: 'bg-red-500/10',    text: 'text-red-500',    dot: 'bg-red-500'    },
-  PAID:      { border: 'border-l-emerald-500',bg: 'bg-emerald-500/10',text: 'text-emerald-400',dot: 'bg-emerald-500'},
+  PENDING:   { border: 'border-l-amber-500',   bg: 'bg-amber-50',   text: 'text-amber-700',  dot: 'bg-amber-500'   },
+  ACCEPTED:  { border: 'border-l-blue-500',    bg: 'bg-blue-50',    text: 'text-blue-700',   dot: 'bg-blue-500'    },
+  PREPARING: { border: 'border-l-orange-500',  bg: 'bg-orange-50',  text: 'text-orange-700', dot: 'bg-orange-500'  },
+  SERVED:    { border: 'border-l-green-500',   bg: 'bg-green-50',   text: 'text-green-700',  dot: 'bg-green-500'   },
+  CANCELLED: { border: 'border-l-red-400',     bg: 'bg-red-50',     text: 'text-red-600',    dot: 'bg-red-400'     },
+  PAID:      { border: 'border-l-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700',dot: 'bg-emerald-500' },
 }
 
 // ── CSV Export Utility ────────────────────────────────────────────────────────
@@ -126,13 +126,13 @@ function AnalyticsTab() {
       <div className="flex flex-wrap items-center gap-2 mb-6">
         {RANGES.map(r => (
           <button key={r.id} onClick={() => setRange(r.id)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${range === r.id ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/25' : 'bg-gray-900 border border-gray-800 text-gray-400 hover:text-white'}`}>
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${range === r.id ? 'bg-brand-600 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-300'}`}>
             {r.label}
           </button>
         ))}
         {data && (
           <button onClick={exportAnalytics}
-            className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-green-900/40 border border-green-700/50 text-green-400 hover:bg-green-900/70 transition-colors">
+            className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors">
             ⬇ Export CSV
           </button>
         )}
@@ -140,19 +140,19 @@ function AnalyticsTab() {
 
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : data ? (
         <>
           {/* Summary cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             {[
-              { label: 'Total Orders',  value: data.totalOrders,                     color: 'text-blue-400',   icon: '📋' },
-              { label: 'Total Revenue', value: `Rs. ${(data.totalRevenue||0).toFixed(0)}`,  color: 'text-brand-400',  icon: '💳' },
-              { label: 'Paid Revenue',  value: `Rs. ${(data.totalPaidRevenue||0).toFixed(0)}`, color: 'text-green-400', icon: '✅' },
-              { label: 'Peak',          value: (() => { const mx = Math.max(...data.revenue); const idx = data.revenue.indexOf(mx); return data.labels[idx] || '—' })(), color: 'text-purple-400', icon: '⚡' },
+              { label: 'Total Orders',  value: data.totalOrders,                     color: 'text-blue-600',   icon: '📋' },
+              { label: 'Total Revenue', value: `Rs. ${(data.totalRevenue||0).toFixed(0)}`,  color: 'text-brand-600',  icon: '💳' },
+              { label: 'Paid Revenue',  value: `Rs. ${(data.totalPaidRevenue||0).toFixed(0)}`, color: 'text-green-600', icon: '✅' },
+              { label: 'Peak',          value: (() => { const mx = Math.max(...data.revenue); const idx = data.revenue.indexOf(mx); return data.labels[idx] || '—' })(), color: 'text-purple-600', icon: '⚡' },
             ].map(s => (
-              <div key={s.label} className="bg-gray-900 rounded-2xl border border-gray-800 p-4">
+              <div key={s.label} className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
                 <p className="text-2xl mb-1">{s.icon}</p>
                 <p className={`font-extrabold text-xl leading-none ${s.color}`}>{s.value}</p>
                 <p className="text-gray-500 text-xs mt-1">{s.label}</p>
@@ -160,11 +160,11 @@ function AnalyticsTab() {
             ))}
           </div>
 
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5 mb-4">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-white font-bold">Paid Revenue</h3>
-                <p className="text-gray-500 text-xs mt-0.5">{RANGES.find(r => r.id === range)?.label} — PAID orders only</p>
+                <h3 className="text-gray-900 font-bold">Paid Revenue</h3>
+                <p className="text-gray-400 text-xs mt-0.5">{RANGES.find(r => r.id === range)?.label} — PAID orders only</p>
               </div>
               <p className="text-green-400 font-extrabold text-lg">Rs. {(data.totalPaidRevenue||0).toFixed(0)}</p>
             </div>
@@ -172,13 +172,13 @@ function AnalyticsTab() {
           </div>
 
           {/* Orders chart */}
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-white font-bold">Orders</h3>
-                <p className="text-gray-500 text-xs mt-0.5">{RANGES.find(r => r.id === range)?.label}</p>
+                <h3 className="text-gray-900 font-bold">Orders</h3>
+                <p className="text-gray-400 text-xs mt-0.5">{RANGES.find(r => r.id === range)?.label}</p>
               </div>
-              <p className="text-brand-400 font-extrabold text-lg">{data.totalOrders} orders</p>
+              <p className="text-brand-600 font-extrabold text-lg">{data.totalOrders} orders</p>
             </div>
             <BarChart data={data.counts} labels={data.labels} color="#f97316" unit="" />
           </div>
@@ -271,70 +271,70 @@ function OrderDetailModal({ order, restaurant, onClose, onPaid }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden">
+      <div className="relative bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className={`px-5 py-4 ${cfg.bg} flex items-center justify-between border-b border-gray-800 flex-shrink-0`}>
+        <div className={`px-5 py-4 ${cfg.bg} flex items-center justify-between border-b border-gray-100 flex-shrink-0`}>
           <div className="flex items-center gap-2">
             <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
             <span className={`font-extrabold text-sm ${cfg.text}`}>{order.status}</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-gray-400 text-xs font-mono">#{order.id.slice(-8).toUpperCase()}</span>
-            <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors text-sm">✕</button>
+            <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition-colors text-sm">✕</button>
           </div>
         </div>
 
         <div className="overflow-y-auto flex-1">
           {/* Customer info */}
-          <div className="px-5 py-4 border-b border-gray-800">
+          <div className="px-5 py-4 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white font-bold">{order.customerName}</p>
-                <p className="text-gray-500 text-sm">{order.phone}</p>
+                <p className="text-gray-900 font-bold">{order.customerName}</p>
+                <p className="text-gray-400 text-sm">{order.phone}</p>
               </div>
               <div className="text-right">
-                <p className="text-gray-500 text-xs">Table</p>
-                <p className="text-white font-extrabold text-2xl">#{order.tableNumber}</p>
+                <p className="text-gray-400 text-xs">Table</p>
+                <p className="text-gray-900 font-extrabold text-2xl">#{order.tableNumber}</p>
               </div>
             </div>
-            <p className="text-gray-600 text-xs mt-2">{fmt(order.createdAt)}</p>
+            <p className="text-gray-400 text-xs mt-2">{fmt(order.createdAt)}</p>
           </div>
 
           {/* Items */}
-          <div className="px-5 py-3 border-b border-gray-800">
+          <div className="px-5 py-3 border-b border-gray-100">
             <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Items Ordered</p>
             <div className="space-y-2">
               {order.items?.map(item => (
                 <div key={item.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 bg-gray-800 rounded-lg flex items-center justify-center text-xs font-bold text-gray-400">×{item.quantity}</span>
-                    <span className="text-white text-sm">{item.menuItem?.name}</span>
+                    <span className="w-6 h-6 bg-gray-100 rounded-lg flex items-center justify-center text-xs font-bold text-gray-500">×{item.quantity}</span>
+                    <span className="text-gray-800 text-sm">{item.menuItem?.name}</span>
                   </div>
-                  <span className="text-gray-400 text-sm font-medium">Rs. {(item.price * item.quantity).toFixed(0)}</span>
+                  <span className="text-gray-500 text-sm font-medium">Rs. {(item.price * item.quantity).toFixed(0)}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Discount + Billing */}
-          <div className="px-5 py-4 border-b border-gray-800">
+          <div className="px-5 py-4 border-b border-gray-100">
             <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Billing</p>
 
             {!alreadyPaid && (
               <div className="mb-4">
-                <p className="text-gray-300 text-sm font-semibold mb-2">Apply Discount</p>
+                <p className="text-gray-700 text-sm font-semibold mb-2">Apply Discount</p>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {DISC_PRESETS.map(p => (
                     <button key={p} onClick={() => setDiscount(p)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                        discount === p ? 'bg-brand-500 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
+                        discount === p ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-500 hover:text-gray-800 border border-gray-200'
                       }`}>
                       {p === 0 ? 'No discount' : `${p}%`}
                     </button>
                   ))}
                   <input type="number" min={0} max={100} step={1}
                     placeholder="Custom %"
-                    className="w-24 px-2 py-1.5 rounded-xl text-xs bg-gray-800 border border-gray-700 text-white"
+                    className="w-24 px-2 py-1.5 rounded-xl text-xs bg-white border border-gray-200 text-gray-800"
                     value={DISC_PRESETS.includes(discount) ? '' : discount}
                     onChange={e => setDiscount(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))} />
                 </div>
@@ -344,8 +344,8 @@ function OrderDetailModal({ order, restaurant, onClose, onPaid }) {
             {/* Amount breakdown */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Subtotal</span>
-                <span className="text-white font-medium">Rs. {subtotal.toFixed(0)}</span>
+                <span className="text-gray-500">Subtotal</span>
+                <span className="text-gray-900 font-medium">Rs. {subtotal.toFixed(0)}</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-sm">
@@ -353,12 +353,12 @@ function OrderDetailModal({ order, restaurant, onClose, onPaid }) {
                   <span className="text-green-400 font-medium">- Rs. {discAmt.toFixed(0)}</span>
                 </div>
               )}
-              <div className="flex justify-between items-center pt-2 border-t border-gray-800">
-                <span className="text-white font-bold text-base">Total</span>
-                <span className="text-white font-extrabold text-xl">Rs. {finalAmt.toFixed(0)}</span>
+              <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                <span className="text-gray-900 font-bold text-base">Total</span>
+                <span className="text-gray-900 font-extrabold text-xl">Rs. {finalAmt.toFixed(0)}</span>
               </div>
               {alreadyPaid && order.discountedTotal && (
-                <div className="mt-2 bg-green-900/30 border border-green-700/40 rounded-xl px-3 py-1.5 text-center text-green-400 text-xs font-bold">
+                <div className="mt-2 bg-green-50 border border-green-200 rounded-xl px-3 py-1.5 text-center text-green-700 text-xs font-bold">
                   ✅ Paid: Rs. {order.discountedTotal.toFixed(0)}
                   {order.discount > 0 && ` (${order.discount}% discount applied)`}
                 </div>
@@ -368,7 +368,7 @@ function OrderDetailModal({ order, restaurant, onClose, onPaid }) {
         </div>
 
         {/* Action buttons */}
-        <div className="px-5 py-4 flex gap-3 flex-shrink-0 border-t border-gray-800">
+        <div className="px-5 py-4 flex gap-3 flex-shrink-0 border-t border-gray-100">
           {!alreadyPaid ? (
             <>
               <button onClick={handleMarkPaid} disabled={paying}
@@ -382,7 +382,7 @@ function OrderDetailModal({ order, restaurant, onClose, onPaid }) {
             </>
           ) : (
             <button onClick={handlePrint}
-              className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors">
+              className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors shadow-sm">
               🖨 Reprint Bill
             </button>
           )}
@@ -438,13 +438,13 @@ function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
           <input
             type="text"
             placeholder="Search by name, phone or table…"
-            className="input bg-gray-900 border-gray-800 text-white placeholder-gray-600 pl-9 focus:ring-brand-500 focus:border-brand-500"
+            className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 pl-9 focus:ring-brand-500 focus:border-brand-500"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
         <select
-          className="input bg-gray-900 border-gray-800 text-white w-full sm:w-44 focus:ring-brand-500"
+          className="input bg-white border-gray-200 text-gray-900 w-full sm:w-44 focus:ring-brand-500"
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
         >
@@ -454,17 +454,17 @@ function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
         </select>
         <button onClick={exportOrders}
           disabled={filtered.length === 0}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-green-900/40 border border-green-700/50 text-green-400 hover:bg-green-900/70 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
           ⬇ Export CSV
         </button>
       </div>
 
       {/* Stats row */}
       <div className="flex flex-wrap gap-3 mb-5 text-xs text-gray-500">
-        <span className="bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-full">
+        <span className="bg-white border border-gray-200 px-3 py-1.5 rounded-full">
           {filtered.length} order{filtered.length !== 1 ? 's' : ''}
         </span>
-        <span className="bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-full text-green-400">
+        <span className="bg-white border border-gray-200 px-3 py-1.5 rounded-full text-green-600">
           Revenue: Rs. {filtered.filter(o=>o.status!=='CANCELLED').reduce((s,o)=>s+o.totalPrice,0).toFixed(0)}
         </span>
       </div>
@@ -489,7 +489,7 @@ function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-white font-semibold text-sm">{o.customerName}</p>
+                    <p className="text-gray-900 font-semibold text-sm">{o.customerName}</p>
                     <span className="text-gray-700">·</span>
                     <span className="text-gray-400 text-xs">Table #{o.tableNumber}</span>
                     <span className="text-gray-700">·</span>
@@ -506,7 +506,7 @@ function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
             )
             return canOpenBill ? (
               <button key={o.id} onClick={() => setSelectedOrder(o)}
-                className={`${sharedCls} hover:bg-gray-800/60 transition-colors`}>
+                className={`${sharedCls} hover:bg-gray-50 transition-colors`}>
                 {inner}
               </button>
             ) : (
@@ -578,22 +578,22 @@ function MenuTab({ restaurantId, onDeleteItem }) {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Add/Edit form */}
       <div className="lg:col-span-1">
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5 sticky top-24">
-          <h3 className="font-bold text-white mb-4">{editId ? '✏️ Edit Item' : '➕ Add Item'}</h3>
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 sticky top-24 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-4">{editId ? '✏️ Edit Item' : '➕ Add Item'}</h3>
           <form onSubmit={handleSubmit} className="space-y-3">
-            <input required placeholder="Item name *" className="input bg-gray-800 border-gray-700 text-white placeholder-gray-600 text-sm focus:ring-brand-500 focus:border-brand-500"
+            <input required placeholder="Item name *" className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:ring-brand-500 focus:border-brand-500"
               value={form.name} onChange={e => setForm(p => ({...p, name: e.target.value}))} />
             <input type="number" required min="0" step="0.01" placeholder="Price (Rs.) *"
-              className="input bg-gray-800 border-gray-700 text-white placeholder-gray-600 text-sm focus:ring-brand-500 focus:border-brand-500"
+              className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:ring-brand-500 focus:border-brand-500"
               value={form.price} onChange={e => setForm(p => ({...p, price: e.target.value}))} />
             <textarea placeholder="Description (optional)" rows={2}
-              className="input bg-gray-800 border-gray-700 text-white placeholder-gray-600 text-sm resize-none focus:ring-brand-500 focus:border-brand-500"
+              className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm resize-none focus:ring-brand-500 focus:border-brand-500"
               value={form.description} onChange={e => setForm(p => ({...p, description: e.target.value}))} />
-            <select className="input bg-gray-800 border-gray-700 text-white text-sm"
+            <select className="input bg-white border-gray-200 text-gray-900 text-sm"
               value={form.category} onChange={e => setForm(p => ({...p, category: e.target.value}))}>
               {CATEGORIES.map(c => <option key={c}>{c}</option>)}
             </select>
-            <input placeholder="Image URL (optional)" className="input bg-gray-800 border-gray-700 text-white placeholder-gray-600 text-sm focus:ring-brand-500 focus:border-brand-500"
+            <input placeholder="Image URL (optional)" className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:ring-brand-500 focus:border-brand-500"
               value={form.imageUrl} onChange={e => setForm(p => ({...p, imageUrl: e.target.value}))} />
             <div className="flex gap-2 pt-1">
               {editId && <button type="button" onClick={cancelEdit} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>}
@@ -613,7 +613,7 @@ function MenuTab({ restaurantId, onDeleteItem }) {
           <input
             type="text"
             placeholder="Search menu items or categories…"
-            className="input bg-gray-900 border-gray-800 text-white placeholder-gray-600 pl-9 focus:ring-brand-500 focus:border-brand-500"
+            className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 pl-9 focus:ring-brand-500 focus:border-brand-500"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -621,37 +621,37 @@ function MenuTab({ restaurantId, onDeleteItem }) {
             <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-sm">✕</button>
           )}
         </div>
-        <p className="text-gray-600 text-xs mb-3">{filteredItems.length} of {items.length} items</p>
+        <p className="text-gray-400 text-xs mb-3">{filteredItems.length} of {items.length} items</p>
 
         <div className="space-y-3">
           {CATEGORIES.map(cat => {
             const catItems = filteredItems.filter(i => i.category === cat)
             if (!catItems.length) return null
             return (
-              <div key={cat} className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
-                <div className="px-4 py-2.5 bg-gray-800/60 border-b border-gray-800 flex items-center justify-between">
-                  <p className="text-white font-bold text-sm">{cat}</p>
+              <div key={cat} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                  <p className="text-gray-800 font-bold text-sm">{cat}</p>
                   <span className="text-gray-500 text-xs">{catItems.length}</span>
                 </div>
                 {catItems.map(item => (
-                  <div key={item.id} className={`flex items-center gap-3 px-4 py-3 border-b border-gray-800/50 last:border-0 transition-opacity ${!item.available ? 'opacity-40' : ''}`}>
+                  <div key={item.id} className={`flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0 transition-opacity ${!item.available ? 'opacity-40' : ''}`}>
                     {item.imageUrl
-                      ? <img src={item.imageUrl} alt={item.name} className="w-11 h-11 rounded-xl object-cover flex-shrink-0 ring-1 ring-gray-700" />
-                      : <div className="w-11 h-11 bg-gray-800 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🍴</div>
+                      ? <img src={item.imageUrl} alt={item.name} className="w-11 h-11 rounded-xl object-cover flex-shrink-0 ring-1 ring-gray-200" />
+                      : <div className="w-11 h-11 bg-gray-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🍴</div>
                     }
                     <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-semibold truncate">{item.name}</p>
-                      {item.description && <p className="text-gray-500 text-xs truncate">{item.description}</p>}
-                      <p className="text-brand-400 text-xs font-bold mt-0.5">Rs. {item.price}</p>
+                      <p className="text-gray-900 text-sm font-semibold truncate">{item.name}</p>
+                      {item.description && <p className="text-gray-400 text-xs truncate">{item.description}</p>}
+                      <p className="text-brand-600 text-xs font-bold mt-0.5">Rs. {item.price}</p>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <button onClick={() => toggleAvailable(item)}
-                        className={`text-[10px] px-2 py-1 rounded-lg font-bold transition-colors ${item.available ? 'bg-green-900/40 text-green-400 hover:bg-green-900/70' : 'bg-gray-800 text-gray-500 hover:bg-gray-700'}`}>
+                        className={`text-[10px] px-2 py-1 rounded-lg font-bold transition-colors ${item.available ? 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200'}`}>
                         {item.available ? 'ON' : 'OFF'}
                       </button>
-                      <button onClick={() => startEdit(item)} className="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors text-xs">✏️</button>
+                      <button onClick={() => startEdit(item)} className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors text-xs">✏️</button>
                       <button onClick={() => onDeleteItem(item, (id) => setItems(p => p.filter(i => i.id !== id)))}
-                        className="p-1.5 rounded-lg bg-red-900/30 hover:bg-red-900/60 text-red-400 transition-colors text-xs">🗑</button>
+                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 border border-red-100 transition-colors text-xs">🗑</button>
                     </div>
                   </div>
                 ))}
@@ -680,10 +680,10 @@ function QRTab({ restaurantId }) {
   return (
     <div>
       <div className="flex flex-wrap gap-4 mb-4 items-end">
-        <div><label className="label text-sm text-gray-300">Base URL</label>
-          <input className="input bg-gray-800 border-gray-700 text-white w-72 text-sm" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} /></div>
-        <div><label className="label text-sm text-gray-300">Tables</label>
-          <input type="number" min={1} max={100} className="input bg-gray-800 border-gray-700 text-white w-24 text-sm"
+        <div><label className="label text-sm text-gray-600">Base URL</label>
+          <input className="input bg-white border-gray-200 text-gray-900 w-72 text-sm" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} /></div>
+        <div><label className="label text-sm text-gray-600">Tables</label>
+          <input type="number" min={1} max={100} className="input bg-white border-gray-200 text-gray-900 w-24 text-sm"
             value={tables} onChange={e => setTables(parseInt(e.target.value) || 1)} /></div>
         <button onClick={() => window.print()} className="btn-primary px-5 py-2.5 text-sm print:hidden">🖨️ Print All</button>
       </div>
@@ -692,10 +692,10 @@ function QRTab({ restaurantId }) {
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
         {Array.from({ length: tables }, (_, i) => i + 1).map(t => (
-          <div key={t} className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col items-center gap-2 hover:border-gray-700 transition-colors">
-            <p className="text-white font-extrabold text-sm">Table {t}</p>
+          <div key={t} className="bg-white border border-gray-200 rounded-2xl p-4 flex flex-col items-center gap-2 hover:border-brand-200 hover:shadow-sm transition-all">
+            <p className="text-gray-900 font-extrabold text-sm">Table {t}</p>
             <div className="bg-white p-2 rounded-xl"><QRCodeSVG value={qrUrl(t)} size={96} /></div>
-            <p className="text-gray-600 text-[9px] text-center break-all">/menu?table={t}&rid=…</p>
+            <p className="text-gray-400 text-[9px] text-center break-all">/menu?table={t}&rid=…</p>
           </div>
         ))}
       </div>
@@ -713,7 +713,7 @@ function StaffTab() {
       .catch(() => setUsers([]))
       .finally(() => setLoading(false))
   }, [])
-  const COLORS = { OWNER: 'text-brand-400 bg-brand-400/10', KITCHEN: 'text-blue-400 bg-blue-400/10', ADMIN: 'text-purple-400 bg-purple-400/10' }
+  const COLORS = { OWNER: 'text-brand-600 bg-brand-50 border border-brand-200', KITCHEN: 'text-blue-600 bg-blue-50 border border-blue-200', ADMIN: 'text-purple-600 bg-purple-50 border border-purple-200' }
   return (
     <div className="max-w-2xl">
       {loading && (
@@ -723,9 +723,9 @@ function StaffTab() {
       )}
       {!loading && users.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center text-3xl border border-gray-800 mb-4">👥</div>
-          <p className="text-white font-bold">No staff assigned yet</p>
-          <p className="text-gray-600 text-sm mt-1">Add staff from the Super Admin portal</p>
+          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-3xl border border-gray-200 mb-4 shadow-sm">👥</div>
+          <p className="text-gray-800 font-bold">No staff assigned yet</p>
+          <p className="text-gray-400 text-sm mt-1">Add staff from the Super Admin portal</p>
         </div>
       )}
       {!loading && users.length > 0 && (
@@ -739,7 +739,7 @@ function StaffTab() {
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${COLORS[u.role] || 'text-gray-400 bg-gray-800'}`}>{u.role}</span>
-                <span className={`text-xs px-2 py-1 rounded-full ${u.active ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10'}`}>{u.active ? 'Active' : 'Inactive'}</span>
+                <span className={`text-xs px-2 py-1 rounded-full border ${u.active ? 'text-green-700 bg-green-50 border-green-200' : 'text-red-600 bg-red-50 border-red-200'}`}>{u.active ? 'Active' : 'Inactive'}</span>
               </div>
             </div>
           ))}
@@ -841,43 +841,43 @@ export default function OwnerDashboardPage() {
   const totalRevenue = orders.filter(o => o.status !== 'CANCELLED').reduce((s, o) => s + o.totalPrice, 0)
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-30 flex-shrink-0">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-30 flex-shrink-0 shadow-sm">
         <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           {/* Logo (real-time) */}
           <div className="flex items-center gap-3 min-w-0">
             {restaurant.logoUrl && !logoError
               ? <img src={restaurant.logoUrl} alt="logo"
-                  className="w-9 h-9 rounded-xl object-cover ring-2 ring-gray-700 flex-shrink-0"
+                  className="w-9 h-9 rounded-xl object-cover ring-2 ring-gray-200 flex-shrink-0"
                   onError={() => setLogoError(true)} />
-              : <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-orange-600 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🏢</div>
+              : <div className="w-9 h-9 bg-gradient-to-br from-brand-600 to-brand-700 rounded-xl flex items-center justify-center text-lg flex-shrink-0 shadow-sm">🏢</div>
             }
             <div className="min-w-0">
-              <p className="text-white font-extrabold text-sm leading-none truncate">{restaurant.name}</p>
-              <p className="text-gray-500 text-xs mt-0.5">Owner Portal</p>
+              <p className="text-gray-900 font-extrabold text-sm leading-none truncate">{restaurant.name}</p>
+              <p className="text-gray-400 text-xs mt-0.5">Owner Portal</p>
             </div>
           </div>
 
           {/* Stats summary */}
           <div className="hidden md:flex items-center gap-3">
             {[
-              { label: 'Orders',  v: orders.length,          color: 'text-brand-400'  },
-              { label: 'Revenue', v: `Rs.${totalRevenue.toFixed(0)}`, color: 'text-green-400' },
+              { label: 'Orders',  v: orders.length,          color: 'text-brand-600'  },
+              { label: 'Revenue', v: `Rs.${totalRevenue.toFixed(0)}`, color: 'text-green-600' },
             ].map(s => (
-              <div key={s.label} className="text-center px-3 py-1.5 bg-gray-800/60 rounded-xl">
+              <div key={s.label} className="text-center px-3 py-1.5 bg-gray-100 rounded-xl border border-gray-200">
                 <p className={`font-extrabold text-base leading-none ${s.color}`}>{s.v}</p>
-                <p className="text-gray-600 text-[9px] mt-0.5 uppercase tracking-wider">{s.label}</p>
+                <p className="text-gray-400 text-[9px] mt-0.5 uppercase tracking-wider">{s.label}</p>
               </div>
             ))}
           </div>
 
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="hidden sm:block text-right">
-              <p className="text-white text-xs font-semibold">{user?.name}</p>
-              <p className="text-gray-600 text-[10px]">Owner</p>
+              <p className="text-gray-900 text-xs font-semibold">{user?.name}</p>
+              <p className="text-gray-400 text-[10px]">Owner</p>
             </div>
-            <button onClick={askLogout} className="text-xs text-gray-500 hover:text-red-400 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-800">Sign out</button>
+            <button onClick={askLogout} className="text-xs text-gray-400 hover:text-brand-600 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100">Sign out</button>
           </div>
         </div>
 
@@ -887,7 +887,7 @@ export default function OwnerDashboardPage() {
             const showBadge = t.id === 'history' && pendingCount > 0
             return (
               <button key={t.id} onClick={() => { changeTab(t.id); if (t.id === 'history') setPendingCount(0) }}
-                className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeTab === t.id ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white hover:bg-gray-800'}`}>
+                className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeTab === t.id ? 'bg-brand-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100 border border-transparent hover:border-gray-200'}`}>
                 {showBadge && (
                   <span className="absolute -top-1.5 -right-1 flex h-5 w-5 items-center justify-center">
                     <span className="animate-ping absolute h-full w-full rounded-full bg-red-400 opacity-60" />
@@ -906,8 +906,8 @@ export default function OwnerDashboardPage() {
       <main className="flex-1 max-w-screen-xl mx-auto w-full px-4 sm:px-6 py-5">
         {/* Error banner */}
         {fetchError && (
-          <div className="mb-4 bg-red-900/30 border border-red-700/50 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-red-300 text-sm">
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-red-600 text-sm">
               <span>⚠️</span>
               <span>{fetchError}</span>
             </div>

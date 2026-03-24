@@ -1,12 +1,6 @@
 /**
  * KitchenDashboardPage — Ultra-professional real-time order management
- * Features:
- *  - Live restaurant name/logo via socket
- *  - Animated red notification badge on each status column change
- *  - Confirmation modal ONLY for PENDING → ACCEPTED (accept/cancel)
- *  - Direct status change (no modal) for ACCEPTED → PREPARING and PREPARING → SERVED
- *  - Audio notification on every new order (reuses single AudioContext)
- *  - Premium dark split-panel UI
+ * Theme: White-Red Professional
  */
 import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -16,7 +10,7 @@ import socket from '../lib/socket'
 import { useAuth } from '../context/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
 
-// ── Notification sound (reuse single AudioContext to avoid browser blocking) ──
+// ── Notification sound ──────────────────────────────────────────────────────
 let _audioCtx = null
 const getAudioCtx = () => {
   if (!_audioCtx || _audioCtx.state === 'closed') {
@@ -41,14 +35,14 @@ const playDing = () => {
   } catch (_) {}
 }
 
-// ── Status config ───────────────────────────────────────────────────────────
+// ── Status config — light theme ─────────────────────────────────────────────
 const STATUS_CFG = {
-  PENDING:   { color: 'border-l-yellow-400',  bg: 'bg-yellow-400/10', text: 'text-yellow-400',  dot: 'bg-yellow-400',  label: 'Pending'  },
-  ACCEPTED:  { color: 'border-l-blue-400',    bg: 'bg-blue-400/10',   text: 'text-blue-400',    dot: 'bg-blue-400',    label: 'Accepted' },
-  PREPARING: { color: 'border-l-orange-400',  bg: 'bg-orange-400/10', text: 'text-orange-400',  dot: 'bg-orange-400',  label: 'Preparing'},
-  SERVED:    { color: 'border-l-green-400',   bg: 'bg-green-400/10',  text: 'text-green-400',   dot: 'bg-green-400',   label: 'Served'   },
-  CANCELLED: { color: 'border-l-red-500',     bg: 'bg-red-500/10',    text: 'text-red-500',     dot: 'bg-red-500',     label: 'Cancelled'},
-  PAID:      { color: 'border-l-emerald-500', bg: 'bg-emerald-500/10',text: 'text-emerald-400', dot: 'bg-emerald-500', label: 'Paid'     },
+  PENDING:   { color: 'border-l-amber-500',   bg: 'bg-amber-50',   text: 'text-amber-700',  dot: 'bg-amber-500',   label: 'Pending'   },
+  ACCEPTED:  { color: 'border-l-blue-500',    bg: 'bg-blue-50',    text: 'text-blue-700',   dot: 'bg-blue-500',    label: 'Accepted'  },
+  PREPARING: { color: 'border-l-orange-500',  bg: 'bg-orange-50',  text: 'text-orange-700', dot: 'bg-orange-500',  label: 'Preparing' },
+  SERVED:    { color: 'border-l-green-500',   bg: 'bg-green-50',   text: 'text-green-700',  dot: 'bg-green-500',   label: 'Served'    },
+  CANCELLED: { color: 'border-l-red-400',     bg: 'bg-red-50',     text: 'text-red-600',    dot: 'bg-red-400',     label: 'Cancelled' },
+  PAID:      { color: 'border-l-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700',dot: 'bg-emerald-500', label: 'Paid'      },
 }
 
 const FILTERS = ['ALL', 'PENDING', 'ACCEPTED', 'PREPARING', 'SERVED']
@@ -59,17 +53,17 @@ function OrderCard({ order, onAccept, onPrepare, onServe, onCancel }) {
   const elapsed = Math.floor((Date.now() - new Date(order.createdAt)) / 60000)
 
   return (
-    <div className={`relative bg-gray-900 rounded-2xl border border-gray-800 border-l-4 ${cfg.color} overflow-hidden hover:border-gray-700 transition-all duration-200`}>
+    <div className={`relative bg-white rounded-2xl border border-gray-200 border-l-4 ${cfg.color} overflow-hidden hover:shadow-md transition-all duration-200`}>
       {/* Header */}
-      <div className={`px-4 py-3 ${cfg.bg} flex items-center justify-between`}>
+      <div className={`px-4 py-3 ${cfg.bg} flex items-center justify-between border-b border-gray-100`}>
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full ${cfg.dot} ${order.status === 'PENDING' ? 'animate-pulse' : ''}`} />
           <span className={`font-bold text-xs uppercase tracking-widest ${cfg.text}`}>{cfg.label}</span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div className="flex items-center gap-2 text-xs text-gray-400">
           <span>Table</span>
-          <span className="font-black text-white text-base">#{order.tableNumber}</span>
-          <span className="text-gray-600">•</span>
+          <span className="font-black text-gray-800 text-base">#{order.tableNumber}</span>
+          <span className="text-gray-300">•</span>
           <span>{elapsed}m ago</span>
         </div>
       </div>
@@ -77,21 +71,21 @@ function OrderCard({ order, onAccept, onPrepare, onServe, onCancel }) {
       {/* Customer */}
       <div className="px-4 pt-3 pb-1 flex items-center justify-between">
         <div>
-          <p className="text-white font-bold text-sm">{order.customerName}</p>
-          <p className="text-gray-500 text-xs">{order.phone}</p>
+          <p className="text-gray-900 font-bold text-sm">{order.customerName}</p>
+          <p className="text-gray-400 text-xs">{order.phone}</p>
         </div>
         <div className="text-right">
-          <p className="text-gray-500 text-[10px] uppercase tracking-wider">Total</p>
-          <p className="text-white font-extrabold text-lg leading-none">Rs. {order.totalPrice}</p>
+          <p className="text-gray-400 text-[10px] uppercase tracking-wider">Total</p>
+          <p className="text-gray-900 font-extrabold text-lg leading-none">Rs. {order.totalPrice}</p>
         </div>
       </div>
 
       {/* Items */}
       <div className="px-4 py-2 space-y-0.5 max-h-36 overflow-y-auto">
         {order.items?.map(item => (
-          <div key={item.id} className="flex justify-between text-xs py-1 border-b border-gray-800/60 last:border-0">
-            <span className="text-gray-300 font-medium">
-              <span className="text-gray-600 mr-1.5">×{item.quantity}</span>
+          <div key={item.id} className="flex justify-between text-xs py-1 border-b border-gray-100 last:border-0">
+            <span className="text-gray-700 font-medium">
+              <span className="text-gray-400 mr-1.5">×{item.quantity}</span>
               {item.menuItem?.name}
             </span>
             <span className="text-gray-500">Rs. {(item.price * item.quantity)}</span>
@@ -99,41 +93,41 @@ function OrderCard({ order, onAccept, onPrepare, onServe, onCancel }) {
         ))}
       </div>
 
-      {/* Actions — only PENDING needs confirm modal, rest are direct */}
-      <div className="px-4 py-3 border-t border-gray-800 flex gap-2">
+      {/* Actions */}
+      <div className="px-4 py-3 border-t border-gray-100 flex gap-2">
         {order.status === 'PENDING' && (
           <>
             <button onClick={() => onAccept(order)}
-              className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5">
+              className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors flex items-center justify-center gap-1.5 shadow-sm">
               ✓ Accept
             </button>
             <button onClick={() => onCancel(order)}
-              className="py-2 px-3 rounded-xl text-xs font-bold text-red-400 bg-red-900/30 hover:bg-red-900/60 transition-colors">
+              className="py-2 px-3 rounded-xl text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors">
               ✕
             </button>
           </>
         )}
         {order.status === 'ACCEPTED' && (
           <button onClick={() => onPrepare(order.id)}
-            className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 transition-colors">
+            className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors shadow-sm">
             🔥 Start Preparing
           </button>
         )}
         {order.status === 'PREPARING' && (
           <button onClick={() => onServe(order.id)}
-            className="flex-1 py-2 rounded-xl text-xs font-bold text-black bg-green-400 hover:bg-green-300 transition-colors">
+            className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-green-600 hover:bg-green-700 transition-colors shadow-sm">
             ✓ Mark Served
           </button>
         )}
         {(order.status === 'SERVED' || order.status === 'PAID' || order.status === 'CANCELLED') && (
-          <div className={`flex-1 py-2 rounded-xl text-xs font-bold text-center ${cfg.text} ${cfg.bg}`}>
+          <div className={`flex-1 py-2 rounded-xl text-xs font-bold text-center ${cfg.text} ${cfg.bg} border ${order.status === 'CANCELLED' ? 'border-red-200' : order.status === 'PAID' ? 'border-emerald-200' : 'border-green-200'}`}>
             {order.status === 'SERVED' ? '✓ Served' : order.status === 'PAID' ? '💳 Paid' : '✕ Cancelled'}
           </div>
         )}
       </div>
 
       {/* ID */}
-      <p className="px-4 pb-2 text-gray-700 text-[10px] font-mono">#{order.id.slice(-8).toUpperCase()}</p>
+      <p className="px-4 pb-2 text-gray-300 text-[10px] font-mono">#{order.id.slice(-8).toUpperCase()}</p>
     </div>
   )
 }
@@ -146,7 +140,7 @@ export default function KitchenDashboardPage() {
   const [orders, setOrders]         = useState([])
   const [loading, setLoading]       = useState(true)
   const [fetchError, setFetchError] = useState(null)
-  const [filter, setFilter]         = useState('ALL')
+  const [filter, setFilter]         = useState(() => localStorage.getItem('kitchen_filter') || 'ALL')
   const [connected, setConnected]   = useState(socket.connected)
   const [restaurant, setRestaurant] = useState(() => {
     try { return JSON.parse(localStorage.getItem('kitchen_restaurant') || 'null') || { name: 'Kitchen', logoUrl: null } }
@@ -154,11 +148,14 @@ export default function KitchenDashboardPage() {
   })
   const [confirm, setConfirm]       = useState(null)
   const [logoError, setLogoError]   = useState(false)
-  // Per-status badge counts — cleared when user clicks that filter
   const [statusBadges, setStatusBadges] = useState({})
   const badgeTimersRef = useRef({})
 
-  // Add badge for a given status, auto-clear after 10s
+  // Persist active filter
+  useEffect(() => {
+    localStorage.setItem('kitchen_filter', filter)
+  }, [filter])
+
   const addBadge = useCallback((status) => {
     setStatusBadges(prev => ({ ...prev, [status]: (prev[status] || 0) + 1 }))
     clearTimeout(badgeTimersRef.current[status])
@@ -172,7 +169,6 @@ export default function KitchenDashboardPage() {
     clearTimeout(badgeTimersRef.current[status])
   }
 
-  // Fetch orders
   const fetchOrders = useCallback(async () => {
     try {
       setFetchError(null)
@@ -185,7 +181,6 @@ export default function KitchenDashboardPage() {
     }
   }, [])
 
-  // Single fetch after auth resolves
   useEffect(() => {
     if (authLoading) return
     fetchOrders()
@@ -199,17 +194,16 @@ export default function KitchenDashboardPage() {
     if (user?.restaurantId) socket.emit('join_restaurant', { restaurantId: user.restaurantId })
   }, [authLoading, fetchOrders, user?.restaurantId])
 
-  // Socket listeners
   useEffect(() => {
     const onNewOrder = (order) => {
       setOrders(prev => prev.find(o => o.id === order.id) ? prev : [order, ...prev])
       playDing()
       addBadge('PENDING')
+      setFilter('PENDING') // auto-focus pending column so no order is missed
       toast.success(`🆕 New order — Table #${order.tableNumber}!`, { duration: 6000 })
     }
     const onStatusUpdate = ({ orderId, status }) => {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o))
-      // Badge on the destination status column
       if (STATUS_CFG[status]) addBadge(status)
     }
     const onRestaurantUpdated = (data) => {
@@ -237,7 +231,6 @@ export default function KitchenDashboardPage() {
     }
   }, [addBadge])
 
-  // Direct status update (no confirmation modal)
   const doStatusUpdate = async (orderId, status) => {
     try {
       const res = await api.put(`/orders/${orderId}/status`, { status })
@@ -250,14 +243,13 @@ export default function KitchenDashboardPage() {
     } catch (err) { toast.error(err.message) }
   }
 
-  // Only PENDING → ACCEPTED and Cancel need confirmation modals
   const askAccept = (order) => setConfirm({
     title: 'Accept Order?',
     message: `Accept order from ${order.customerName} (Table #${order.tableNumber})? An OTP will be sent to the customer.`,
     onConfirm: () => { doStatusUpdate(order.id, 'ACCEPTED'); setConfirm(null) },
     type: 'info',
     confirmLabel: '✓ Accept',
-    confirmStyle: 'bg-blue-600 hover:bg-blue-700',
+    confirmStyle: 'bg-brand-600 hover:bg-brand-700',
   })
   const askCancel = (order) => setConfirm({
     title: 'Cancel Order?',
@@ -275,7 +267,7 @@ export default function KitchenDashboardPage() {
   })
 
   const filteredOrders = filter === 'ALL'
-    ? orders.filter(o => o.status !== 'PAID') // hide PAID from ALL view in kitchen
+    ? orders.filter(o => o.status !== 'PAID')
     : orders.filter(o => o.status === filter)
 
   const counts = {
@@ -286,33 +278,33 @@ export default function KitchenDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
-      {/* ── Top Header ──────────────────────────────────────────────────────────── */}
-      <header className="bg-gray-900 border-b border-gray-800 sticky top-0 z-30 flex-shrink-0">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* ── Top Header ─────────────────────────────────────────────────────────── */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-30 flex-shrink-0 shadow-sm">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          {/* Logo */}
+          {/* Logo + Brand */}
           <div className="flex items-center gap-3 min-w-0">
             {restaurant.logoUrl && !logoError
               ? <img src={restaurant.logoUrl} alt="logo"
-                  className="w-9 h-9 rounded-xl object-cover ring-2 ring-gray-700 flex-shrink-0"
+                  className="w-9 h-9 rounded-xl object-cover ring-2 ring-gray-200 flex-shrink-0"
                   onError={() => setLogoError(true)} />
-              : <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-orange-600 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🍽️</div>
+              : <div className="w-9 h-9 bg-gradient-to-br from-brand-600 to-brand-700 rounded-xl flex items-center justify-center text-lg flex-shrink-0 shadow-sm">🍽️</div>
             }
             <div className="min-w-0">
-              <p className="text-white font-extrabold text-sm leading-none truncate">{restaurant.name}</p>
-              <p className="text-gray-500 text-xs mt-0.5">Kitchen Dashboard</p>
+              <p className="text-gray-900 font-extrabold text-sm leading-none truncate">{restaurant.name}</p>
+              <p className="text-gray-400 text-xs mt-0.5">Kitchen Dashboard</p>
             </div>
           </div>
 
           {/* Pending alert */}
           <div className="flex items-center gap-3">
             {counts.PENDING > 0 && (
-              <div className="relative flex items-center gap-2 bg-red-900/30 border border-red-700/50 rounded-full px-3 py-1.5">
+              <div className="relative flex items-center gap-2 bg-brand-50 border border-brand-200 rounded-full px-3 py-1.5">
                 <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-brand-600" />
                 </span>
-                <span className="text-red-300 text-xs font-bold">{counts.PENDING} pending order{counts.PENDING > 1 ? 's' : ''}</span>
+                <span className="text-brand-700 text-xs font-bold">{counts.PENDING} pending order{counts.PENDING > 1 ? 's' : ''}</span>
               </div>
             )}
           </div>
@@ -320,21 +312,21 @@ export default function KitchenDashboardPage() {
           {/* Right — connection + logout */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="hidden sm:flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400' : 'bg-red-400 animate-pulse'}`} />
-              <span className="text-xs text-gray-500">{connected ? 'Live' : 'Reconnecting…'}</span>
+              <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-400 animate-pulse'}`} />
+              <span className="text-xs text-gray-400">{connected ? 'Live' : 'Reconnecting…'}</span>
             </div>
-            <div className="h-5 w-px bg-gray-700 hidden sm:block" />
+            <div className="h-5 w-px bg-gray-200 hidden sm:block" />
             <div className="text-right hidden md:block">
-              <p className="text-white text-xs font-semibold leading-none">{user?.name}</p>
-              <p className="text-gray-600 text-[10px] mt-0.5">Kitchen Staff</p>
+              <p className="text-gray-800 text-xs font-semibold leading-none">{user?.name}</p>
+              <p className="text-gray-400 text-[10px] mt-0.5">Kitchen Staff</p>
             </div>
-            <button onClick={askLogout} className="text-xs text-gray-500 hover:text-red-400 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-800">
+            <button onClick={askLogout} className="text-xs text-gray-400 hover:text-brand-600 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100">
               Sign out
             </button>
           </div>
         </div>
 
-        {/* Filter strip — each tab shows its own red badge when orders shift into it */}
+        {/* Filter strip */}
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 pb-3 flex gap-2 overflow-x-auto">
           {FILTERS.map(f => {
             const count   = f === 'ALL' ? orders.filter(o => o.status !== 'PAID').length : (counts[f] ?? 0)
@@ -344,29 +336,31 @@ export default function KitchenDashboardPage() {
               <button key={f}
                 onClick={() => { setFilter(f); if (f !== 'ALL') clearBadge(f) }}
                 className={`relative flex-shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all duration-150 ${
-                  isActive ? 'bg-white text-gray-900' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
+                  isActive
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'bg-white text-gray-500 border border-gray-200 hover:text-gray-800 hover:border-gray-300'
                 }`}>
                 {badge > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] text-white flex items-center justify-center animate-bounce">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-600 rounded-full text-[9px] text-white flex items-center justify-center animate-bounce">
                     {badge}
                   </span>
                 )}
                 {f === 'ALL' ? 'All' : STATUS_CFG[f]?.label || f}
-                <span className={`${isActive ? 'bg-gray-200 text-gray-700' : 'bg-gray-700 text-gray-400'} rounded-full px-1.5 py-0.5 text-[10px] font-bold`}>{count}</span>
+                <span className={`${isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'} rounded-full px-1.5 py-0.5 text-[10px] font-bold`}>{count}</span>
               </button>
             )
           })}
         </div>
       </header>
 
-      {/* ── Main ────────────────────────────────────────────────────────────────── */}
+      {/* ── Main ──────────────────────────────────────────────────────────────── */}
       <main className="flex-1 max-w-screen-2xl mx-auto w-full px-4 sm:px-6 py-5">
         {fetchError && (
-          <div className="mb-4 bg-red-900/30 border border-red-700/50 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-red-300 text-sm">
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-red-600 text-sm">
               <span>⚠️</span><span>{fetchError}</span>
             </div>
-            <button onClick={fetchOrders} className="text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0">
+            <button onClick={fetchOrders} className="text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0">
               Retry
             </button>
           </div>
@@ -374,13 +368,13 @@ export default function KitchenDashboardPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
             <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-gray-500 text-sm">Loading orders…</p>
+            <p className="text-gray-400 text-sm">Loading orders…</p>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 text-center">
-            <div className="w-24 h-24 bg-gray-900 rounded-full flex items-center justify-center text-5xl mb-6 border border-gray-800">🍳</div>
-            <p className="text-white font-bold text-lg">No {filter !== 'ALL' ? (STATUS_CFG[filter]?.label?.toLowerCase() || filter.toLowerCase()) : ''} orders</p>
-            <p className="text-gray-600 text-sm mt-1">Orders will appear here in real-time</p>
+            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-5xl mb-6 border border-gray-200 shadow-sm">🍳</div>
+            <p className="text-gray-800 font-bold text-lg">No {filter !== 'ALL' ? (STATUS_CFG[filter]?.label?.toLowerCase() || filter.toLowerCase()) : ''} orders</p>
+            <p className="text-gray-400 text-sm mt-1">Orders will appear here in real-time</p>
           </div>
         ) : (
           <div className="columns-1 sm:columns-2 xl:columns-3 gap-4 space-y-4">
@@ -399,7 +393,6 @@ export default function KitchenDashboardPage() {
         )}
       </main>
 
-      {/* Confirmation Modal — only for Accept and Cancel */}
       {confirm && (
         <ConfirmModal
           open

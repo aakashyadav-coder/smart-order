@@ -66,8 +66,8 @@ export default function UsersPage() {
 
   const InputField = ({ label, field, type = 'text', placeholder }) => (
     <div>
-      <label className="label text-gray-300 text-xs">{label}</label>
-      <input type={type} placeholder={placeholder} className="input bg-gray-800 border-gray-700 text-white placeholder-gray-600 text-sm focus:ring-purple-500 focus:border-purple-500"
+      <label className="label text-gray-600 text-xs">{label}</label>
+      <input type={type} placeholder={placeholder} className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:ring-brand-500 focus:border-brand-500"
         value={form[field]} onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))} />
     </div>
   )
@@ -76,10 +76,10 @@ export default function UsersPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Users</h1>
-          <p className="text-gray-500 text-sm mt-1">{users.length} user(s) across all restaurants</p>
+          <h1 className="text-2xl font-extrabold text-gray-900">Users</h1>
+          <p className="text-gray-400 text-sm mt-1">{users.length} user(s) across all restaurants</p>
         </div>
-        <button onClick={openCreate} className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors">
+        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors shadow-sm">
           + New User
         </button>
       </div>
@@ -87,31 +87,31 @@ export default function UsersPage() {
       {loading ? (
         <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" /></div>
       ) : (
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-800">
+                <tr className="border-b border-gray-100 bg-gray-50">
                   {['Name', 'Email', 'Role', 'Restaurant', 'Status', 'Actions'].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody className="divide-y divide-gray-100">
                 {users.map(u => (
-                  <tr key={u.id} className="hover:bg-gray-800/50 transition-colors">
-                    <td className="px-4 py-3 text-white font-medium">{u.name}</td>
+                  <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 text-gray-900 font-medium">{u.name}</td>
                     <td className="px-4 py-3 text-gray-400">{u.email}</td>
                     <td className="px-4 py-3"><span className={`badge text-xs ${ROLE_COLORS[u.role] || 'badge-pending'}`}>{u.role}</span></td>
-                    <td className="px-4 py-3 text-gray-400">{u.restaurant?.name || <span className="text-gray-700">—</span>}</td>
+                    <td className="px-4 py-3 text-gray-400">{u.restaurant?.name || <span className="text-gray-300">—</span>}</td>
                     <td className="px-4 py-3">
                       <span className={`badge text-xs ${u.active ? 'badge-completed' : 'badge-cancelled'}`}>{u.active ? 'Active' : 'Inactive'}</span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => openEdit(u)} className="text-xs text-gray-400 hover:text-white transition-colors">✏️</button>
-                        <button onClick={() => handleToggleActive(u)} className="text-xs text-gray-400 hover:text-yellow-400 transition-colors">{u.active ? '🔴' : '🟢'}</button>
-                        <button onClick={() => handleDelete(u.id)} className="text-xs text-gray-400 hover:text-red-400 transition-colors">🗑</button>
+                        <button onClick={() => openEdit(u)} className="text-xs text-gray-400 hover:text-gray-700 transition-colors">✏️</button>
+                        <button onClick={() => handleToggleActive(u)} className="text-xs text-gray-400 hover:text-amber-500 transition-colors">{u.active ? '🔴' : '🟢'}</button>
+                        <button onClick={() => handleDelete(u.id)} className="text-xs text-gray-400 hover:text-red-500 transition-colors">🗑</button>
                       </div>
                     </td>
                   </tr>
@@ -125,38 +125,38 @@ export default function UsersPage() {
       {/* Modal */}
       {modal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-gray-900 rounded-2xl border border-gray-800 w-full max-w-md shadow-2xl animate-bounce-in">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
-              <h3 className="font-bold text-white">{modal === 'create' ? '👤 New User' : `✏️ Edit ${modal.name}`}</h3>
-              <button onClick={() => setModal(null)} className="text-gray-500 hover:text-white w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-800">✕</button>
+          <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-md shadow-2xl animate-bounce-in">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl">
+              <h3 className="font-bold text-gray-900">{modal === 'create' ? '👤 New User' : `✏️ Edit ${modal.name}`}</h3>
+              <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-700 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100">✕</button>
             </div>
             <div className="p-5 space-y-3">
               <InputField label="Full Name *" field="name" placeholder="John Doe" />
               <InputField label="Email *" field="email" type="email" placeholder="user@restaurant.com" />
               <InputField label={modal === 'create' ? 'Password *' : 'New Password (leave blank to keep)'} field="password" type="password" placeholder="••••••••" />
               <div>
-                <label className="label text-gray-300 text-xs">Role *</label>
-                <select className="input bg-gray-800 border-gray-700 text-white text-sm focus:ring-purple-500 focus:border-purple-500"
+                <label className="label text-gray-600 text-xs">Role *</label>
+                <select className="input bg-white border-gray-200 text-gray-900 text-sm focus:ring-brand-500 focus:border-brand-500"
                   value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
                   {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
               <div>
-                <label className="label text-gray-300 text-xs">Restaurant</label>
-                <select className="input bg-gray-800 border-gray-700 text-white text-sm focus:ring-purple-500 focus:border-purple-500"
+                <label className="label text-gray-600 text-xs">Restaurant</label>
+                <select className="input bg-white border-gray-200 text-gray-900 text-sm focus:ring-brand-500 focus:border-brand-500"
                   value={form.restaurantId} onChange={e => setForm(p => ({ ...p, restaurantId: e.target.value }))}>
                   <option value="">— No restaurant —</option>
                   {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <input type="checkbox" id="active" checked={form.active} onChange={e => setForm(p => ({ ...p, active: e.target.checked }))} className="w-4 h-4 accent-purple-500" />
-                <label htmlFor="active" className="text-gray-300 text-sm">Active account</label>
+                <input type="checkbox" id="active" checked={form.active} onChange={e => setForm(p => ({ ...p, active: e.target.checked }))} className="w-4 h-4 accent-brand-600" />
+                <label htmlFor="active" className="text-gray-700 text-sm">Active account</label>
               </div>
             </div>
             <div className="flex gap-2 px-5 pb-5">
               <button onClick={() => setModal(null)} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
-              <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-sm transition-colors">
+              <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-sm transition-colors shadow-sm">
                 {saving ? 'Saving…' : 'Save User'}
               </button>
             </div>
