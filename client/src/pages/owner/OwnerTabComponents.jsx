@@ -109,13 +109,13 @@ function StatCard({ icon: Icon, label, value, rawValue, trend, prefix = '', icon
   const displayValue = rawValue !== undefined ? `${prefix}${counted.toLocaleString()}` : value
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-      <div className={`w-12 h-12 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0`}>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group">
+      <div className={`w-12 h-12 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110`}>
         <Icon className={`w-6 h-6 ${iconColor}`} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-gray-400 text-xs font-medium truncate">{label}</p>
-        <p className="text-gray-900 text-2xl font-extrabold leading-tight">{displayValue}</p>
+        <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider truncate">{label}</p>
+        <p className="font-display text-gray-900 text-2xl font-bold leading-tight tracking-tight">{displayValue}</p>
         {trend !== undefined && (
           <p className={`text-xs mt-0.5 font-semibold flex items-center gap-1 ${trend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
             <span>{trend >= 0 ? '↑' : '↓'}</span>
@@ -353,10 +353,12 @@ function BillModal({ order, restaurant, onClose, onPaid }) {
   )
 }
 
-export function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
+export function OrderHistoryTab({ orders, loading, restaurant, onPaid, onStatusChange }) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [selected, setSelected] = useState(null)
+
+  const STATUS_TABS = ['ALL', 'PENDING', 'ACCEPTED', 'PREPARING', 'SERVED', 'PAID', 'CANCELLED']
 
   const filtered = orders.filter(o => {
     const matchStatus = statusFilter === 'ALL' || o.status === statusFilter
@@ -364,7 +366,6 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
     return matchStatus && (!q || o.customerName.toLowerCase().includes(q) || o.phone?.includes(q) || String(o.tableNumber).includes(q))
   })
   const fmt = d => new Date(d).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })
-  // Only count PAID orders for revenue display
   const totalRev = filtered.filter(o => o.status === 'PAID').reduce((s, o) => s + (o.discountedTotal ?? o.totalPrice), 0)
 
   const exportCSV = () => downloadCSV(`orders_${new Date().toISOString().slice(0, 10)}.csv`, [
@@ -374,38 +375,66 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
 
   return (
     <div className="space-y-4">
+      {/* ── Toolbar ── */}
       <div className="flex flex-wrap gap-3">
-        <input type="text" placeholder="Search name, phone, table…" className="input flex-1 min-w-48 text-sm" value={search} onChange={e => setSearch(e.target.value)} />
-        <select className="input w-40 text-sm bg-white" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-          {['ALL', 'PENDING', 'ACCEPTED', 'PREPARING', 'SERVED', 'PAID', 'CANCELLED'].map(s => <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s}</option>)}
+        <div className="relative flex-1 min-w-48">
+          <input
+            type="text"
+            placeholder="Search name, phone, table…"
+            className="input text-sm w-full pl-9 focus:ring-brand-400 focus:border-brand-400"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <circle cx={11} cy={11} r={8}/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </div>
+        <select
+          className="input w-44 text-sm bg-white focus:ring-brand-400 focus:border-brand-400"
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+        >
+          {STATUS_TABS.map(s => <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s}</option>)}
         </select>
-        <button onClick={exportCSV} disabled={!filtered.length} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 disabled:opacity-40">↓ Export</button>
+        <button
+          onClick={exportCSV}
+          disabled={!filtered.length}
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 disabled:opacity-40 transition-colors"
+        >
+          ↓ Export
+        </button>
       </div>
 
-      <div className="flex gap-3 text-xs">
-        <span className="bg-white border border-gray-200 px-3 py-1.5 rounded-full font-semibold text-gray-600">{filtered.length} orders</span>
-        <span className="bg-white border border-gray-200 px-3 py-1.5 rounded-full font-semibold text-green-600">Rs. {totalRev.toFixed(0)} paid</span>
+      {/* ── Summary pills ── */}
+      <div className="flex gap-2.5 text-xs flex-wrap">
+        <span className="bg-brand-50 border border-brand-200 text-brand-700 px-3 py-1.5 rounded-full font-bold">
+          {filtered.length} orders
+        </span>
+        <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-full font-bold">
+          Rs. {totalRev.toFixed(0)} paid
+        </span>
       </div>
 
+      {/* ── Table ── */}
       {loading ? <OrderRowSkeleton count={6} /> : filtered.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
+        <div className="text-center py-24 text-gray-400">
           <ClipboardList className="w-14 h-14 mx-auto mb-4 opacity-15" />
-          <p className="font-bold text-gray-500 text-base">No orders found</p>
+          <p className="font-display font-bold text-gray-500 text-base">No orders found</p>
           <p className="text-sm mt-1">Try adjusting your filters</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
 
-          {/* ── Table header ── */}
-          <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_140px] items-center px-6 py-3 bg-gray-50 border-b border-gray-100">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Customer</span>
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Items</span>
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</span>
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Amount</span>
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center pl-4 border-l border-gray-200">Action</span>
+          {/* Header row — brand gradient */}
+          <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_140px] items-center px-6 py-3.5 bg-gradient-to-r from-brand-700 to-brand-600">
+            <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">Customer</span>
+            <span className="text-[10px] font-black text-white/80 uppercase tracking-widest text-center">Items</span>
+            <span className="text-[10px] font-black text-white/80 uppercase tracking-widest text-center">Status</span>
+            <span className="text-[10px] font-black text-white/80 uppercase tracking-widest text-center">Amount</span>
+            <span className="text-[10px] font-black text-white/80 uppercase tracking-widest text-center pl-4 border-l border-white/20">Action</span>
           </div>
 
-          {/* ── Rows ── */}
+          {/* Rows */}
           {filtered.map(o => {
             const cfg = STATUS_CFG[o.status] || STATUS_CFG.PENDING
             const avatarColors = ['bg-brand-500', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-teal-500']
@@ -418,14 +447,13 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
 
             return (
               <div key={o.id}
-                className={`grid grid-cols-[2fr_1.5fr_1fr_1fr_140px] items-center px-6 py-4 border-b border-gray-50 last:border-0 transition-colors
-                  ${isCancelled ? 'opacity-50' : 'hover:bg-gray-50/60'}
-                  ${isServed ? 'bg-green-50/25' : ''}
-                `}>
-
-                {/* Customer — left */}
+                className={`grid grid-cols-[2fr_1.5fr_1fr_1fr_140px] items-center px-6 py-4 border-b border-gray-50 last:border-0 transition-colors ${
+                  isCancelled ? 'opacity-50' : 'hover:bg-brand-50/30'
+                } ${isServed ? 'bg-green-50/20' : ''}`}
+              >
+                {/* Customer */}
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-9 h-9 rounded-xl ${avatarBg} flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>
+                  <div className={`w-9 h-9 rounded-xl ${avatarBg} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm`}>
                     {o.customerName?.[0]?.toUpperCase()}
                   </div>
                   <div className="min-w-0">
@@ -434,41 +462,49 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
                   </div>
                 </div>
 
-                {/* Items — center */}
+                {/* Items */}
                 <p className="text-gray-500 text-xs text-center truncate px-2">{preview || '—'}</p>
 
-                {/* Status — center */}
+                {/* Status */}
                 <div className="flex justify-center">
                   <span className={`inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1 rounded-full border ${cfg.badge}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${o.status === 'PENDING' ? cfg.dot + ' animate-pulse' : cfg.dot}`} />
                     {o.status}
                   </span>
                 </div>
 
-                {/* Amount — center */}
+                {/* Amount */}
                 <div className="text-center">
-                  <p className="font-bold text-gray-900 text-sm">Rs. {amount}</p>
+                  <p className={`font-bold text-sm ${isPaid ? 'text-emerald-600' : isCancelled ? 'text-gray-300 line-through' : 'text-gray-900'}`}>
+                    Rs. {amount}
+                  </p>
                   {isPaid && o.discount > 0 && (
-                    <p className="text-green-500 text-[10px] font-semibold">{o.discount}% off</p>
+                    <p className="text-emerald-500 text-[10px] font-semibold">{o.discount}% off</p>
                   )}
                 </div>
 
-                {/* Action — center, left divider */}
+                {/* Action */}
                 <div className="flex justify-center pl-4 border-l border-gray-100">
                   {isServed && (
-                    <button onClick={() => setSelected(o)}
-                      className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 transition-all shadow-sm shadow-green-200 whitespace-nowrap">
+                    <button
+                      onClick={() => setSelected(o)}
+                      className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white hover:from-brand-700 hover:to-brand-600 transition-all shadow-sm whitespace-nowrap"
+                    >
                       <Printer className="w-3.5 h-3.5 flex-shrink-0" /> Bill
                     </button>
                   )}
                   {isPaid && (
-                    <button onClick={() => setSelected(o)}
-                      className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors whitespace-nowrap">
+                    <button
+                      onClick={() => setSelected(o)}
+                      className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors whitespace-nowrap"
+                    >
                       <Printer className="w-3.5 h-3.5 flex-shrink-0" /> Reprint
                     </button>
                   )}
+                  {!isServed && !isPaid && !isCancelled && (
+                    <span className="text-[10px] text-gray-300 font-medium">—</span>
+                  )}
                 </div>
-
               </div>
             )
           })}

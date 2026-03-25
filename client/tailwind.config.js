@@ -22,7 +22,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans:    ['DM Sans', 'system-ui', 'sans-serif'],
+        display: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
       },
       animation: {
         'slide-up':    'slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1)',

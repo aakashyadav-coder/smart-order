@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,9 +15,20 @@
   body {
     @apply font-sans antialiased text-gray-900 bg-gray-50;
     min-height: 100dvh;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+    line-height: 1.6;
   }
 
-  h1, h2, h3, h4 { @apply font-bold; }
+  h1, h2, h3, h4 {
+    @apply font-display font-bold;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+
+  p, span, div, button, input, select, textarea, label {
+    letter-spacing: -0.008em;
+  }
 }
 
 @layer components {
