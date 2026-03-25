@@ -426,7 +426,8 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid, onStatusC
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
 
           {/* Header row — brand gradient */}
-          <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_140px] items-center px-6 py-3.5 bg-gradient-to-r from-brand-700 to-brand-600">
+          <div className="grid grid-cols-[36px_2fr_1.5fr_1fr_1fr_140px] items-center px-6 py-3.5 bg-gradient-to-r from-brand-700 to-brand-600">
+            <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">#</span>
             <span className="text-[10px] font-black text-white/80 uppercase tracking-widest">Customer</span>
             <span className="text-[10px] font-black text-white/80 uppercase tracking-widest text-center">Items</span>
             <span className="text-[10px] font-black text-white/80 uppercase tracking-widest text-center">Status</span>
@@ -435,10 +436,8 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid, onStatusC
           </div>
 
           {/* Rows */}
-          {filtered.map(o => {
+          {filtered.map((o, idx) => {
             const cfg = STATUS_CFG[o.status] || STATUS_CFG.PENDING
-            const avatarColors = ['bg-brand-500', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-teal-500']
-            const avatarBg = avatarColors[(o.customerName?.charCodeAt(0) || 0) % avatarColors.length]
             const preview = o.items?.slice(0, 2).map(it => it.menuItem?.name).filter(Boolean).join(', ') + (o.items?.length > 2 ? ` +${o.items.length - 2}` : '')
             const isCancelled = o.status === 'CANCELLED'
             const isPaid = o.status === 'PAID'
@@ -447,15 +446,18 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid, onStatusC
 
             return (
               <div key={o.id}
-                className={`grid grid-cols-[2fr_1.5fr_1fr_1fr_140px] items-center px-6 py-4 border-b border-gray-50 last:border-0 transition-colors ${
+                className={`grid grid-cols-[36px_2fr_1.5fr_1fr_1fr_140px] items-center px-6 py-4 border-b border-gray-50 last:border-0 transition-colors ${
                   isCancelled ? 'opacity-50' : 'hover:bg-brand-50/30'
                 } ${isServed ? 'bg-green-50/20' : ''}`}
               >
+                {/* Serial number */}
+                <div className="flex-shrink-0">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 text-gray-500 font-bold text-xs">
+                    {idx + 1}
+                  </span>
+                </div>
                 {/* Customer */}
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-9 h-9 rounded-xl ${avatarBg} flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm`}>
-                    {o.customerName?.[0]?.toUpperCase()}
-                  </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-gray-900 text-sm leading-none truncate">{o.customerName}</p>
                     <p className="text-gray-400 text-xs mt-0.5">Table #{o.tableNumber} · {fmt(o.createdAt)}</p>

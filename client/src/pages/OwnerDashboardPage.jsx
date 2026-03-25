@@ -52,8 +52,8 @@ function requestPush() {
 }
 
 // ── Profile Editor Modal ───────────────────────────────────────────────────────
-function ProfileModal({ restaurant, onClose, onSaved }) {
-  const [form, setForm] = useState({ name: restaurant?.name || '', logoUrl: restaurant?.logoUrl || '', address: restaurant?.address || '', phone: restaurant?.phone || '' })
+function ProfileModal({ restaurant, user, onClose, onSaved }) {
+  const [form, setForm] = useState({ name: restaurant?.name || '', logoUrl: restaurant?.logoUrl || '', address: restaurant?.address || '' })
   const [saving, setSaving] = useState(false)
   const handleSubmit = async e => {
     e.preventDefault(); setSaving(true)
@@ -72,11 +72,26 @@ function ProfileModal({ restaurant, onClose, onSaved }) {
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-3">
           <div><label className="label">Restaurant Name</label><input required className="input text-sm" value={form.name} onChange={e => setForm(p=>({...p,name:e.target.value}))} /></div>
+          {/* Read-only account email */}
+          <div>
+            <label className="label">Email Address</label>
+            <div className="input text-sm bg-gray-50 text-gray-400 cursor-not-allowed select-none flex items-center gap-2">
+              <span className="flex-1 truncate">{user?.email || '—'}</span>
+              <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex-shrink-0">Read only</span>
+            </div>
+          </div>
           <div><label className="label">Logo URL</label><input className="input text-sm" placeholder="https://..." value={form.logoUrl} onChange={e => setForm(p=>({...p,logoUrl:e.target.value}))} />
             {form.logoUrl && <img src={form.logoUrl} alt="" className="w-12 h-12 object-cover rounded-xl mt-2 border border-gray-100" onError={e => e.target.style.display='none'} />}
           </div>
           <div><label className="label">Address</label><input className="input text-sm" value={form.address} onChange={e => setForm(p=>({...p,address:e.target.value}))} /></div>
-          <div><label className="label">Phone</label><input className="input text-sm" value={form.phone} onChange={e => setForm(p=>({...p,phone:e.target.value}))} /></div>
+          {/* Read-only phone */}
+          <div>
+            <label className="label">Phone Number</label>
+            <div className="input text-sm bg-gray-50 text-gray-400 cursor-not-allowed select-none flex items-center gap-2">
+              <span className="flex-1">{restaurant?.phone || '—'}</span>
+              <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex-shrink-0">Read only</span>
+            </div>
+          </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
             <button type="submit" disabled={saving} className="btn-primary flex-1 py-2.5 text-sm">{saving?'Saving…':'Save Changes'}</button>
@@ -145,22 +160,10 @@ function Sidebar({ activeTab, onChange, user, restaurant, logoError, onLogoError
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-white/8 space-y-2 flex-shrink-0">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-brand-600 rounded-full flex items-center justify-center text-white font-extrabold text-sm flex-shrink-0">
-            {user?.name?.[0]?.toUpperCase() || 'O'}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-semibold leading-none truncate">{user?.name}</p>
-            <p className="text-gray-500 text-xs truncate mt-0.5">{user?.email}</p>
-          </div>
-        </div>
-        <button onClick={onProfile} className="w-full flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors py-2 px-2 rounded-lg hover:bg-white/8 font-medium">
+      {/* Footer — Edit Profile only */}
+      <div className="p-4 border-t border-white/8 flex-shrink-0">
+        <button onClick={onProfile} className="w-full flex items-center gap-2 text-xs text-gray-400 hover:text-white transition-colors py-2.5 px-3 rounded-xl hover:bg-white/8 font-semibold">
           <Settings className="w-4 h-4" /> Edit Profile
-        </button>
-        <button onClick={onLogout} className="w-full flex items-center gap-2 text-xs text-gray-500 hover:text-red-400 transition-colors py-2 px-2 rounded-lg hover:bg-white/8 font-medium">
-          <LogOut className="w-4 h-4" /> Sign Out
         </button>
       </div>
     </div>
@@ -371,6 +374,14 @@ export default function OwnerDashboardPage() {
               <kbd className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">O</kbd>
               <kbd className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">M</kbd>
             </div>
+            {/* Sign Out — top right, red */}
+            <button
+              onClick={askLogout}
+              className="flex items-center gap-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-colors px-3.5 py-2 rounded-xl flex-shrink-0 ml-2 shadow-sm shadow-red-600/25"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
           </div>
         </header>
 
@@ -389,7 +400,7 @@ export default function OwnerDashboardPage() {
       </div>
 
       {confirm && <ConfirmModal open title={confirm.title} message={confirm.message} confirmLabel={confirm.confirmLabel||'Confirm'} type={confirm.type||'danger'} onConfirm={confirm.onConfirm} onCancel={() => setConfirm(null)} />}
-      {showProfile && <ProfileModal restaurant={restaurant} onClose={() => setShowProfile(false)} onSaved={data => { setRestaurant(p=>({...p,...data})); localStorage.setItem('owner_restaurant', JSON.stringify({...restaurant,...data})) }} />}
+      {showProfile && <ProfileModal restaurant={restaurant} user={user} onClose={() => setShowProfile(false)} onSaved={data => { setRestaurant(p=>({...p,...data})); localStorage.setItem('owner_restaurant', JSON.stringify({...restaurant,...data})) }} />}
     </div>
   )
 }
