@@ -1,6 +1,7 @@
 /**
- * KitchenDashboardPage — Ultra-professional Kanban Kitchen Display System
- * Features: live per-second timers, urgency heat system, stats strip, entrance animations
+ * KitchenDashboardPage — Ultra-professional Slate & White KDS
+ * Design: Clean floating columns on slate background, minimal status accents,
+ *         giant table numbers, refined typography, zero visual noise.
  */
 import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -10,165 +11,164 @@ import socket from '../lib/socket'
 import { useAuth } from '../context/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
 import {
-  ChefHat, Wifi, WifiOff, LogOut,
+  ChefHat, WifiOff, LogOut,
   CheckCircle, Flame, XCircle, RefreshCw, Clock
 } from '../components/Icons'
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
-let _audioCtx = null
-const getCtx = () => {
-  if (!_audioCtx || _audioCtx.state === 'closed')
-    _audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-  return _audioCtx
-}
-const playDing = () => {
+let _ctx = null
+const ding = () => {
   try {
-    const ctx = getCtx()
-    if (ctx.state === 'suspended') ctx.resume()
-    const osc = ctx.createOscillator(); const gain = ctx.createGain()
-    osc.connect(gain); gain.connect(ctx.destination)
-    osc.frequency.setValueAtTime(1047, ctx.currentTime)
-    osc.frequency.setValueAtTime(784, ctx.currentTime + 0.12)
-    gain.gain.setValueAtTime(0.35, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6)
-    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.6)
+    if (!_ctx || _ctx.state === 'closed') _ctx = new (window.AudioContext || window.webkitAudioContext)()
+    if (_ctx.state === 'suspended') _ctx.resume()
+    const o = _ctx.createOscillator(), g = _ctx.createGain()
+    o.connect(g); g.connect(_ctx.destination)
+    o.frequency.setValueAtTime(1047, _ctx.currentTime)
+    o.frequency.setValueAtTime(880, _ctx.currentTime + 0.1)
+    g.gain.setValueAtTime(0.28, _ctx.currentTime)
+    g.gain.exponentialRampToValueAtTime(0.001, _ctx.currentTime + 0.55)
+    o.start(); o.stop(_ctx.currentTime + 0.55)
   } catch (_) {}
 }
 
-// ── Live clock — ticks every second ───────────────────────────────────────────
+// ── Live second ticker ────────────────────────────────────────────────────────
 function useTick() {
-  const [, setTick] = useState(0)
-  useEffect(() => {
-    const t = setInterval(() => setTick(n => n + 1), 1000)
-    return () => clearInterval(t)
-  }, [])
+  const [, set] = useState(0)
+  useEffect(() => { const t = setInterval(() => set(n => n + 1), 1000); return () => clearInterval(t) }, [])
 }
 
-// Format elapsed seconds as m:ss
-function fmtElapsed(seconds) {
-  const m = Math.floor(seconds / 60)
-  const s = seconds % 60
-  return `${m}:${String(s).padStart(2, '0')}`
+function elapsed(createdAt) {
+  const s = Math.floor((Date.now() - new Date(createdAt)) / 1000)
+  const m = Math.floor(s / 60)
+  return { s, m, label: `${m}:${String(s % 60).padStart(2, '0')}` }
 }
 
-// Urgency level based on elapsed minutes
-function getUrgency(elapsedSec, status) {
-  if (status !== 'PENDING' && status !== 'ACCEPTED' && status !== 'PREPARING') return 'normal'
-  const m = elapsedSec / 60
-  if (m >= 10) return 'critical'
-  if (m >= 5)  return 'high'
-  if (m >= 2)  return 'medium'
-  return 'low'
-}
-
-const URGENCY_STYLES = {
-  normal:   { border: 'border-l-gray-200',   ring: '',                      bg: '',                     label: null,       labelCls: '' },
-  low:      { border: 'border-l-green-400',  ring: '',                      bg: '',                     label: null,       labelCls: '' },
-  medium:   { border: 'border-l-amber-500',  ring: '',                      bg: 'bg-amber-50/30',       label: null,       labelCls: '' },
-  high:     { border: 'border-l-orange-500', ring: 'ring-1 ring-orange-200',bg: 'bg-orange-50/40',      label: '⚡ High',  labelCls: 'bg-orange-100 text-orange-700' },
-  critical: { border: 'border-l-red-600',    ring: 'ring-2 ring-red-300',   bg: 'bg-red-50/60',         label: '🔴 URGENT',labelCls: 'bg-red-100 text-red-700 animate-pulse' },
-}
-
-// ── Kanban column config ───────────────────────────────────────────────────────
+// ── Column config — minimal, no heavy color ────────────────────────────────────
 const COLUMNS = [
-  { id: 'PENDING',   label: 'New Orders',  headerBg: 'bg-amber-500',  colBg: 'bg-amber-50/50',   topBorder: 'border-t-amber-500',  defaultBorder: 'border-l-amber-500',  emptyIcon: '⏳', emptyText: 'Waiting for orders' },
-  { id: 'ACCEPTED',  label: 'Accepted',    headerBg: 'bg-blue-500',   colBg: 'bg-blue-50/40',    topBorder: 'border-t-blue-500',   defaultBorder: 'border-l-blue-500',  emptyIcon: '👍', emptyText: 'Accept incoming orders' },
-  { id: 'PREPARING', label: 'Preparing',   headerBg: 'bg-orange-500', colBg: 'bg-orange-50/40',  topBorder: 'border-t-orange-500', defaultBorder: 'border-l-orange-500', emptyIcon: '🔥', emptyText: 'No items being cooked' },
-  { id: 'SERVED',    label: 'Served',      headerBg: 'bg-green-600',  colBg: 'bg-green-50/30',   topBorder: 'border-t-green-600',  defaultBorder: 'border-l-green-500',  emptyIcon: '✅', emptyText: 'Completed orders appear here' },
+  {
+    id: 'PENDING',
+    label: 'New Orders',
+    dot: 'bg-amber-400',
+    accent: 'border-l-amber-400',
+    timerCritical: 'text-red-500',
+    timerHigh: 'text-amber-500',
+    badge: 'bg-amber-50 text-amber-700 border-amber-200',
+    emptyText: 'Waiting for orders',
+  },
+  {
+    id: 'ACCEPTED',
+    label: 'Accepted',
+    dot: 'bg-sky-400',
+    accent: 'border-l-sky-400',
+    timerCritical: 'text-red-500',
+    timerHigh: 'text-amber-500',
+    badge: 'bg-sky-50 text-sky-700 border-sky-200',
+    emptyText: 'Accept incoming orders',
+  },
+  {
+    id: 'PREPARING',
+    label: 'Preparing',
+    dot: 'bg-orange-400',
+    accent: 'border-l-orange-400',
+    timerCritical: 'text-red-500',
+    timerHigh: 'text-amber-500',
+    badge: 'bg-orange-50 text-orange-700 border-orange-200',
+    emptyText: 'Nothing cooking yet',
+  },
+  {
+    id: 'SERVED',
+    label: 'Served',
+    dot: 'bg-emerald-400',
+    accent: 'border-l-emerald-400',
+    timerCritical: 'text-slate-400',
+    timerHigh: 'text-slate-400',
+    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    emptyText: 'Completed orders here',
+  },
 ]
 
 // ── Order Card ─────────────────────────────────────────────────────────────────
-function OrderCard({ order, col, onAccept, onPrepare, onServe, onCancel, isNew }) {
-  useTick() // re-render every second
-
-  const nowSec    = Math.floor((Date.now() - new Date(order.createdAt)) / 1000)
-  const urgency   = getUrgency(nowSec, order.status)
-  const uStyle    = URGENCY_STYLES[urgency]
-  const borderCls = (urgency === 'low' || urgency === 'normal') ? col.defaultBorder : uStyle.border
+function OrderCard({ order, col, isNew, onAccept, onPrepare, onServe, onCancel }) {
+  useTick()
+  const { m, label } = elapsed(order.createdAt)
+  const isCritical = m >= 10
+  const isHigh     = m >= 5 && !isCritical
+  const timerCls   = isCritical ? col.timerCritical : isHigh ? col.timerHigh : 'text-slate-400'
 
   return (
-    <div
+    <article
       className={`
-        bg-white rounded-xl border border-gray-100 border-l-4 ${borderCls}
-        ${uStyle.ring} ${uStyle.bg}
-        shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden
+        bg-white rounded-2xl border border-slate-100 border-l-[3px] ${col.accent}
+        shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden
         ${isNew ? 'animate-slide-up' : ''}
       `}
     >
-      {/* ── Header row ── */}
-      <div className="flex items-center justify-between px-3.5 pt-3 pb-2">
-        <div className="flex items-center gap-2 min-w-0">
-          {/* Table number — most important info */}
-          <span className="font-display font-black text-gray-900 text-2xl leading-none flex-shrink-0">
-            #{order.tableNumber}
+      {/* TOP — table number + timer */}
+      <div className="px-4 pt-4 pb-2 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <span className="font-display font-black text-slate-900 text-4xl leading-none tabular-nums tracking-tight">
+            {order.tableNumber}
           </span>
-          {uStyle.label && (
-            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${uStyle.labelCls}`}>
-              {uStyle.label}
-            </span>
+          <p className="text-slate-500 text-xs font-medium mt-1 leading-none truncate">
+            {order.customerName}
+          </p>
+        </div>
+        <div className={`flex items-center gap-1 text-[11px] font-mono font-semibold flex-shrink-0 mt-1 ${timerCls}`}>
+          {isCritical && (
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block mr-0.5" />
           )}
-        </div>
-        {/* Live elapsed timer */}
-        <div className={`flex items-center gap-1 text-xs font-bold tabular-nums flex-shrink-0 ${
-          urgency === 'critical' ? 'text-red-600' :
-          urgency === 'high'     ? 'text-orange-500' :
-          urgency === 'medium'   ? 'text-amber-500' : 'text-gray-400'
-        }`}>
-          <Clock className="w-3 h-3" />
-          {fmtElapsed(nowSec)}
+          {label}
         </div>
       </div>
 
-      {/* Customer */}
-      <div className="px-3.5 pb-2.5">
-        <p className="text-gray-800 text-sm font-semibold leading-none truncate">{order.customerName}</p>
-        {order.phone && <p className="text-gray-400 text-[11px] mt-0.5">{order.phone}</p>}
-      </div>
+      {/* DIVIDER */}
+      <div className="mx-4 border-t border-slate-100" />
 
-      {/* Divider */}
-      <div className="border-t border-gray-100 mx-0" />
-
-      {/* Items */}
-      <div className="px-3.5 py-2.5 space-y-1.5 max-h-36 overflow-y-auto">
+      {/* ITEMS */}
+      <div className="px-4 py-2.5 space-y-1 max-h-32 overflow-y-auto">
         {order.items?.map(item => (
-          <div key={item.id} className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded bg-gray-100 text-gray-600 font-black text-[9px] flex-shrink-0 leading-none">
-                {item.quantity}
-              </span>
-              <span className="text-gray-700 text-[11px] font-medium truncate">{item.menuItem?.name}</span>
-            </div>
-            <span className="text-gray-400 text-[10px] flex-shrink-0 font-medium">
+          <div key={item.id} className="flex justify-between items-center gap-2 text-xs">
+            <span className="text-slate-600 truncate leading-relaxed">
+              <span className="text-slate-400 font-semibold mr-1">{item.quantity}×</span>
+              {item.menuItem?.name}
+            </span>
+            <span className="text-slate-400 flex-shrink-0 text-[10px]">
               Rs.{item.price * item.quantity}
             </span>
           </div>
         ))}
       </div>
 
-      {/* Divider */}
-      <div className="border-t border-gray-100" />
+      {/* DIVIDER */}
+      <div className="mx-4 border-t border-slate-100" />
 
-      {/* Footer — total + action */}
-      <div className="px-3.5 py-2.5 flex items-center justify-between gap-2">
-        <span className="text-gray-900 font-extrabold text-sm">Rs.{order.totalPrice}</span>
+      {/* FOOTER — total + action */}
+      <div className="px-4 py-3 flex items-center justify-between gap-2">
+        <span className="text-slate-900 font-extrabold text-sm tabular-nums">
+          Rs.{order.totalPrice}
+        </span>
+
         <div className="flex items-center gap-1.5">
           {col.id === 'PENDING' && (
             <>
               <button
                 onClick={() => onAccept(order)}
-                className="flex items-center gap-1 text-[11px] font-extrabold text-white bg-gradient-to-r from-brand-700 to-brand-500 hover:from-brand-800 hover:to-brand-600 px-3 py-1.5 rounded-lg transition-all shadow-sm"
+                className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-slate-900 hover:bg-slate-700 px-3 py-2 rounded-xl transition-colors"
               >
                 <CheckCircle className="w-3 h-3" /> Accept
               </button>
-              <button onClick={() => onCancel(order)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
-                <XCircle className="w-3.5 h-3.5" />
+              <button
+                onClick={() => onCancel(order)}
+                className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors border border-slate-100"
+              >
+                <XCircle className="w-4 h-4" />
               </button>
             </>
           )}
           {col.id === 'ACCEPTED' && (
             <button
               onClick={() => onPrepare(order.id)}
-              className="flex items-center gap-1 text-[11px] font-extrabold text-white bg-orange-500 hover:bg-orange-600 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+              className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-orange-500 hover:bg-orange-600 px-3 py-2 rounded-xl transition-colors"
             >
               <Flame className="w-3 h-3" /> Prepare
             </button>
@@ -176,58 +176,60 @@ function OrderCard({ order, col, onAccept, onPrepare, onServe, onCancel, isNew }
           {col.id === 'PREPARING' && (
             <button
               onClick={() => onServe(order.id)}
-              className="flex items-center gap-1 text-[11px] font-extrabold text-white bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded-lg transition-colors shadow-sm"
+              className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-2 rounded-xl transition-colors"
             >
               <CheckCircle className="w-3 h-3" /> Serve
             </button>
           )}
           {col.id === 'SERVED' && (
-            <span className="text-[11px] font-bold text-green-700 bg-green-50 px-3 py-1.5 rounded-lg border border-green-100">
-              ✓ Done
+            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-100">
+              Served
             </span>
           )}
         </div>
       </div>
-
-      {/* ID */}
-      <div className="px-3.5 pb-2">
-        <span className="text-gray-200 text-[9px] font-mono">#{order.id.slice(-6).toUpperCase()}</span>
-      </div>
-    </div>
+    </article>
   )
 }
 
-// ── Kanban Column ─────────────────────────────────────────────────────────────
-function KanbanColumn({ col, orders, newOrderIds, onAccept, onPrepare, onServe, onCancel }) {
-  // Sort: most urgent (oldest) first
+// ── Column Panel ───────────────────────────────────────────────────────────────
+function ColumnPanel({ col, orders, newIds, onAccept, onPrepare, onServe, onCancel }) {
+  // Oldest first (most urgent at top)
   const sorted = [...orders].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
 
   return (
-    <div
-      className={`flex flex-col rounded-2xl border border-gray-200 overflow-hidden shadow-sm border-t-4 ${col.topBorder} flex-shrink-0`}
-      style={{ width: '17rem', minWidth: '17rem', height: 'calc(100vh - 92px)' }}
+    <section
+      className="flex flex-col bg-slate-50 rounded-3xl border border-slate-200/80 overflow-hidden flex-shrink-0 shadow-sm"
+      style={{ width: '17rem', height: 'calc(100vh - 80px)', minWidth: '17rem' }}
     >
       {/* Column header */}
-      <div className={`${col.headerBg} px-4 py-2.5 flex items-center justify-between flex-shrink-0`}>
-        <span className="font-display font-extrabold text-white text-sm">{col.label}</span>
-        <span className={`text-xs font-black px-2.5 py-0.5 rounded-full bg-white/25 text-white ${orders.length > 0 && col.id === 'PENDING' ? 'animate-pulse' : ''}`}>
+      <div className="px-5 py-3.5 bg-white border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-2.5">
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${col.dot} ${orders.length > 0 && col.id === 'PENDING' ? 'animate-pulse' : ''}`} />
+          <span className="font-display font-bold text-slate-800 text-sm">{col.label}</span>
+        </div>
+        <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full border ${
+          orders.length > 0
+            ? col.badge
+            : 'bg-slate-100 text-slate-400 border-slate-200'
+        }`}>
           {orders.length}
         </span>
       </div>
 
-      {/* Card list */}
-      <div className={`flex-1 overflow-y-auto p-3 space-y-3 ${col.colBg} scrollbar-none`}>
+      {/* Cards */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-none">
         {sorted.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full py-16 gap-2 select-none opacity-50">
-            <span className="text-3xl">{col.emptyIcon}</span>
-            <p className="text-gray-400 text-xs font-semibold text-center">{col.emptyText}</p>
+          <div className="flex flex-col items-center justify-center h-full select-none pointer-events-none">
+            <div className="w-12 h-12 bg-slate-100 rounded-2xl mb-3" />
+            <p className="text-slate-300 text-xs font-semibold text-center">{col.emptyText}</p>
           </div>
         ) : sorted.map(order => (
           <OrderCard
             key={order.id}
             order={order}
             col={col}
-            isNew={newOrderIds.has(order.id)}
+            isNew={newIds.has(order.id)}
             onAccept={onAccept}
             onPrepare={onPrepare}
             onServe={onServe}
@@ -235,38 +237,17 @@ function KanbanColumn({ col, orders, newOrderIds, onAccept, onPrepare, onServe, 
           />
         ))}
       </div>
-    </div>
+    </section>
   )
 }
 
-// ── Live stat hook — recalculates every 10 s ──────────────────────────────────
-function useStats(orders) {
-  const pending   = orders.filter(o => o.status === 'PENDING').length
-  const active    = orders.filter(o => ['PENDING','ACCEPTED','PREPARING'].includes(o.status)).length
-  const servedToday = orders.filter(o => {
-    if (o.status !== 'SERVED' && o.status !== 'PAID') return false
-    const d = new Date(o.updatedAt || o.createdAt)
-    const now = new Date()
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
-  }).length
-
-  // Average wait time of currently PENDING orders (in minutes)
-  const pendingOrders = orders.filter(o => o.status === 'PENDING')
-  const avgWait = pendingOrders.length
-    ? Math.round(pendingOrders.reduce((s, o) => s + (Date.now() - new Date(o.createdAt)) / 60000, 0) / pendingOrders.length)
-    : null
-
-  return { pending, active, servedToday, avgWait }
-}
-
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// ── Main ───────────────────────────────────────────────────────────────────────
 export default function KitchenDashboardPage() {
   const navigate = useNavigate()
   const { user, logout, loading: authLoading } = useAuth()
-  useTick() // global tick keeps stats live
 
-  const [orders, setOrders]     = useState([])
-  const [loading, setLoading]   = useState(true)
+  const [orders, setOrders]         = useState([])
+  const [loading, setLoading]       = useState(true)
   const [fetchError, setFetchError] = useState(null)
   const [connected, setConnected]   = useState(socket.connected)
   const [restaurant, setRestaurant] = useState(() => {
@@ -275,214 +256,207 @@ export default function KitchenDashboardPage() {
   })
   const [confirm, setConfirm]     = useState(null)
   const [logoError, setLogoError] = useState(false)
-  const newOrderIds = useRef(new Set())
+  const newIds = useRef(new Set())
 
   const fetchOrders = useCallback(async () => {
     try {
       setFetchError(null)
       const res = await api.get('/orders')
       setOrders(res.data)
-    } catch (err) {
-      setFetchError(err.message || 'Failed to load orders')
-    } finally { setLoading(false) }
+    } catch (e) { setFetchError(e.message || 'Failed to load') }
+    finally { setLoading(false) }
   }, [])
 
   useEffect(() => {
     if (authLoading) return
     fetchOrders()
     api.get('/restaurant/mine').then(r => {
-      const data = { name: r.data.name, logoUrl: r.data.logoUrl }
-      setRestaurant(data); setLogoError(false)
-      localStorage.setItem('kitchen_restaurant', JSON.stringify(data))
+      const d = { name: r.data.name, logoUrl: r.data.logoUrl }
+      setRestaurant(d); setLogoError(false)
+      localStorage.setItem('kitchen_restaurant', JSON.stringify(d))
     }).catch(() => {})
     socket.emit('join_kitchen')
     if (user?.restaurantId) socket.emit('join_restaurant', { restaurantId: user.restaurantId })
   }, [authLoading, fetchOrders, user?.restaurantId])
 
   useEffect(() => {
-    const onNewOrder = order => {
-      setOrders(prev => prev.find(o => o.id === order.id) ? prev : [order, ...prev])
-      newOrderIds.current.add(order.id)
-      setTimeout(() => newOrderIds.current.delete(order.id), 2000) // remove animation class after anim
-      playDing()
-      toast.success(`🆕 New order — Table #${order.tableNumber}!`, { duration: 6000 })
+    const onNew = order => {
+      setOrders(p => p.find(o => o.id === order.id) ? p : [order, ...p])
+      newIds.current.add(order.id)
+      setTimeout(() => newIds.current.delete(order.id), 1500)
+      ding()
+      toast.success(`New order — Table ${order.tableNumber}`, { duration: 6000 })
     }
-    const onStatusUpdate = ({ orderId, status }) =>
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o))
-    const onRestaurantUpdated = data => {
-      const b = { name: data.name, logoUrl: data.logoUrl }
+    const onStatus = ({ orderId, status }) =>
+      setOrders(p => p.map(o => o.id === orderId ? { ...o, status } : o))
+    const onBrand = d => {
+      const b = { name: d.name, logoUrl: d.logoUrl }
       setRestaurant(b); setLogoError(false)
       localStorage.setItem('kitchen_restaurant', JSON.stringify(b))
     }
-    const onConnect    = () => setConnected(true)
-    const onDisconnect = () => setConnected(false)
-
-    socket.on('new_order',           onNewOrder)
-    socket.on('order_status_update', onStatusUpdate)
-    socket.on('restaurant_updated',  onRestaurantUpdated)
-    socket.on('connect',             onConnect)
-    socket.on('disconnect',          onDisconnect)
+    socket.on('new_order', onNew)
+    socket.on('order_status_update', onStatus)
+    socket.on('restaurant_updated', onBrand)
+    socket.on('connect',    () => setConnected(true))
+    socket.on('disconnect', () => setConnected(false))
     return () => {
-      socket.off('new_order',           onNewOrder)
-      socket.off('order_status_update', onStatusUpdate)
-      socket.off('restaurant_updated',  onRestaurantUpdated)
-      socket.off('connect',             onConnect)
-      socket.off('disconnect',          onDisconnect)
+      socket.off('new_order', onNew)
+      socket.off('order_status_update', onStatus)
+      socket.off('restaurant_updated', onBrand)
+      socket.off('connect');    socket.off('disconnect')
     }
   }, [])
 
-  const doStatusUpdate = async (orderId, status) => {
+  const doStatus = async (orderId, status) => {
     try {
       const res = await api.put(`/orders/${orderId}/status`, { status })
-      setOrders(prev => prev.map(o => o.id === orderId ? res.data : o))
-      toast.success(`Marked as ${status.toLowerCase()}`)
+      setOrders(p => p.map(o => o.id === orderId ? res.data : o))
       if (status === 'ACCEPTED') api.post('/otp/send', { orderId }).catch(() => {})
-    } catch (err) { toast.error(err.message) }
+    } catch (e) { toast.error(e.message) }
   }
 
-  const askAccept = order => setConfirm({
-    title: 'Accept Order?',
-    message: `Accept order from ${order.customerName} (Table #${order.tableNumber})? An OTP will be sent.`,
-    onConfirm: () => { doStatusUpdate(order.id, 'ACCEPTED'); setConfirm(null) },
-    type: 'info', confirmLabel: '✓ Accept',
+  const askAccept = o => setConfirm({
+    title: 'Accept order?',
+    message: `Table ${o.tableNumber} — ${o.customerName}. An OTP will be sent to the customer.`,
+    confirmLabel: 'Accept', type: 'info',
+    onConfirm: () => { doStatus(o.id, 'ACCEPTED'); setConfirm(null) },
   })
-  const askCancel = order => setConfirm({
-    title: 'Cancel Order?',
-    message: `Cancel order from ${order.customerName}? This cannot be undone.`,
-    onConfirm: () => { doStatusUpdate(order.id, 'CANCELLED'); setConfirm(null) },
-    type: 'danger', confirmLabel: 'Cancel Order',
+  const askCancel = o => setConfirm({
+    title: 'Cancel order?',
+    message: `Cancel Table ${o.tableNumber} — ${o.customerName}? This cannot be undone.`,
+    confirmLabel: 'Cancel Order', type: 'danger',
+    onConfirm: () => { doStatus(o.id, 'CANCELLED'); setConfirm(null) },
   })
   const askLogout = () => setConfirm({
-    title: 'Sign Out?', message: 'Sign out of the Kitchen Dashboard?',
+    title: 'Sign out?', message: 'Sign out of the Kitchen Display System?',
+    confirmLabel: 'Sign Out', type: 'danger',
     onConfirm: () => { logout(); navigate('/kitchen/login') },
-    type: 'danger', confirmLabel: 'Sign Out',
   })
 
   const grouped = {}
-  COLUMNS.forEach(col => { grouped[col.id] = orders.filter(o => o.status === col.id) })
-  const cancelledOrders = orders.filter(o => o.status === 'CANCELLED')
-  const stats = useStats(orders)
+  COLUMNS.forEach(c => { grouped[c.id] = orders.filter(o => o.status === c.id) })
+  const cancelled = orders.filter(o => o.status === 'CANCELLED')
+  const pending   = grouped['PENDING']?.length || 0
+  const active    = orders.filter(o => ['PENDING','ACCEPTED','PREPARING'].includes(o.status)).length
 
   return (
-    <div className="h-screen bg-gray-100 flex flex-col overflow-hidden">
+    <div className="h-screen bg-slate-100 flex flex-col overflow-hidden">
 
-      {/* ── Dark Header ────────────────────────────────────────────────────────── */}
-      <header className="bg-gradient-to-r from-gray-950 via-gray-900 to-gray-950 flex-shrink-0 shadow-2xl shadow-black/30">
-        <div className="px-5 py-3 flex items-center gap-4">
+      {/* ── Header ────────────────────────────────────────────────────────────── */}
+      <header className="flex-shrink-0 bg-slate-900 px-5 py-3 flex items-center gap-4">
 
-          {/* Brand mark */}
-          <div className="flex items-center gap-3 min-w-0">
-            {restaurant.logoUrl && !logoError
-              ? <img src={restaurant.logoUrl} alt="" className="w-9 h-9 rounded-xl object-cover ring-2 ring-white/10 flex-shrink-0" onError={() => setLogoError(true)} />
-              : <div className="w-9 h-9 bg-gradient-to-br from-brand-600 to-brand-800 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                  <ChefHat className="w-5 h-5 text-white" />
-                </div>
+        {/* Brand */}
+        <div className="flex items-center gap-3 min-w-0">
+          {restaurant.logoUrl && !logoError
+            ? <img src={restaurant.logoUrl} alt="" className="w-8 h-8 rounded-xl object-cover ring-1 ring-white/10 flex-shrink-0" onError={() => setLogoError(true)} />
+            : <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                <ChefHat className="w-4 h-4 text-white/60" />
+              </div>
+          }
+          <div className="min-w-0">
+            <p className="font-display font-bold text-white text-sm leading-none truncate">{restaurant.name}</p>
+            <p className="text-slate-500 text-[10px] font-medium mt-0.5 uppercase tracking-widest">KDS</p>
+          </div>
+        </div>
+
+        {/* Center — summary pills */}
+        <div className="flex items-center gap-2 flex-1 justify-center">
+          {pending > 0 && (
+            <div className="flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/25 rounded-full px-3 py-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="text-amber-300 text-[11px] font-bold">{pending} pending</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
+            <span className="text-slate-400 text-[11px] font-semibold">{active} active</span>
+          </div>
+          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
+            <span className="text-slate-400 text-[11px] font-semibold">{grouped['SERVED']?.length || 0} served</span>
+          </div>
+        </div>
+
+        {/* Right */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Connection */}
+          <div className="flex items-center gap-1.5">
+            {connected
+              ? <><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /><span className="text-slate-500 text-[10px] font-medium hidden sm:inline">Live</span></>
+              : <><WifiOff className="w-3 h-3 text-red-400 animate-pulse" /><span className="text-red-400 text-[10px] hidden sm:inline">Offline</span></>
             }
-            <div className="min-w-0">
-              <p className="font-display text-white font-extrabold text-sm leading-none truncate">{restaurant.name}</p>
-              <p className="text-brand-400 text-[11px] font-semibold mt-0.5 tracking-wide">Kitchen Display System</p>
-            </div>
           </div>
-
-          {/* ── Live stats strip ── */}
-          <div className="hidden md:flex items-center gap-2 flex-1 justify-center">
-            <StatChip
-              label="Pending"
-              value={stats.pending}
-              pulse={stats.pending > 0}
-              cls={stats.pending > 0 ? 'border-amber-500/40 bg-amber-500/10 text-amber-300' : 'border-white/10 bg-white/5 text-gray-500'}
-            />
-            <StatChip label="Active" value={stats.active} cls="border-white/10 bg-white/5 text-gray-300" />
-            <StatChip label="Served Today" value={stats.servedToday} cls="border-green-500/30 bg-green-500/10 text-green-400" />
-            {stats.avgWait !== null && (
-              <StatChip
-                label="Avg Wait"
-                value={`${stats.avgWait}m`}
-                cls={stats.avgWait >= 5 ? 'border-red-500/40 bg-red-500/10 text-red-400' : 'border-white/10 bg-white/5 text-gray-300'}
-              />
-            )}
-          </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="hidden sm:flex items-center gap-1.5">
-              {connected
-                ? <><span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" /><span className="text-[11px] text-gray-400 font-medium">Live</span></>
-                : <><WifiOff className="w-3.5 h-3.5 text-red-400 animate-pulse" /><span className="text-[11px] text-red-400">Reconnecting…</span></>
-              }
-            </div>
-            <div className="h-4 w-px bg-white/10 hidden sm:block" />
-            <div className="hidden md:block text-right">
-              <p className="text-white text-[11px] font-semibold leading-none">{user?.name}</p>
-              <p className="text-gray-600 text-[10px] mt-0.5">Kitchen Staff</p>
-            </div>
-            <button
-              onClick={askLogout}
-              className="flex items-center gap-1.5 text-[11px] text-gray-500 hover:text-brand-400 transition-colors px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline font-medium">Sign out</span>
-            </button>
-          </div>
+          <div className="h-3.5 w-px bg-white/10 hidden sm:block" />
+          {/* User */}
+          <p className="text-slate-500 text-[11px] font-medium hidden md:block">{user?.name}</p>
+          {/* Logout */}
+          <button
+            onClick={askLogout}
+            className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-red-400 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-white/5"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Sign out</span>
+          </button>
         </div>
       </header>
 
-      {/* Error banner */}
+      {/* Error */}
       {fetchError && (
-        <div className="bg-red-50 border-b border-red-200 px-5 py-2 flex items-center justify-between gap-3 text-xs flex-shrink-0">
-          <div className="flex items-center gap-2 text-red-600 font-medium">
-            <XCircle className="w-4 h-4" />{fetchError}
-          </div>
-          <button onClick={fetchOrders} className="flex items-center gap-1 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-lg transition-colors">
+        <div className="bg-red-50 border-b border-red-100 px-5 py-2 flex items-center justify-between text-xs flex-shrink-0">
+          <span className="text-red-600 font-medium">{fetchError}</span>
+          <button onClick={fetchOrders} className="flex items-center gap-1 text-xs font-bold text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg transition-colors">
             <RefreshCw className="w-3 h-3" /> Retry
           </button>
         </div>
       )}
 
-      {/* ── Kanban Board ──────────────────────────────────────────────────────── */}
+      {/* ── Board ─────────────────────────────────────────────────────────────── */}
       {loading ? (
-        <div className="flex-1 flex items-center justify-center flex-col gap-4">
-          <div className="relative w-12 h-12">
-            <div className="absolute inset-0 border-4 border-gray-200 rounded-full" />
-            <div className="absolute inset-0 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" />
+        <div className="flex-1 flex flex-col items-center justify-center gap-5">
+          <div className="relative w-10 h-10">
+            <div className="absolute inset-0 border-[3px] border-slate-200 rounded-full" />
+            <div className="absolute inset-0 border-[3px] border-slate-700 border-t-transparent rounded-full animate-spin" />
           </div>
-          <p className="font-display font-bold text-gray-600">Loading kitchen orders…</p>
+          <p className="text-slate-400 text-sm font-medium">Loading orders…</p>
         </div>
       ) : (
         <div className="flex-1 overflow-x-auto overflow-y-hidden">
-          <div className="flex gap-3.5 p-4 h-full" style={{ minWidth: 'max-content' }}>
+          <div className="flex gap-3 p-4 h-full" style={{ minWidth: 'max-content' }}>
             {COLUMNS.map(col => (
-              <KanbanColumn
+              <ColumnPanel
                 key={col.id}
                 col={col}
                 orders={grouped[col.id] || []}
-                newOrderIds={newOrderIds.current}
+                newIds={newIds.current}
                 onAccept={askAccept}
-                onPrepare={id => doStatusUpdate(id, 'PREPARING')}
-                onServe={id => doStatusUpdate(id, 'SERVED')}
+                onPrepare={id => doStatus(id, 'PREPARING')}
+                onServe={id => doStatus(id, 'SERVED')}
                 onCancel={askCancel}
               />
             ))}
 
-            {/* Cancelled — narrow, only shows if any exist */}
-            {cancelledOrders.length > 0 && (
-              <div
-                className="flex flex-col rounded-2xl border border-red-200 overflow-hidden shadow-sm border-t-4 border-t-red-400 flex-shrink-0"
-                style={{ width: '12rem', height: 'calc(100vh - 92px)' }}
+            {/* Cancelled — slim column, only when needed */}
+            {cancelled.length > 0 && (
+              <section
+                className="flex flex-col bg-slate-50 rounded-3xl border border-slate-200/80 overflow-hidden flex-shrink-0"
+                style={{ width: '11rem', height: 'calc(100vh - 80px)' }}
               >
-                <div className="bg-red-400 px-3 py-2.5 flex items-center justify-between flex-shrink-0">
-                  <span className="font-display font-extrabold text-white text-sm">Cancelled</span>
-                  <span className="text-xs font-black px-2 py-0.5 rounded-full bg-white/25 text-white">{cancelledOrders.length}</span>
+                <div className="px-4 py-3.5 bg-white border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-300 flex-shrink-0" />
+                    <span className="font-display font-bold text-slate-400 text-sm">Cancelled</span>
+                  </div>
+                  <span className="text-xs font-extrabold px-2 py-0.5 rounded-full border bg-slate-100 text-slate-400 border-slate-200">
+                    {cancelled.length}
+                  </span>
                 </div>
-                <div className="flex-1 overflow-y-auto p-2.5 space-y-2 bg-red-50/40 scrollbar-none">
-                  {cancelledOrders.map(order => (
-                    <div key={order.id} className="bg-white/70 rounded-xl border border-red-100 border-l-4 border-l-red-400 px-3 py-2 opacity-60">
-                      <p className="font-bold text-gray-700 text-xs">Table #{order.tableNumber}</p>
-                      <p className="text-gray-400 text-[10px] truncate">{order.customerName}</p>
+                <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-none">
+                  {cancelled.map(o => (
+                    <div key={o.id} className="bg-white rounded-xl border border-slate-100 border-l-[3px] border-l-slate-300 px-3 py-2.5 opacity-50">
+                      <p className="font-display font-black text-slate-500 text-xl leading-none">{o.tableNumber}</p>
+                      <p className="text-slate-400 text-[10px] mt-1 truncate">{o.customerName}</p>
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
           </div>
         </div>
@@ -493,23 +467,12 @@ export default function KitchenDashboardPage() {
           open
           title={confirm.title}
           message={confirm.message}
-          confirmLabel={confirm.confirmLabel || 'Confirm'}
-          type={confirm.type || 'danger'}
+          confirmLabel={confirm.confirmLabel}
+          type={confirm.type}
           onConfirm={confirm.onConfirm}
           onCancel={() => setConfirm(null)}
         />
       )}
-    </div>
-  )
-}
-
-// ── Small stat chip for header ─────────────────────────────────────────────────
-function StatChip({ label, value, cls, pulse }) {
-  return (
-    <div className={`flex items-center gap-2 border rounded-lg px-3 py-1.5 ${cls}`}>
-      {pulse && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />}
-      <span className="text-[10px] font-semibold opacity-60 uppercase tracking-wider">{label}</span>
-      <span className="text-sm font-extrabold font-display leading-none">{value}</span>
     </div>
   )
 }
