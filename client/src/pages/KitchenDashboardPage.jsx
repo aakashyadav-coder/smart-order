@@ -1,7 +1,7 @@
 /**
- * KitchenDashboardPage — Ultra-professional Slate & White KDS
- * Design: Clean floating columns on slate background, minimal status accents,
- *         giant table numbers, refined typography, zero visual noise.
+ * KitchenDashboardPage — Ultra‑professional Red & White KDS
+ * Design: Clean white cards on light grey background, red accents,
+ *         giant table numbers, refined typography, minimal visual noise.
  */
 import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -28,7 +28,7 @@ const ding = () => {
     g.gain.setValueAtTime(0.28, _ctx.currentTime)
     g.gain.exponentialRampToValueAtTime(0.001, _ctx.currentTime + 0.55)
     o.start(); o.stop(_ctx.currentTime + 0.55)
-  } catch (_) {}
+  } catch (_) { }
 }
 
 // ── Live second ticker ────────────────────────────────────────────────────────
@@ -43,48 +43,12 @@ function elapsed(createdAt) {
   return { s, m, label: `${m}:${String(s % 60).padStart(2, '0')}` }
 }
 
-// ── Column config — minimal, no heavy color ────────────────────────────────────
+// ── Column config — only used for labels and empty text ──────────────────────
 const COLUMNS = [
-  {
-    id: 'PENDING',
-    label: 'New Orders',
-    dot: 'bg-amber-400',
-    accent: 'border-l-amber-400',
-    timerCritical: 'text-red-500',
-    timerHigh: 'text-amber-500',
-    badge: 'bg-amber-50 text-amber-700 border-amber-200',
-    emptyText: 'Waiting for orders',
-  },
-  {
-    id: 'ACCEPTED',
-    label: 'Accepted',
-    dot: 'bg-sky-400',
-    accent: 'border-l-sky-400',
-    timerCritical: 'text-red-500',
-    timerHigh: 'text-amber-500',
-    badge: 'bg-sky-50 text-sky-700 border-sky-200',
-    emptyText: 'Accept incoming orders',
-  },
-  {
-    id: 'PREPARING',
-    label: 'Preparing',
-    dot: 'bg-orange-400',
-    accent: 'border-l-orange-400',
-    timerCritical: 'text-red-500',
-    timerHigh: 'text-amber-500',
-    badge: 'bg-orange-50 text-orange-700 border-orange-200',
-    emptyText: 'Nothing cooking yet',
-  },
-  {
-    id: 'SERVED',
-    label: 'Served',
-    dot: 'bg-emerald-400',
-    accent: 'border-l-emerald-400',
-    timerCritical: 'text-slate-400',
-    timerHigh: 'text-slate-400',
-    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    emptyText: 'Completed orders here',
-  },
+  { id: 'PENDING', label: 'New Orders', emptyText: 'Waiting for orders' },
+  { id: 'ACCEPTED', label: 'Accepted', emptyText: 'Accept incoming orders' },
+  { id: 'PREPARING', label: 'Preparing', emptyText: 'Nothing cooking yet' },
+  { id: 'SERVED', label: 'Served', emptyText: 'Completed orders here' },
 ]
 
 // ── Order Card ─────────────────────────────────────────────────────────────────
@@ -92,97 +56,102 @@ function OrderCard({ order, col, isNew, onAccept, onPrepare, onServe, onCancel }
   useTick()
   const { m, label } = elapsed(order.createdAt)
   const isCritical = m >= 10
-  const isHigh     = m >= 5 && !isCritical
-  const timerCls   = isCritical ? col.timerCritical : isHigh ? col.timerHigh : 'text-slate-400'
+  const isHigh = m >= 5 && !isCritical
+
+  // Status‑based styling (red theme)
+  const getStatusColors = () => {
+    switch (order.status) {
+      case 'PENDING': return { border: 'border-l-red-500', dot: 'bg-red-500', timerCritical: 'text-red-600', timerHigh: 'text-red-400' }
+      case 'ACCEPTED': return { border: 'border-l-red-400', dot: 'bg-red-400', timerCritical: 'text-red-600', timerHigh: 'text-red-400' }
+      case 'PREPARING': return { border: 'border-l-red-300', dot: 'bg-red-300', timerCritical: 'text-red-600', timerHigh: 'text-red-400' }
+      default: return { border: 'border-l-gray-300', dot: 'bg-gray-300', timerCritical: 'text-gray-500', timerHigh: 'text-gray-500' }
+    }
+  }
+  const { border, dot, timerCritical, timerHigh } = getStatusColors()
+  const timerCls = isCritical ? timerCritical : isHigh ? timerHigh : 'text-gray-400'
 
   return (
     <article
       className={`
-        bg-white rounded-2xl border border-slate-100 border-l-[3px] ${col.accent}
-        shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden
+        bg-white rounded-xl border border-gray-100 border-l-[3px] ${border}
+        shadow-sm hover:shadow transition-all duration-200 overflow-hidden
         ${isNew ? 'animate-slide-up' : ''}
       `}
     >
       {/* TOP — table number + timer */}
       <div className="px-4 pt-4 pb-2 flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <span className="font-display font-black text-slate-900 text-4xl leading-none tabular-nums tracking-tight">
+          <span className="font-display font-black text-3xl leading-none tracking-tight text-gray-900">
             {order.tableNumber}
           </span>
-          <p className="text-slate-500 text-xs font-medium mt-1 leading-none truncate">
+          <p className="text-gray-500 text-xs font-medium mt-1 truncate">
             {order.customerName}
           </p>
         </div>
         <div className={`flex items-center gap-1 text-[11px] font-mono font-semibold flex-shrink-0 mt-1 ${timerCls}`}>
           {isCritical && (
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block mr-0.5" />
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse mr-0.5" />
           )}
           {label}
         </div>
       </div>
 
-      {/* DIVIDER */}
-      <div className="mx-4 border-t border-slate-100" />
-
-      {/* ITEMS */}
-      <div className="px-4 py-2.5 space-y-1 max-h-32 overflow-y-auto">
+      {/* ITEMS — no dividers, cleaner */}
+      <div className="px-4 py-2 space-y-1 max-h-28 overflow-y-auto">
         {order.items?.map(item => (
           <div key={item.id} className="flex justify-between items-center gap-2 text-xs">
-            <span className="text-slate-600 truncate leading-relaxed">
-              <span className="text-slate-400 font-semibold mr-1">{item.quantity}×</span>
+            <span className="text-gray-600 truncate">
+              <span className="text-gray-400 font-semibold mr-1">{item.quantity}×</span>
               {item.menuItem?.name}
             </span>
-            <span className="text-slate-400 flex-shrink-0 text-[10px]">
+            <span className="text-gray-400 flex-shrink-0 text-[10px]">
               Rs.{item.price * item.quantity}
             </span>
           </div>
         ))}
       </div>
 
-      {/* DIVIDER */}
-      <div className="mx-4 border-t border-slate-100" />
-
       {/* FOOTER — total + action */}
-      <div className="px-4 py-3 flex items-center justify-between gap-2">
-        <span className="text-slate-900 font-extrabold text-sm tabular-nums">
+      <div className="px-4 py-3 flex items-center justify-between gap-2 border-t border-gray-50">
+        <span className="text-gray-900 font-bold text-sm tabular-nums">
           Rs.{order.totalPrice}
         </span>
 
         <div className="flex items-center gap-1.5">
-          {col.id === 'PENDING' && (
+          {order.status === 'PENDING' && (
             <>
               <button
                 onClick={() => onAccept(order)}
-                className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-slate-900 hover:bg-slate-700 px-3 py-2 rounded-xl transition-colors"
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded-lg transition-colors"
               >
                 <CheckCircle className="w-3 h-3" /> Accept
               </button>
               <button
                 onClick={() => onCancel(order)}
-                className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors border border-slate-100"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors border border-gray-100"
               >
                 <XCircle className="w-4 h-4" />
               </button>
             </>
           )}
-          {col.id === 'ACCEPTED' && (
+          {order.status === 'ACCEPTED' && (
             <button
               onClick={() => onPrepare(order.id)}
-              className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-orange-500 hover:bg-orange-600 px-3 py-2 rounded-xl transition-colors"
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-white bg-red-500 hover:bg-red-600 px-3 py-2 rounded-lg transition-colors"
             >
               <Flame className="w-3 h-3" /> Prepare
             </button>
           )}
-          {col.id === 'PREPARING' && (
+          {order.status === 'PREPARING' && (
             <button
               onClick={() => onServe(order.id)}
-              className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-2 rounded-xl transition-colors"
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-2 rounded-lg transition-colors"
             >
               <CheckCircle className="w-3 h-3" /> Serve
             </button>
           )}
-          {col.id === 'SERVED' && (
-            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-100">
+          {order.status === 'SERVED' && (
+            <span className="text-[11px] font-semibold text-green-600 bg-green-50 px-3 py-2 rounded-lg border border-green-100">
               Served
             </span>
           )}
@@ -194,25 +163,31 @@ function OrderCard({ order, col, isNew, onAccept, onPrepare, onServe, onCancel }
 
 // ── Column Panel ───────────────────────────────────────────────────────────────
 function ColumnPanel({ col, orders, newIds, onAccept, onPrepare, onServe, onCancel }) {
-  // Oldest first (most urgent at top)
   const sorted = [...orders].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+
+  // Column header styling based on status
+  const getHeaderColors = () => {
+    switch (col.id) {
+      case 'PENDING': return { dot: 'bg-red-500', badge: 'bg-red-50 text-red-700 border-red-200' }
+      case 'ACCEPTED': return { dot: 'bg-red-400', badge: 'bg-red-50 text-red-700 border-red-200' }
+      case 'PREPARING': return { dot: 'bg-red-300', badge: 'bg-red-50 text-red-700 border-red-200' }
+      default: return { dot: 'bg-gray-300', badge: 'bg-gray-50 text-gray-500 border-gray-200' }
+    }
+  }
+  const { dot, badge } = getHeaderColors()
 
   return (
     <section
-      className="flex flex-col bg-slate-50 rounded-3xl border border-slate-200/80 overflow-hidden flex-shrink-0 shadow-sm"
+      className="flex flex-col bg-white rounded-2xl border border-gray-100 overflow-hidden flex-shrink-0 shadow-sm"
       style={{ width: '17rem', height: 'calc(100vh - 80px)', minWidth: '17rem' }}
     >
       {/* Column header */}
-      <div className="px-5 py-3.5 bg-white border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+      <div className="px-5 py-4 bg-white border-b border-gray-100 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2.5">
-          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${col.dot} ${orders.length > 0 && col.id === 'PENDING' ? 'animate-pulse' : ''}`} />
-          <span className="font-display font-bold text-slate-800 text-sm">{col.label}</span>
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot} ${orders.length > 0 && col.id === 'PENDING' ? 'animate-pulse' : ''}`} />
+          <span className="font-display font-semibold text-gray-800 text-sm">{col.label}</span>
         </div>
-        <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full border ${
-          orders.length > 0
-            ? col.badge
-            : 'bg-slate-100 text-slate-400 border-slate-200'
-        }`}>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${badge}`}>
           {orders.length}
         </span>
       </div>
@@ -221,8 +196,10 @@ function ColumnPanel({ col, orders, newIds, onAccept, onPrepare, onServe, onCanc
       <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-none">
         {sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full select-none pointer-events-none">
-            <div className="w-12 h-12 bg-slate-100 rounded-2xl mb-3" />
-            <p className="text-slate-300 text-xs font-semibold text-center">{col.emptyText}</p>
+            <div className="w-12 h-12 bg-gray-100 rounded-2xl mb-3 flex items-center justify-center">
+              <ChefHat className="w-5 h-5 text-gray-300" />
+            </div>
+            <p className="text-gray-300 text-xs font-medium text-center">{col.emptyText}</p>
           </div>
         ) : sorted.map(order => (
           <OrderCard
@@ -246,15 +223,15 @@ export default function KitchenDashboardPage() {
   const navigate = useNavigate()
   const { user, logout, loading: authLoading } = useAuth()
 
-  const [orders, setOrders]         = useState([])
-  const [loading, setLoading]       = useState(true)
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(null)
-  const [connected, setConnected]   = useState(socket.connected)
+  const [connected, setConnected] = useState(socket.connected)
   const [restaurant, setRestaurant] = useState(() => {
     try { return JSON.parse(localStorage.getItem('kitchen_restaurant') || 'null') || { name: 'Kitchen', logoUrl: null } }
     catch { return { name: 'Kitchen', logoUrl: null } }
   })
-  const [confirm, setConfirm]     = useState(null)
+  const [confirm, setConfirm] = useState(null)
   const [logoError, setLogoError] = useState(false)
   const newIds = useRef(new Set())
 
@@ -274,7 +251,7 @@ export default function KitchenDashboardPage() {
       const d = { name: r.data.name, logoUrl: r.data.logoUrl }
       setRestaurant(d); setLogoError(false)
       localStorage.setItem('kitchen_restaurant', JSON.stringify(d))
-    }).catch(() => {})
+    }).catch(() => { })
     socket.emit('join_kitchen')
     if (user?.restaurantId) socket.emit('join_restaurant', { restaurantId: user.restaurantId })
   }, [authLoading, fetchOrders, user?.restaurantId])
@@ -297,13 +274,13 @@ export default function KitchenDashboardPage() {
     socket.on('new_order', onNew)
     socket.on('order_status_update', onStatus)
     socket.on('restaurant_updated', onBrand)
-    socket.on('connect',    () => setConnected(true))
+    socket.on('connect', () => setConnected(true))
     socket.on('disconnect', () => setConnected(false))
     return () => {
       socket.off('new_order', onNew)
       socket.off('order_status_update', onStatus)
       socket.off('restaurant_updated', onBrand)
-      socket.off('connect');    socket.off('disconnect')
+      socket.off('connect'); socket.off('disconnect')
     }
   }, [])
 
@@ -311,7 +288,7 @@ export default function KitchenDashboardPage() {
     try {
       const res = await api.put(`/orders/${orderId}/status`, { status })
       setOrders(p => p.map(o => o.id === orderId ? res.data : o))
-      if (status === 'ACCEPTED') api.post('/otp/send', { orderId }).catch(() => {})
+      if (status === 'ACCEPTED') api.post('/otp/send', { orderId }).catch(() => { })
     } catch (e) { toast.error(e.message) }
   }
 
@@ -336,42 +313,41 @@ export default function KitchenDashboardPage() {
   const grouped = {}
   COLUMNS.forEach(c => { grouped[c.id] = orders.filter(o => o.status === c.id) })
   const cancelled = orders.filter(o => o.status === 'CANCELLED')
-  const pending   = grouped['PENDING']?.length || 0
-  const active    = orders.filter(o => ['PENDING','ACCEPTED','PREPARING'].includes(o.status)).length
+  const pending = grouped['PENDING']?.length || 0
+  const active = orders.filter(o => ['PENDING', 'ACCEPTED', 'PREPARING'].includes(o.status)).length
 
   return (
-    <div className="h-screen bg-slate-100 flex flex-col overflow-hidden">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
 
       {/* ── Header ────────────────────────────────────────────────────────────── */}
-      <header className="flex-shrink-0 bg-slate-900 px-5 py-3 flex items-center gap-4">
-
+      <header className="flex-shrink-0 bg-white border-b border-gray-100 px-6 py-3 flex items-center gap-6 shadow-sm">
         {/* Brand */}
         <div className="flex items-center gap-3 min-w-0">
           {restaurant.logoUrl && !logoError
-            ? <img src={restaurant.logoUrl} alt="" className="w-8 h-8 rounded-xl object-cover ring-1 ring-white/10 flex-shrink-0" onError={() => setLogoError(true)} />
-            : <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <ChefHat className="w-4 h-4 text-white/60" />
-              </div>
+            ? <img src={restaurant.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover ring-1 ring-gray-200 flex-shrink-0" onError={() => setLogoError(true)} />
+            : <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0">
+              <ChefHat className="w-4 h-4 text-red-600" />
+            </div>
           }
           <div className="min-w-0">
-            <p className="font-display font-bold text-white text-sm leading-none truncate">{restaurant.name}</p>
-            <p className="text-slate-500 text-[10px] font-medium mt-0.5 uppercase tracking-widest">KDS</p>
+            <p className="font-display font-bold text-gray-800 text-sm leading-none truncate">{restaurant.name}</p>
+            <p className="text-gray-400 text-[10px] font-medium mt-0.5 uppercase tracking-wider">KITCHEN</p>
           </div>
         </div>
 
         {/* Center — summary pills */}
-        <div className="flex items-center gap-2 flex-1 justify-center">
+        <div className="flex items-center gap-3 flex-1 justify-center">
           {pending > 0 && (
-            <div className="flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/25 rounded-full px-3 py-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-amber-300 text-[11px] font-bold">{pending} pending</span>
+            <div className="flex items-center gap-1.5 bg-red-50 border border-red-100 rounded-full px-3 py-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-red-700 text-[11px] font-semibold">{pending} pending</span>
             </div>
           )}
-          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
-            <span className="text-slate-400 text-[11px] font-semibold">{active} active</span>
+          <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-full px-3 py-1.5">
+            <span className="text-gray-600 text-[11px] font-medium">{active} active</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
-            <span className="text-slate-400 text-[11px] font-semibold">{grouped['SERVED']?.length || 0} served</span>
+          <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-full px-3 py-1.5">
+            <span className="text-gray-600 text-[11px] font-medium">{grouped['SERVED']?.length || 0} served</span>
           </div>
         </div>
 
@@ -380,17 +356,17 @@ export default function KitchenDashboardPage() {
           {/* Connection */}
           <div className="flex items-center gap-1.5">
             {connected
-              ? <><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /><span className="text-slate-500 text-[10px] font-medium hidden sm:inline">Live</span></>
-              : <><WifiOff className="w-3 h-3 text-red-400 animate-pulse" /><span className="text-red-400 text-[10px] hidden sm:inline">Offline</span></>
+              ? <><span className="w-1.5 h-1.5 rounded-full bg-green-500" /><span className="text-gray-500 text-[10px] font-medium hidden sm:inline">Live</span></>
+              : <><WifiOff className="w-3 h-3 text-red-500" /><span className="text-red-500 text-[10px] hidden sm:inline">Offline</span></>
             }
           </div>
-          <div className="h-3.5 w-px bg-white/10 hidden sm:block" />
+          <div className="h-3.5 w-px bg-gray-200 hidden sm:block" />
           {/* User */}
-          <p className="text-slate-500 text-[11px] font-medium hidden md:block">{user?.name}</p>
+          <p className="text-gray-500 text-[11px] font-medium hidden md:block">{user?.name}</p>
           {/* Logout */}
           <button
             onClick={askLogout}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-red-400 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-white/5"
+            className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500 hover:text-red-600 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-gray-50"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Sign out</span>
@@ -402,7 +378,7 @@ export default function KitchenDashboardPage() {
       {fetchError && (
         <div className="bg-red-50 border-b border-red-100 px-5 py-2 flex items-center justify-between text-xs flex-shrink-0">
           <span className="text-red-600 font-medium">{fetchError}</span>
-          <button onClick={fetchOrders} className="flex items-center gap-1 text-xs font-bold text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg transition-colors">
+          <button onClick={fetchOrders} className="flex items-center gap-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors">
             <RefreshCw className="w-3 h-3" /> Retry
           </button>
         </div>
@@ -412,14 +388,14 @@ export default function KitchenDashboardPage() {
       {loading ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-5">
           <div className="relative w-10 h-10">
-            <div className="absolute inset-0 border-[3px] border-slate-200 rounded-full" />
-            <div className="absolute inset-0 border-[3px] border-slate-700 border-t-transparent rounded-full animate-spin" />
+            <div className="absolute inset-0 border-[3px] border-gray-200 rounded-full" />
+            <div className="absolute inset-0 border-[3px] border-red-500 border-t-transparent rounded-full animate-spin" />
           </div>
-          <p className="text-slate-400 text-sm font-medium">Loading orders…</p>
+          <p className="text-gray-400 text-sm font-medium">Loading orders…</p>
         </div>
       ) : (
         <div className="flex-1 overflow-x-auto overflow-y-hidden">
-          <div className="flex gap-3 p-4 h-full" style={{ minWidth: 'max-content' }}>
+          <div className="flex gap-4 p-4 h-full" style={{ minWidth: 'max-content' }}>
             {COLUMNS.map(col => (
               <ColumnPanel
                 key={col.id}
@@ -433,26 +409,26 @@ export default function KitchenDashboardPage() {
               />
             ))}
 
-            {/* Cancelled — slim column, only when needed */}
+            {/* Cancelled — slim column */}
             {cancelled.length > 0 && (
               <section
-                className="flex flex-col bg-slate-50 rounded-3xl border border-slate-200/80 overflow-hidden flex-shrink-0"
-                style={{ width: '11rem', height: 'calc(100vh - 80px)' }}
+                className="flex flex-col bg-white rounded-2xl border border-gray-100 overflow-hidden flex-shrink-0 shadow-sm"
+                style={{ width: '12rem', height: 'calc(100vh - 80px)' }}
               >
-                <div className="px-4 py-3.5 bg-white border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+                <div className="px-4 py-4 bg-white border-b border-gray-100 flex items-center justify-between flex-shrink-0">
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-slate-300 flex-shrink-0" />
-                    <span className="font-display font-bold text-slate-400 text-sm">Cancelled</span>
+                    <span className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0" />
+                    <span className="font-display font-semibold text-gray-500 text-sm">Cancelled</span>
                   </div>
-                  <span className="text-xs font-extrabold px-2 py-0.5 rounded-full border bg-slate-100 text-slate-400 border-slate-200">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full border bg-gray-50 text-gray-500 border-gray-200">
                     {cancelled.length}
                   </span>
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-none">
                   {cancelled.map(o => (
-                    <div key={o.id} className="bg-white rounded-xl border border-slate-100 border-l-[3px] border-l-slate-300 px-3 py-2.5 opacity-50">
-                      <p className="font-display font-black text-slate-500 text-xl leading-none">{o.tableNumber}</p>
-                      <p className="text-slate-400 text-[10px] mt-1 truncate">{o.customerName}</p>
+                    <div key={o.id} className="bg-white rounded-lg border border-gray-100 border-l-[3px] border-l-gray-300 px-3 py-2.5 opacity-60">
+                      <p className="font-display font-bold text-gray-500 text-xl leading-none">{o.tableNumber}</p>
+                      <p className="text-gray-400 text-[10px] mt-1 truncate">{o.customerName}</p>
                     </div>
                   ))}
                 </div>
