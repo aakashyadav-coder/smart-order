@@ -1,8 +1,6 @@
 /**
  * MenuPage — Premium customer-facing menu
- * Shows restaurant logo, name, table number hero from QR code
- * Real-time branding updates via Socket.io (restaurant_updated event)
- * URL: /menu?table=3&rid=<restaurantId>
+ * Theme: White/red — aurora hero, glassmorphism header
  */
 import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -14,6 +12,7 @@ import CartDrawer from '../components/CartDrawer'
 import CheckoutModal from '../components/CheckoutModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorState from '../components/ErrorState'
+import { ShoppingCart, MapPin, Utensils } from '../components/Icons'
 
 const CATEGORY_ICONS = {
   'Drinks':      '🥤',
@@ -27,17 +26,16 @@ export default function MenuPage() {
   const tableNumber  = searchParams.get('table') || '1'
   const restaurantId = searchParams.get('rid')   || null
 
-  const [categories, setCategories]     = useState({})
+  const [categories, setCategories]       = useState({})
   const [activeCategory, setActiveCategory] = useState(null)
-  const [restaurant, setRestaurant]     = useState(null)
-  const [loading, setLoading]           = useState(true)
-  const [error, setError]               = useState(null)
-  const [cartOpen, setCartOpen]         = useState(false)
-  const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [restaurant, setRestaurant]       = useState(null)
+  const [loading, setLoading]             = useState(true)
+  const [error, setError]                 = useState(null)
+  const [cartOpen, setCartOpen]           = useState(false)
+  const [checkoutOpen, setCheckoutOpen]   = useState(false)
 
   const { totalItems, totalPrice } = useCart()
 
-  // Fetch menu + restaurant branding together
   useEffect(() => {
     const init = async () => {
       try {
@@ -51,12 +49,9 @@ export default function MenuPage() {
         setCategories(cats)
         setActiveCategory(Object.keys(cats)[0] || null)
 
-        // Fetch restaurant public info (name, logo)
         if (resId) {
           const infoRes = await api.get(`/restaurant/info/${resId}`)
           setRestaurant(infoRes.data)
-
-          // Join restaurant room for real-time branding
           socket.emit('join_restaurant', { restaurantId: resId })
         }
       } catch (err) {
@@ -68,7 +63,6 @@ export default function MenuPage() {
     init()
   }, [restaurantId])
 
-  // Real-time restaurant branding update
   useEffect(() => {
     const onUpdate = (data) => {
       setRestaurant(prev => prev ? { ...prev, name: data.name, logoUrl: data.logoUrl } : prev)
@@ -83,49 +77,60 @@ export default function MenuPage() {
   const categoryList = Object.keys(categories)
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28">
-      {/* ── Restaurant Hero ─────────────────────────────────────────────────── */}
+    <div className="min-h-screen bg-gray-50 pb-32">
+      {/* ── Restaurant Hero ──────────────────────────────────────────────── */}
       {restaurant && (
-        <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white px-4 py-8 text-center relative overflow-hidden">
-          {/* Background pattern */}
-          <div className="absolute inset-0 opacity-5" style={{
-            backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
-            backgroundSize: '32px 32px'
+        <div className="relative bg-gradient-to-br from-gray-950 via-brand-950 to-gray-900 text-white px-4 py-10 text-center overflow-hidden">
+          {/* Aurora blobs */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-0 left-1/4 w-64 h-64 bg-brand-600/25 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-1/4 w-48 h-48 bg-brand-800/20 rounded-full blur-2xl" />
+          </div>
+          {/* Dot grid */}
+          <div className="absolute inset-0 opacity-[0.04]" style={{
+            backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+            backgroundSize: '28px 28px'
           }} />
+
           <div className="relative z-10">
-            {/* Logo */}
             {restaurant.logoUrl ? (
               <img
                 src={restaurant.logoUrl}
                 alt={restaurant.name}
-                className="w-20 h-20 rounded-2xl object-cover mx-auto mb-3 ring-4 ring-white/20 shadow-2xl"
+                className="w-24 h-24 rounded-3xl object-cover mx-auto mb-4 ring-4 ring-white/15 shadow-2xl shadow-black/50"
               />
             ) : (
-              <div className="w-20 h-20 bg-gradient-to-br from-brand-500 to-orange-600 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-3 shadow-2xl">
-                🍽️
+              <div className="w-24 h-24 bg-gradient-to-br from-brand-500 to-brand-700 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-brand-600/40">
+                <Utensils className="w-12 h-12 text-white" />
               </div>
             )}
-            {/* Restaurant name */}
-            <h1 className="text-2xl font-extrabold tracking-tight">{restaurant.name}</h1>
+            <h1 className="text-3xl font-black tracking-tight">{restaurant.name}</h1>
             {restaurant.address && (
-              <p className="text-gray-400 text-xs mt-1">📍 {restaurant.address}</p>
+              <p className="text-gray-400 text-sm mt-2 flex items-center justify-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5" />
+                {restaurant.address}
+              </p>
             )}
-            {/* Table badge */}
-            <div className="inline-flex items-center gap-2 mt-4 bg-white/10 backdrop-blur border border-white/20 rounded-full px-5 py-2">
-              <span className="text-xl">🪑</span>
-              <span className="font-extrabold text-lg">Table {tableNumber}</span>
+            <div className="inline-flex items-center gap-2 mt-5 bg-white/10 backdrop-blur border border-white/15 rounded-full px-5 py-2.5 text-sm font-bold">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              Table {tableNumber}
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Sticky header (when no restaurant hero or after scroll) ─────────── */}
-      <header className={`sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm ${restaurant ? '' : ''}`}>
+      {/* ── Sticky Header ────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div>
               {!restaurant && (
-                <h1 className="text-xl font-extrabold text-gray-900 leading-tight">🍽️ Smart Order</h1>
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 bg-gradient-to-br from-brand-500 to-brand-700 rounded-lg flex items-center justify-center">
+                    <Utensils className="w-4 h-4 text-white" />
+                  </div>
+                  <h1 className="text-base font-black text-gray-900">Smart Order</h1>
+                </div>
               )}
               {restaurant && (
                 <div className="flex items-center gap-2">
@@ -137,10 +142,15 @@ export default function MenuPage() {
               )}
               <p className="text-xs text-brand-600 font-semibold mt-0.5">Table #{tableNumber}</p>
             </div>
-            <button onClick={() => setCartOpen(true)} className="relative btn-primary py-2.5 px-4 text-sm">
-              🛒 Cart
+
+            <button
+              onClick={() => setCartOpen(true)}
+              className="relative flex items-center gap-2 bg-gradient-to-r from-brand-600 to-brand-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm hover:shadow-brand-500/25 hover:shadow-lg transition-all active:scale-[0.97]"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Cart
               {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-bounce-in">
+                <span className="absolute -top-2 -right-2 bg-gray-900 text-white text-xs font-black w-5 h-5 rounded-full flex items-center justify-center animate-bounce-in">
                   {totalItems}
                 </span>
               )}
@@ -154,7 +164,7 @@ export default function MenuPage() {
             <button key={cat} onClick={() => setActiveCategory(cat)}
               className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                 activeCategory === cat
-                  ? 'bg-brand-500 text-white shadow-md'
+                  ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/25'
                   : 'bg-white text-gray-600 border border-gray-200 hover:border-brand-300 hover:text-brand-600'
               }`}>
               <span>{CATEGORY_ICONS[cat] || '🍽️'}</span>
@@ -164,13 +174,14 @@ export default function MenuPage() {
         </div>
       </header>
 
-      {/* ── Menu items ──────────────────────────────────────────────────────── */}
-      <main className="max-w-2xl mx-auto px-4 mt-4">
+      {/* ── Menu Items ───────────────────────────────────────────────────── */}
+      <main className="max-w-2xl mx-auto px-4 mt-5">
         {activeCategory && (
           <div>
             <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <span>{CATEGORY_ICONS[activeCategory] || '🍽️'}</span>
+              <span className="text-xl">{CATEGORY_ICONS[activeCategory] || '🍽️'}</span>
               <span>{activeCategory}</span>
+              <span className="text-sm font-normal text-gray-400 ml-1">({(categories[activeCategory] || []).length})</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {(categories[activeCategory] || []).map(item => (
@@ -180,22 +191,30 @@ export default function MenuPage() {
           </div>
         )}
         {categoryList.length === 0 && (
-          <div className="text-center py-20 text-gray-400">
-            <div className="text-5xl mb-4">🍽️</div>
-            <p className="font-semibold">Menu is being prepared</p>
+          <div className="text-center py-24 text-gray-400">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5">
+              <Utensils className="w-10 h-10 text-gray-300" />
+            </div>
+            <p className="font-semibold text-gray-500">Menu is being prepared</p>
             <p className="text-sm mt-1">Check back soon!</p>
           </div>
         )}
       </main>
 
-      {/* ── Floating cart bar ───────────────────────────────────────────────── */}
+      {/* ── Floating Cart Bar ────────────────────────────────────────────── */}
       {totalItems > 0 && (
         <div className="fixed bottom-4 left-4 right-4 z-30 animate-slide-up">
           <div className="max-w-lg mx-auto">
-            <button onClick={() => setCartOpen(true)} className="w-full btn-primary py-4 text-base rounded-2xl shadow-xl">
-              <span className="flex items-center justify-between w-full">
+            <button
+              onClick={() => setCartOpen(true)}
+              className="w-full bg-gradient-to-r from-brand-700 to-brand-500 text-white py-4 px-5 rounded-2xl shadow-xl shadow-brand-600/30 hover:shadow-brand-600/50 transition-all active:scale-[0.98]"
+            >
+              <span className="flex items-center justify-between w-full font-semibold">
                 <span className="bg-white/20 rounded-lg px-2.5 py-1 text-sm font-bold">{totalItems} item{totalItems > 1 ? 's' : ''}</span>
-                <span>View Cart</span>
+                <span className="flex items-center gap-2">
+                  <ShoppingCart className="w-4 h-4" />
+                  View Cart
+                </span>
                 <span className="font-bold">Rs. {totalPrice.toFixed(0)}</span>
               </span>
             </button>

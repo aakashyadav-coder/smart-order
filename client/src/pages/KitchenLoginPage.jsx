@@ -1,11 +1,13 @@
 /**
- * KitchenLoginPage — JWT auth form for kitchen/admin staff
+ * KitchenLoginPage — Premium dark login for kitchen staff
+ * Theme: Deep dark with animated red mesh background
  */
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
+import { ChefHat, Eye, EyeOff } from '../components/Icons'
 
 export default function KitchenLoginPage() {
   const navigate = useNavigate()
@@ -14,8 +16,8 @@ export default function KitchenLoginPage() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPw, setShowPw] = useState(false)
 
-  // Already logged in → redirect
   React.useEffect(() => {
     if (isAuthenticated) navigate('/kitchen', { replace: true })
   }, [isAuthenticated, navigate])
@@ -27,7 +29,7 @@ export default function KitchenLoginPage() {
     try {
       const res = await api.post('/auth/login', form)
       login(res.data.token)
-      toast.success(`Welcome, ${res.data.user.name}! 👋`)
+      toast.success(`Welcome, ${res.data.user.name}!`)
       navigate('/kitchen', { replace: true })
     } catch (err) {
       setError(err.message)
@@ -37,67 +39,110 @@ export default function KitchenLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        {/* Logo */}
+    <div className="login-bg min-h-screen flex items-center justify-center p-4">
+      {/* Decorative blur blobs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-brand-800/15 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative w-full max-w-sm">
+        {/* Logo mark */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-brand-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-brand-500/30">
-            🍽️
+          <div className="relative inline-flex">
+            <div className="w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-700 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-brand-600/40 animate-float">
+              <ChefHat className="w-10 h-10 text-white" />
+            </div>
+            {/* Glow ring */}
+            <div className="absolute inset-0 w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-700 rounded-3xl mx-auto mb-4 blur-xl opacity-40" />
           </div>
-          <h1 className="text-2xl font-extrabold text-white">Smart Order</h1>
-          <p className="text-gray-400 text-sm mt-1">Kitchen Dashboard Login</p>
+          <h1 className="text-2xl font-black text-white tracking-tight mt-4">Smart Order</h1>
+          <p className="text-gray-400 text-sm mt-1.5 font-medium">Kitchen Dashboard</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-gray-900 rounded-3xl p-6 border border-gray-800 space-y-4 shadow-2xl">
-          {error && (
-            <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm px-4 py-3 rounded-xl animate-fade-in">
-              {error}
+        {/* Card */}
+        <div className="rounded-3xl p-7 border border-white/10 shadow-2xl" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)' }}>
+          {/* Portal badge */}
+          <div className="flex items-center justify-center mb-6">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-brand-600/20 border border-brand-500/30 text-brand-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
+              Kitchen Staff Portal
+            </span>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="bg-red-950/60 border border-red-700/60 text-red-300 text-sm px-4 py-3 rounded-xl animate-fade-in flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <div>
+              <label className="label-dark">Email address</label>
+              <input
+                type="email"
+                autoComplete="email"
+                placeholder="admin@restaurant.com"
+                required
+                className="input-dark w-full"
+                value={form.email}
+                onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+              />
             </div>
-          )}
 
-          <div>
-            <label className="label text-gray-300">Email</label>
-            <input
-              type="email"
-              autoComplete="email"
-              placeholder="admin@restaurant.com"
-              required
-              className="input bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:ring-brand-500 focus:border-brand-500"
-              value={form.email}
-              onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-            />
-          </div>
+            <div>
+              <label className="label-dark">Password</label>
+              <div className="relative">
+                <input
+                  type={showPw ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  required
+                  className="input-dark w-full pr-11"
+                  value={form.password}
+                  onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors p-1"
+                >
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
 
-          <div>
-            <label className="label text-gray-300">Password</label>
-            <input
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              required
-              className="input bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:ring-brand-500 focus:border-brand-500"
-              value={form.password}
-              onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-            />
-          </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full py-3.5 mt-2 text-base rounded-xl"
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Signing in…
+                </span>
+              ) : (
+                <>
+                  <ChefHat className="w-4 h-4" />
+                  Login to Kitchen Dashboard
+                </>
+              )}
+            </button>
+          </form>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary w-full py-3.5 mt-2"
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Logging in…
-              </span>
-            ) : 'Login to Kitchen Dashboard'}
-          </button>
-
-          <p className="text-gray-500 text-xs text-center mt-2">
-            Default: admin@restaurant.com / admin123
+          <p className="text-gray-600 text-xs text-center mt-5">
+            admin@restaurant.com · admin123
           </p>
-        </form>
+        </div>
+
+        {/* Portal links */}
+        <div className="text-center mt-6 flex items-center justify-center gap-4">
+          <a href="/owner/login" className="text-xs text-gray-600 hover:text-gray-400 transition-colors">Owner portal →</a>
+          <span className="text-gray-800">·</span>
+          <a href="/super/login" className="text-xs text-gray-600 hover:text-gray-400 transition-colors">Developer portal →</a>
+        </div>
       </div>
     </div>
   )

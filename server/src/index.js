@@ -98,7 +98,7 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 // ── Start server ──────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => {
   console.log(`\n🚀 Smart Order server running on http://localhost:${PORT}`);
   console.log(`📡 Socket.io ready`);

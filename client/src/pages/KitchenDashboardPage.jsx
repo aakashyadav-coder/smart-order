@@ -9,6 +9,7 @@ import api from '../lib/api'
 import socket from '../lib/socket'
 import { useAuth } from '../context/AuthContext'
 import ConfirmModal from '../components/ConfirmModal'
+import { ChefHat, Wifi, WifiOff, LogOut, CheckCircle, Flame, XCircle, RefreshCw } from '../components/Icons'
 
 // ── Notification sound ──────────────────────────────────────────────────────
 let _audioCtx = null
@@ -98,25 +99,25 @@ function OrderCard({ order, onAccept, onPrepare, onServe, onCancel }) {
         {order.status === 'PENDING' && (
           <>
             <button onClick={() => onAccept(order)}
-              className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors flex items-center justify-center gap-1.5 shadow-sm">
-              ✓ Accept
+              className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 transition-all flex items-center justify-center gap-1.5 shadow-sm">
+              <CheckCircle className="w-3.5 h-3.5" /> Accept
             </button>
             <button onClick={() => onCancel(order)}
-              className="py-2 px-3 rounded-xl text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors">
-              ✕
+              className="py-2 px-3 rounded-xl text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors flex items-center justify-center">
+              <XCircle className="w-3.5 h-3.5" />
             </button>
           </>
         )}
         {order.status === 'ACCEPTED' && (
           <button onClick={() => onPrepare(order.id)}
-            className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors shadow-sm">
-            🔥 Start Preparing
+            className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors shadow-sm flex items-center justify-center gap-1.5">
+            <Flame className="w-3.5 h-3.5" /> Start Preparing
           </button>
         )}
         {order.status === 'PREPARING' && (
           <button onClick={() => onServe(order.id)}
-            className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-green-600 hover:bg-green-700 transition-colors shadow-sm">
-            ✓ Mark Served
+            className="flex-1 py-2 rounded-xl text-xs font-bold text-white bg-green-600 hover:bg-green-700 transition-colors shadow-sm flex items-center justify-center gap-1.5">
+            <CheckCircle className="w-3.5 h-3.5" /> Mark Served
           </button>
         )}
         {(order.status === 'SERVED' || order.status === 'PAID' || order.status === 'CANCELLED') && (
@@ -288,7 +289,9 @@ export default function KitchenDashboardPage() {
               ? <img src={restaurant.logoUrl} alt="logo"
                   className="w-9 h-9 rounded-xl object-cover ring-2 ring-gray-200 flex-shrink-0"
                   onError={() => setLogoError(true)} />
-              : <div className="w-9 h-9 bg-gradient-to-br from-brand-600 to-brand-700 rounded-xl flex items-center justify-center text-lg flex-shrink-0 shadow-sm">🍽️</div>
+              : <div className="w-9 h-9 bg-gradient-to-br from-brand-600 to-brand-700 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <ChefHat className="w-5 h-5 text-white" />
+                </div>
             }
             <div className="min-w-0">
               <p className="text-gray-900 font-extrabold text-sm leading-none truncate">{restaurant.name}</p>
@@ -312,16 +315,18 @@ export default function KitchenDashboardPage() {
           {/* Right — connection + logout */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="hidden sm:flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-400 animate-pulse'}`} />
-              <span className="text-xs text-gray-400">{connected ? 'Live' : 'Reconnecting…'}</span>
+              {connected
+                ? <><Wifi className="w-3.5 h-3.5 text-green-500" /><span className="text-xs text-gray-400">Live</span></>
+                : <><WifiOff className="w-3.5 h-3.5 text-red-400 animate-pulse" /><span className="text-xs text-gray-400">Reconnecting…</span></>}
             </div>
             <div className="h-5 w-px bg-gray-200 hidden sm:block" />
             <div className="text-right hidden md:block">
               <p className="text-gray-800 text-xs font-semibold leading-none">{user?.name}</p>
               <p className="text-gray-400 text-[10px] mt-0.5">Kitchen Staff</p>
             </div>
-            <button onClick={askLogout} className="text-xs text-gray-400 hover:text-brand-600 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100">
-              Sign out
+            <button onClick={askLogout} className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-brand-600 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100">
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sign out</span>
             </button>
           </div>
         </div>
@@ -356,14 +361,14 @@ export default function KitchenDashboardPage() {
       {/* ── Main ──────────────────────────────────────────────────────────────── */}
       <main className="flex-1 max-w-screen-2xl mx-auto w-full px-4 sm:px-6 py-5">
         {fetchError && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-red-600 text-sm">
-              <span>⚠️</span><span>{fetchError}</span>
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <XCircle className="w-4 h-4" /><span>{fetchError}</span>
+              </div>
+              <button onClick={fetchOrders} className="flex items-center gap-1.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0">
+                <RefreshCw className="w-3 h-3" /> Retry
+              </button>
             </div>
-            <button onClick={fetchOrders} className="text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0">
-              Retry
-            </button>
-          </div>
         )}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">

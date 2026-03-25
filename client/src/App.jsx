@@ -68,15 +68,16 @@ export default function App() {
         <Route path="logs"        element={<ActivityLogsPage />} />
       </Route>
 
-      {/* ── 404 ──────────────────────────────────────── */}
+      {/* ── 404 ──────────────────────────────────────────────── */}
       <Route path="*" element={
         <div className="min-h-screen bg-gray-950 flex items-center justify-center flex-col gap-4">
-          <div className="text-6xl font-black text-gray-800">404</div>
-          <p className="text-gray-400">Page not found</p>
-          <a href="/" className="text-brand-500 hover:underline text-sm">Go home →</a>
+          <div className="text-7xl font-black text-gray-800 tracking-tighter">404</div>
+          <p className="text-gray-500 font-medium">Page not found</p>
+          <a href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-white bg-gradient-to-r from-brand-600 to-brand-500 px-5 py-2.5 rounded-xl hover:from-brand-700 hover:to-brand-600 transition-all mt-2">
+            Go home →
+          </a>
         </div>
       } />
     </Routes>
   )
 }
-

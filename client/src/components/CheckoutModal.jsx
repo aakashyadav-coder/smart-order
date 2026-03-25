@@ -1,11 +1,13 @@
 /**
- * CheckoutModal — form for customer name and phone, then submits order
+ * CheckoutModal — Premium order form
+ * Theme: White modal, gradient header, icon inputs
  */
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useCart } from '../context/CartContext'
+import { X, User, Phone, ShoppingCart } from '../components/Icons'
 
 export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
   const navigate = useNavigate()
@@ -46,7 +48,7 @@ export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
       const order = res.data
 
       clearCart()
-      toast.success('Order placed successfully! 🎉')
+      toast.success('Order placed successfully!')
       navigate(`/order/${order.id}`)
     } catch (err) {
       toast.error(err.message)
@@ -62,67 +64,76 @@ export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-brand-500 to-brand-600 p-5 text-white">
+        <div className="bg-gradient-to-r from-brand-700 to-brand-500 p-5 text-white">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-extrabold">Checkout</h2>
-              <p className="text-brand-100 text-sm">Table #{tableNumber}</p>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
+                <ShoppingCart className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-extrabold leading-none">Checkout</h2>
+                <p className="text-brand-200 text-xs mt-0.5">Table #{tableNumber}</p>
+              </div>
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 transition-colors"
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Order summary */}
-          <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
-            <p className="text-sm font-semibold text-gray-700 mb-2">Order Summary</p>
+          <div className="bg-gray-50 rounded-2xl p-4 space-y-2 border border-gray-100">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Order Summary</p>
             {items.map(item => (
-              <div key={item.menuItemId} className="flex justify-between text-sm text-gray-600">
-                <span>{item.name} × {item.quantity}</span>
-                <span className="font-medium">Rs. {(item.price * item.quantity).toFixed(0)}</span>
+              <div key={item.menuItemId} className="flex justify-between text-sm">
+                <span className="text-gray-700">{item.name} <span className="text-gray-400">×{item.quantity}</span></span>
+                <span className="font-semibold text-gray-800">Rs. {(item.price * item.quantity).toFixed(0)}</span>
               </div>
             ))}
-            <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between font-bold text-gray-900">
-              <span>Total</span>
-              <span className="text-brand-600">Rs. {totalPrice.toFixed(0)}</span>
+            <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between">
+              <span className="font-bold text-gray-900">Total</span>
+              <span className="font-black text-brand-600 text-base">Rs. {totalPrice.toFixed(0)}</span>
             </div>
           </div>
 
           {/* Customer Name */}
           <div>
-            <label className="label">Your Name *</label>
-            <input
-              type="text"
-              placeholder="e.g. Anil Sharma"
-              className={`input ${errors.customerName ? 'input-error' : ''}`}
-              value={form.customerName}
-              onChange={e => { setForm(p => ({ ...p, customerName: e.target.value })); setErrors(p => ({ ...p, customerName: null })) }}
-            />
-            {errors.customerName && <p className="text-red-500 text-xs mt-1">{errors.customerName}</p>}
+            <label className="label">Your Name</label>
+            <div className="relative">
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <User className="w-4 h-4" />
+              </div>
+              <input
+                type="text"
+                placeholder="e.g. Anil Sharma"
+                className={`input pl-10 ${errors.customerName ? 'input-error' : ''}`}
+                value={form.customerName}
+                onChange={e => { setForm(p => ({ ...p, customerName: e.target.value })); setErrors(p => ({ ...p, customerName: null })) }}
+              />
+            </div>
+            {errors.customerName && <p className="text-red-500 text-xs mt-1.5">{errors.customerName}</p>}
           </div>
 
           {/* Phone */}
           <div>
-            <label className="label">Phone Number *</label>
-            <input
-              type="tel"
-              placeholder="e.g. 9800000000"
-              className={`input ${errors.phone ? 'input-error' : ''}`}
-              value={form.phone}
-              onChange={e => { setForm(p => ({ ...p, phone: e.target.value })); setErrors(p => ({ ...p, phone: null })) }}
-            />
-            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
-          </div>
-
-          {/* Table (read-only) */}
-          <div>
-            <label className="label">Table Number</label>
-            <input type="text" value={`Table #${tableNumber}`} readOnly className="input bg-gray-50 text-gray-500 cursor-not-allowed" />
+            <label className="label">Phone Number</label>
+            <div className="relative">
+              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <Phone className="w-4 h-4" />
+              </div>
+              <input
+                type="tel"
+                placeholder="e.g. 9800000000"
+                className={`input pl-10 ${errors.phone ? 'input-error' : ''}`}
+                value={form.phone}
+                onChange={e => { setForm(p => ({ ...p, phone: e.target.value })); setErrors(p => ({ ...p, phone: null })) }}
+              />
+            </div>
+            {errors.phone && <p className="text-red-500 text-xs mt-1.5">{errors.phone}</p>}
           </div>
 
           <button

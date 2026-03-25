@@ -1,10 +1,11 @@
 /**
- * QRGeneratorPage — generates QR codes for each table
- * Protected route — only accessible to authenticated kitchen/admin staff
+ * QRGeneratorPage — Generates QR codes for each table
+ * Theme: Dark red/white — consistent with kitchen dashboard
  */
 import React, { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Link } from 'react-router-dom'
+import { ArrowLeft, QrCode, Printer } from '../components/Icons'
 
 const DEFAULT_TABLE_COUNT = 10
 
@@ -20,11 +21,11 @@ export default function QRGeneratorPage() {
     win.document.write(`
       <html>
         <head><title>Table ${tableNum} QR Code</title></head>
-        <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:sans-serif;gap:12px">
-          <h2 style="font-size:22px;font-weight:bold;margin:0">Table #${tableNum}</h2>
-          <p style="color:#666;font-size:13px;margin:0">Scan to order</p>
+        <body style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Inter',sans-serif;gap:12px;background:#fff">
+          <h2 style="font-size:22px;font-weight:800;margin:0;color:#111">Table #${tableNum}</h2>
+          <p style="color:#888;font-size:13px;margin:0">Scan to order</p>
           <div id="qr"></div>
-          <p style="font-size:11px;color:#999;margin:0">${url}</p>
+          <p style="font-size:11px;color:#bbb;margin:0">${url}</p>
           <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>
           <script>QRCode.toCanvas(document.createElement('canvas'), '${url}', function(err, canvas){if(!err){document.getElementById('qr').appendChild(canvas)}})<\/script>
         </body>
@@ -37,36 +38,44 @@ export default function QRGeneratorPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Header */}
-      <header className="bg-gray-900 border-b border-gray-800 px-4 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/kitchen" className="text-gray-400 hover:text-white text-sm transition-colors">← Dashboard</Link>
-            <h1 className="text-lg font-extrabold">QR Code Generator</h1>
+      <header className="bg-gray-900 border-b border-white/8 sticky top-0 z-20 shadow-lg">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center gap-4">
+          <Link
+            to="/kitchen"
+            className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/8 hover:bg-white/15 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 text-gray-400" />
+          </Link>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-700 rounded-lg flex items-center justify-center">
+              <QrCode className="w-4 h-4 text-white" />
+            </div>
+            <h1 className="text-base font-extrabold text-white">QR Code Generator</h1>
           </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {/* Controls */}
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-5 mb-8 flex flex-wrap gap-4 items-end">
+        <div className="bg-gray-900 rounded-2xl border border-white/8 p-5 mb-8 flex flex-wrap gap-4 items-end">
           <div className="flex-1 min-w-48">
-            <label className="label text-gray-300 text-sm">Number of Tables</label>
+            <label className="label-dark text-sm">Number of Tables</label>
             <input
               type="number"
               min={1}
               max={50}
               value={tableCount}
               onChange={e => setTableCount(Math.max(1, parseInt(e.target.value) || 1))}
-              className="input bg-gray-800 border-gray-700 text-white focus:ring-brand-500 focus:border-brand-500"
+              className="input-dark w-full"
             />
           </div>
           <div className="flex-1 min-w-48">
-            <label className="label text-gray-300 text-sm">Base URL</label>
+            <label className="label-dark text-sm">Base URL</label>
             <input
               type="text"
               value={baseUrl}
               onChange={e => setBaseUrl(e.target.value)}
-              className="input bg-gray-800 border-gray-700 text-white focus:ring-brand-500 focus:border-brand-500 text-sm"
+              className="input-dark w-full text-sm"
             />
           </div>
         </div>
@@ -78,25 +87,26 @@ export default function QRGeneratorPage() {
             return (
               <div
                 key={tableNum}
-                className="bg-white rounded-2xl p-4 flex flex-col items-center gap-3 hover:shadow-lg hover:shadow-brand-500/20 transition-all"
+                className="bg-white rounded-2xl p-4 flex flex-col items-center gap-3 hover:shadow-xl hover:shadow-brand-600/20 hover:-translate-y-0.5 transition-all duration-200 border border-gray-100"
               >
                 <p className="font-extrabold text-gray-900 text-sm">Table #{tableNum}</p>
-                <div className="bg-white p-1 rounded-xl">
+                <div className="bg-white p-1.5 rounded-xl border border-gray-100">
                   <QRCodeSVG
                     value={url}
-                    size={140}
+                    size={130}
                     bgColor="#ffffff"
-                    fgColor="#1a1a1a"
+                    fgColor="#111111"
                     level="M"
                     includeMargin={false}
                   />
                 </div>
-                <p className="text-gray-400 text-xs text-center break-all leading-tight">{url}</p>
+                <p className="text-gray-400 text-[10px] text-center break-all leading-tight">{url}</p>
                 <button
                   onClick={() => printQR(tableNum)}
-                  className="w-full text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-3 rounded-xl transition-colors"
+                  className="w-full flex items-center justify-center gap-1.5 text-xs bg-brand-50 border border-brand-100 hover:bg-brand-100 text-brand-700 font-semibold py-2 px-3 rounded-xl transition-colors"
                 >
-                  🖨 Print
+                  <Printer className="w-3.5 h-3.5" />
+                  Print
                 </button>
               </div>
             )

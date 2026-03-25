@@ -1,933 +1,395 @@
 /**
- * OwnerDashboardPage — Premium restaurant management panel
- * Tabs: Analytics | Order History | Menu | QR Codes | Staff
+ * OwnerDashboardPage — Ultra-premium restaurant management panel
+ * Features: dark sidebar, kanban live orders, push notifications,
+ *           confetti on milestones, profile editor, keyboard shortcuts
  */
 import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { QRCodeSVG } from 'qrcode.react'
 import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import socket from '../lib/socket'
 import ConfirmModal from '../components/ConfirmModal'
+import {
+  Building, LogOut, TrendingUp, ClipboardList,
+  Utensils, QrCode, Users, XCircle, RefreshCw, Menu, X,
+  Settings
+} from '../components/Icons'
+import {
+  AnalyticsTab, OrderHistoryTab, MenuTab, QRTab, StaffTab
+} from './owner/OwnerTabComponents'
 
-const TABS = [
-  { id: 'analytics', label: 'Analytics',     icon: '📈' },
-  { id: 'history',   label: 'Order History', icon: '📋' },
-  { id: 'menu',      label: 'Menu',          icon: '🍽️' },
-  { id: 'qr',        label: 'QR Codes',      icon: '📱' },
-  { id: 'staff',     label: 'Staff',         icon: '👥' },
-]
-const CATEGORIES = ['Drinks', 'Starters', 'Main Course', 'Desserts']
-const EMPTY_ITEM = { name: '', description: '', price: '', category: 'Main Course', imageUrl: '', available: true }
-const STATUS_CFG = {
-  PENDING:   { border: 'border-l-amber-500',   bg: 'bg-amber-50',   text: 'text-amber-700',  dot: 'bg-amber-500'   },
-  ACCEPTED:  { border: 'border-l-blue-500',    bg: 'bg-blue-50',    text: 'text-blue-700',   dot: 'bg-blue-500'    },
-  PREPARING: { border: 'border-l-orange-500',  bg: 'bg-orange-50',  text: 'text-orange-700', dot: 'bg-orange-500'  },
-  SERVED:    { border: 'border-l-green-500',   bg: 'bg-green-50',   text: 'text-green-700',  dot: 'bg-green-500'   },
-  CANCELLED: { border: 'border-l-red-400',     bg: 'bg-red-50',     text: 'text-red-600',    dot: 'bg-red-400'     },
-  PAID:      { border: 'border-l-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700',dot: 'bg-emerald-500' },
-}
-
-// ── CSV Export Utility ────────────────────────────────────────────────────────
-function downloadCSV(filename, rows) {
-  const escape = (v) => {
-    const s = String(v ?? '')
-    return s.includes(',') || s.includes('"') || s.includes('\n')
-      ? `"${s.replace(/"/g, '""')}"`
-      : s
+// ── Confetti burst ─────────────────────────────────────────────────────────────
+function spawnConfetti() {
+  const colors = ['#e11d48','#f97316','#22c55e','#3b82f6','#a855f7','#fbbf24']
+  const container = document.createElement('div')
+  container.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;overflow:hidden'
+  document.body.appendChild(container)
+  for (let i = 0; i < 80; i++) {
+    const el = document.createElement('div')
+    const color = colors[Math.floor(Math.random() * colors.length)]
+    const size = 6 + Math.random() * 8
+    el.style.cssText = `position:absolute;width:${size}px;height:${size}px;background:${color};border-radius:${Math.random()>0.5?'50%':'2px'};left:${Math.random()*100}%;top:-10px;opacity:1;transition:transform 2.5s ease-in,opacity 2.5s ease-in;transform:translateY(0) rotate(0deg)`
+    container.appendChild(el)
+    requestAnimationFrame(() => {
+      el.style.transform = `translateY(${window.innerHeight + 60}px) rotate(${720 + Math.random()*720}deg) translateX(${(Math.random()-0.5)*400}px)`
+      el.style.opacity = '0'
+    })
   }
-  const csv = rows.map(r => r.map(escape).join(',')).join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url  = URL.createObjectURL(blob)
-  const a    = Object.assign(document.createElement('a'), { href: url, download: filename })
-  document.body.appendChild(a); a.click()
-  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url) }, 100)
+  setTimeout(() => document.body.removeChild(container), 2600)
 }
 
-// ── SVG Bar Chart ────────────────────────────────────────────────────────────
-function BarChart({ data, labels, color = '#f97316', unit = 'Rs.' }) {
-  const max = Math.max(...data, 1)
-  const W = 100 / data.length
-  const showEvery = data.length > 10 ? Math.ceil(data.length / 8) : 1
-  return (
-    <div className="relative h-48 flex flex-col gap-1 select-none">
-      <svg viewBox={`0 0 ${data.length * 20} 100`} className="flex-1 w-full overflow-visible" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id={`grad-${color}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.85" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.15" />
-          </linearGradient>
-        </defs>
-        {data.map((v, i) => {
-          const h  = max > 0 ? (v / max) * 90 : 0
-          const x  = i * 20 + 1
-          return (
-            <g key={i}>
-              <rect x={x} y={100 - h} width={18} height={h}
-                fill={`url(#grad-${color})`} rx={3} className="hover:opacity-100 opacity-80 transition-opacity cursor-pointer" />
-              {v > 0 && (
-                <title>{unit}{unit === 'Rs.' ? v.toFixed(0) : v}</title>
-              )}
-            </g>
-          )
-        })}
-      </svg>
-      {/* X labels */}
-      <div className="flex" style={{ gap: 0 }}>
-        {labels.map((l, i) => (
-          <div key={i} className="text-center flex-1 text-gray-600 text-[9px] leading-tight truncate"
-            style={{ display: (i % showEvery === 0 || i === labels.length - 1) ? 'block' : 'none' }}>
-            {l}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ── Analytics Tab ─────────────────────────────────────────────────────────────
-function AnalyticsTab() {
-  const [range, setRange]   = useState('30d')
-  const [data, setData]     = useState(null)
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    setLoading(true)
-    api.get(`/restaurant/analytics?range=${range}`)
-      .then(r => setData(r.data))
-      .catch(() => toast.error('Failed to load analytics'))
-      .finally(() => setLoading(false))
-  }, [range])
-
-  const RANGES = [
-    { id: '24h', label: 'Last 24 Hours' },
-    { id: '30d', label: 'Last 30 Days'  },
-    { id: '6m',  label: 'Last 6 Months' },
-  ]
-
-  const exportAnalytics = () => {
-    if (!data) return
-    const label = RANGES.find(r => r.id === range)?.label || range
-    const rows  = [
-      [`Smart Order — Analytics Export (${label})`, '', ''],
-      ['Period', 'Revenue (Rs.)', 'Orders'],
-      ...data.labels.map((l, i) => [l, (data.revenue[i] || 0).toFixed(2), data.counts[i] || 0]),
-      [],
-      ['TOTAL', (data.totalRevenue || 0).toFixed(2), data.totalOrders],
-      ['PAID REVENUE', (data.totalPaidRevenue || 0).toFixed(2), data.paidOrders],
-    ]
-    downloadCSV(`analytics_${range}_${new Date().toISOString().slice(0,10)}.csv`, rows)
+// ── Push notification helper ───────────────────────────────────────────────────
+function sendPush(title, body) {
+  if (Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '/favicon.ico', badge: '/favicon.ico' })
   }
-
-  return (
-    <div>
-      {/* Range selector + export */}
-      <div className="flex flex-wrap items-center gap-2 mb-6">
-        {RANGES.map(r => (
-          <button key={r.id} onClick={() => setRange(r.id)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${range === r.id ? 'bg-brand-600 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-300'}`}>
-            {r.label}
-          </button>
-        ))}
-        {data && (
-          <button onClick={exportAnalytics}
-            className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors">
-            ⬇ Export CSV
-          </button>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : data ? (
-        <>
-          {/* Summary cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            {[
-              { label: 'Total Orders',  value: data.totalOrders,                     color: 'text-blue-600',   icon: '📋' },
-              { label: 'Total Revenue', value: `Rs. ${(data.totalRevenue||0).toFixed(0)}`,  color: 'text-brand-600',  icon: '💳' },
-              { label: 'Paid Revenue',  value: `Rs. ${(data.totalPaidRevenue||0).toFixed(0)}`, color: 'text-green-600', icon: '✅' },
-              { label: 'Peak',          value: (() => { const mx = Math.max(...data.revenue); const idx = data.revenue.indexOf(mx); return data.labels[idx] || '—' })(), color: 'text-purple-600', icon: '⚡' },
-            ].map(s => (
-              <div key={s.label} className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-                <p className="text-2xl mb-1">{s.icon}</p>
-                <p className={`font-extrabold text-xl leading-none ${s.color}`}>{s.value}</p>
-                <p className="text-gray-500 text-xs mt-1">{s.label}</p>
-              </div>
-            ))}
-          </div>
-
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-gray-900 font-bold">Paid Revenue</h3>
-                <p className="text-gray-400 text-xs mt-0.5">{RANGES.find(r => r.id === range)?.label} — PAID orders only</p>
-              </div>
-              <p className="text-green-400 font-extrabold text-lg">Rs. {(data.totalPaidRevenue||0).toFixed(0)}</p>
-            </div>
-            <BarChart data={data.revenue} labels={data.labels} color="#22c55e" unit="Rs." />
-          </div>
-
-          {/* Orders chart */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-gray-900 font-bold">Orders</h3>
-                <p className="text-gray-400 text-xs mt-0.5">{RANGES.find(r => r.id === range)?.label}</p>
-              </div>
-              <p className="text-brand-600 font-extrabold text-lg">{data.totalOrders} orders</p>
-            </div>
-            <BarChart data={data.counts} labels={data.labels} color="#f97316" unit="" />
-          </div>
-        </>
-      ) : null}
-    </div>
-  )
+}
+function requestPush() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission()
+  }
 }
 
-// ── Order Detail + Billing Modal ───────────────────────────────────────────────────
-function OrderDetailModal({ order, restaurant, onClose, onPaid }) {
-  if (!order) return null
-  const cfg = STATUS_CFG[order.status] || STATUS_CFG.PENDING
-  const fmt = (d) => new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
-
-  const [discount, setDiscount] = useState(order.discount || 0)
-  const [paying, setPaying]     = useState(false)
-  const alreadyPaid = order.status === 'PAID'
-
-  const subtotal  = order.totalPrice
-  const discAmt   = parseFloat(((subtotal * discount) / 100).toFixed(2))
-  const finalAmt  = parseFloat((subtotal - discAmt).toFixed(2))
-
-  const handleMarkPaid = async () => {
-    setPaying(true)
-    try {
-      const res = await api.put(`/orders/${order.id}/status`, {
-        status: 'PAID',
-        discount,
-        discountedTotal: finalAmt,
-      })
-      onPaid(res.data)
-      toast.success('✅ Order marked as PAID!')
-      onClose()
-    } catch (err) { toast.error(err.message) }
-    finally { setPaying(false) }
-  }
-
-  const handlePrint = () => {
-    const logoHtml = (restaurant?.logoUrl)
-      ? `<img src="${restaurant.logoUrl}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;margin-bottom:8px" />`
-      : `<div style="font-size:36px;margin-bottom:8px">🏔️</div>`
-    const itemRows = order.items?.map(i =>
-      `<tr><td style="padding:4px 0">${i.menuItem?.name}</td><td style="text-align:center;padding:4px 8px">×${i.quantity}</td><td style="text-align:right;padding:4px 0">Rs. ${(i.price * i.quantity).toFixed(0)}</td></tr>`
-    ).join('')
-    const discountRow = discount > 0
-      ? `<tr style="color:#ef4444"><td colspan="2">Discount (${discount}%)</td><td style="text-align:right">- Rs. ${discAmt.toFixed(0)}</td></tr>`
-      : ''
-    const win = window.open('', '_blank', 'width=400,height=600')
-    win.document.write(`
-      <!DOCTYPE html><html><head><title>Bill - ${order.customerName}</title>
-      <style>body{font-family:'Segoe UI',Arial,sans-serif;max-width:380px;margin:0 auto;padding:20px;color:#111}
-        h2{margin:0;font-size:18px} p{margin:4px 0;font-size:13px;color:#555}
-        table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
-        th{border-bottom:2px solid #ddd;padding:6px 0;text-align:left;font-size:12px;color:#888;text-transform:uppercase}
-        tfoot td{border-top:2px solid #ddd;padding:6px 0;font-weight:700;font-size:14px}
-        .total{font-size:18px;color:#111} .paid-badge{display:inline-block;background:#dcfce7;color:#166534;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-top:8px}
-        .footer{margin-top:20px;text-align:center;font-size:11px;color:#999;border-top:1px dashed #ddd;padding-top:12px}
-      </style></head><body>
-      <div style="text-align:center;margin-bottom:16px">
-        ${logoHtml}
-        <h2>${restaurant?.name || 'Smart Order'}</h2>
-        ${restaurant?.address ? `<p>📍 ${restaurant.address}</p>` : ''}
-        ${restaurant?.phone   ? `<p>📞 ${restaurant.phone}</p>`   : ''}
-      </div>
-      <hr style="border:none;border-top:1px dashed #ddd;margin:12px 0">
-      <p><strong>Customer:</strong> ${order.customerName}</p>
-      <p><strong>Phone:</strong> ${order.phone}</p>
-      <p><strong>Table:</strong> #${order.tableNumber}</p>
-      <p><strong>Date:</strong> ${fmt(order.createdAt)}</p>
-      <p><strong>Order #:</strong> ${order.id.slice(-8).toUpperCase()}</p>
-      <table>
-        <thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Amount</th></tr></thead>
-        <tbody>${itemRows}</tbody>
-        <tfoot>
-          <tr style="color:#555;font-weight:400"><td colspan="2">Subtotal</td><td style="text-align:right">Rs. ${subtotal.toFixed(0)}</td></tr>
-          ${discountRow}
-          <tr><td colspan="2" class="total">TOTAL</td><td style="text-align:right" class="total">Rs. ${finalAmt.toFixed(0)}</td></tr>
-        </tfoot>
-      </table>
-      <div style="text-align:center"><span class="paid-badge">✅ PAID</span></div>
-      <div class="footer">Thank you for dining with us!<br>Powered by Smart Order</div>
-      <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),1000)}<\/script>
-    </body></html>`)
-    win.document.close()
-  }
-
-  const DISC_PRESETS = [0, 5, 10, 15, 20]
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className={`px-5 py-4 ${cfg.bg} flex items-center justify-between border-b border-gray-100 flex-shrink-0`}>
-          <div className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot}`} />
-            <span className={`font-extrabold text-sm ${cfg.text}`}>{order.status}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-gray-400 text-xs font-mono">#{order.id.slice(-8).toUpperCase()}</span>
-            <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition-colors text-sm">✕</button>
-          </div>
-        </div>
-
-        <div className="overflow-y-auto flex-1">
-          {/* Customer info */}
-          <div className="px-5 py-4 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-900 font-bold">{order.customerName}</p>
-                <p className="text-gray-400 text-sm">{order.phone}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-gray-400 text-xs">Table</p>
-                <p className="text-gray-900 font-extrabold text-2xl">#{order.tableNumber}</p>
-              </div>
-            </div>
-            <p className="text-gray-400 text-xs mt-2">{fmt(order.createdAt)}</p>
-          </div>
-
-          {/* Items */}
-          <div className="px-5 py-3 border-b border-gray-100">
-            <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Items Ordered</p>
-            <div className="space-y-2">
-              {order.items?.map(item => (
-                <div key={item.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 bg-gray-100 rounded-lg flex items-center justify-center text-xs font-bold text-gray-500">×{item.quantity}</span>
-                    <span className="text-gray-800 text-sm">{item.menuItem?.name}</span>
-                  </div>
-                  <span className="text-gray-500 text-sm font-medium">Rs. {(item.price * item.quantity).toFixed(0)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Discount + Billing */}
-          <div className="px-5 py-4 border-b border-gray-100">
-            <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Billing</p>
-
-            {!alreadyPaid && (
-              <div className="mb-4">
-                <p className="text-gray-700 text-sm font-semibold mb-2">Apply Discount</p>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {DISC_PRESETS.map(p => (
-                    <button key={p} onClick={() => setDiscount(p)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                        discount === p ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-500 hover:text-gray-800 border border-gray-200'
-                      }`}>
-                      {p === 0 ? 'No discount' : `${p}%`}
-                    </button>
-                  ))}
-                  <input type="number" min={0} max={100} step={1}
-                    placeholder="Custom %"
-                    className="w-24 px-2 py-1.5 rounded-xl text-xs bg-white border border-gray-200 text-gray-800"
-                    value={DISC_PRESETS.includes(discount) ? '' : discount}
-                    onChange={e => setDiscount(Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))} />
-                </div>
-              </div>
-            )}
-
-            {/* Amount breakdown */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Subtotal</span>
-                <span className="text-gray-900 font-medium">Rs. {subtotal.toFixed(0)}</span>
-              </div>
-              {discount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-green-400">Discount ({discount}%)</span>
-                  <span className="text-green-400 font-medium">- Rs. {discAmt.toFixed(0)}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                <span className="text-gray-900 font-bold text-base">Total</span>
-                <span className="text-gray-900 font-extrabold text-xl">Rs. {finalAmt.toFixed(0)}</span>
-              </div>
-              {alreadyPaid && order.discountedTotal && (
-                <div className="mt-2 bg-green-50 border border-green-200 rounded-xl px-3 py-1.5 text-center text-green-700 text-xs font-bold">
-                  ✅ Paid: Rs. {order.discountedTotal.toFixed(0)}
-                  {order.discount > 0 && ` (${order.discount}% discount applied)`}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className="px-5 py-4 flex gap-3 flex-shrink-0 border-t border-gray-100">
-          {!alreadyPaid ? (
-            <>
-              <button onClick={handleMarkPaid} disabled={paying}
-                className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50">
-                {paying ? 'Processing…' : '✅ Mark as Paid'}
-              </button>
-              <button onClick={handlePrint}
-                className="px-4 py-3 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors">
-                🖨 Print &amp; Pay
-              </button>
-            </>
-          ) : (
-            <button onClick={handlePrint}
-              className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors shadow-sm">
-              🖨 Reprint Bill
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Order History Tab ─────────────────────────────────────────────────────────
-function OrderHistoryTab({ orders, loading, restaurant, onPaid }) {
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('ALL')
-  const [selectedOrder, setSelectedOrder] = useState(null)
-
-  const filtered = orders.filter(o => {
-    const matchStatus = statusFilter === 'ALL' || o.status === statusFilter
-    const q = search.toLowerCase()
-    const matchSearch = !q || o.customerName.toLowerCase().includes(q) || o.phone.includes(q) || String(o.tableNumber).includes(q) || o.id.toLowerCase().includes(q)
-    return matchStatus && matchSearch
-  })
-
-  const fmt = (d) => new Date(d).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })
-
-  const exportOrders = () => {
-    const rows = [
-      ['Smart Order — Order History Export', '', '', '', '', '', ''],
-      ['Order ID', 'Date', 'Customer', 'Phone', 'Table', 'Items', 'Total (Rs.)', 'Status'],
-      ...filtered.map(o => [
-        o.id,
-        new Date(o.createdAt).toLocaleString('en-IN'),
-        o.customerName,
-        o.phone,
-        o.tableNumber,
-        o.items?.map(i => `${i.menuItem?.name} x${i.quantity}`).join(' | '),
-        o.totalPrice,
-        o.status,
-      ]),
-      [],
-      ['', '', '', '', '', 'TOTAL REVENUE',
-        filtered.filter(o => o.status !== 'CANCELLED').reduce((s, o) => s + o.totalPrice, 0).toFixed(2),
-      ],
-    ]
-    downloadCSV(`orders_${new Date().toISOString().slice(0,10)}.csv`, rows)
-  }
-
-  return (
-    <div>
-      {/* Search + filter + export row */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
-        <div className="relative flex-1">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
-          <input
-            type="text"
-            placeholder="Search by name, phone or table…"
-            className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 pl-9 focus:ring-brand-500 focus:border-brand-500"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-        <select
-          className="input bg-white border-gray-200 text-gray-900 w-full sm:w-44 focus:ring-brand-500"
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
-        >
-          {['ALL','PENDING','ACCEPTED','PREPARING','SERVED','PAID','CANCELLED'].map(s => (
-            <option key={s} value={s}>{s === 'ALL' ? 'All Statuses' : s.charAt(0) + s.slice(1).toLowerCase()}</option>
-          ))}
-        </select>
-        <button onClick={exportOrders}
-          disabled={filtered.length === 0}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
-          ⬇ Export CSV
-        </button>
-      </div>
-
-      {/* Stats row */}
-      <div className="flex flex-wrap gap-3 mb-5 text-xs text-gray-500">
-        <span className="bg-white border border-gray-200 px-3 py-1.5 rounded-full">
-          {filtered.length} order{filtered.length !== 1 ? 's' : ''}
-        </span>
-        <span className="bg-white border border-gray-200 px-3 py-1.5 rounded-full text-green-600">
-          Revenue: Rs. {filtered.filter(o=>o.status!=='CANCELLED').reduce((s,o)=>s+o.totalPrice,0).toFixed(0)}
-        </span>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center text-3xl border border-gray-800 mb-4">🔍</div>
-          <p className="text-white font-bold">No orders found</p>
-          <p className="text-gray-600 text-sm mt-1">Try a different search or filter</p>
-        </div>
-      ) : (
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
-          {filtered.map((o, i) => {
-            const cfg = STATUS_CFG[o.status] || STATUS_CFG.PENDING
-            const canOpenBill = o.status === 'SERVED' || o.status === 'PAID'
-            const statusLabel = o.status.charAt(0) + o.status.slice(1).toLowerCase()
-            const sharedCls = `w-full flex items-center gap-3 px-5 py-4 text-left border-l-4 ${cfg.border} ${i > 0 ? 'border-t border-gray-800' : ''}`
-            const inner = (
-              <>
-                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-gray-900 font-semibold text-sm">{o.customerName}</p>
-                    <span className="text-gray-700">·</span>
-                    <span className="text-gray-400 text-xs">Table #{o.tableNumber}</span>
-                    <span className="text-gray-700">·</span>
-                    <span className="text-gray-500 text-xs">{o.items?.length} item{o.items?.length !== 1 ? 's' : ''}</span>
-                  </div>
-                  <p className="text-gray-600 text-xs mt-0.5">{fmt(o.createdAt)}</p>
-                </div>
-                <div className="flex-shrink-0 text-right">
-                  <p className="text-white font-bold text-sm">Rs. {o.totalPrice}</p>
-                  <span className={`text-xs font-semibold ${cfg.text}`}>{statusLabel}</span>
-                </div>
-                {canOpenBill && <span className="text-gray-500 text-xs flex-shrink-0">💳›</span>}
-              </>
-            )
-            return canOpenBill ? (
-              <button key={o.id} onClick={() => setSelectedOrder(o)}
-                className={`${sharedCls} hover:bg-gray-50 transition-colors`}>
-                {inner}
-              </button>
-            ) : (
-              <div key={o.id} className={`${sharedCls} opacity-80`}>
-                {inner}
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {selectedOrder && <OrderDetailModal order={selectedOrder} restaurant={restaurant} onClose={() => setSelectedOrder(null)} onPaid={(updated) => { onPaid(updated); setSelectedOrder(null) }} />}
-    </div>
-  )
-}
-
-// ── Menu Tab with Search ──────────────────────────────────────────────────────
-function MenuTab({ restaurantId, onDeleteItem }) {
-  const [items, setItems]   = useState([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [form, setForm]     = useState(EMPTY_ITEM)
-  const [editId, setEditId] = useState(null)
+// ── Profile Editor Modal ───────────────────────────────────────────────────────
+function ProfileModal({ restaurant, onClose, onSaved }) {
+  const [form, setForm] = useState({ name: restaurant?.name || '', logoUrl: restaurant?.logoUrl || '', address: restaurant?.address || '', phone: restaurant?.phone || '' })
   const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    if (!restaurantId) return
-    api.get(`/menu?restaurantId=${restaurantId}`)
-      .then(r => setItems(r.data.items || []))
-      .finally(() => setLoading(false))
-  }, [restaurantId])
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault(); setSaving(true)
     try {
-      const payload = { ...form, price: parseFloat(form.price), restaurantId }
-      if (editId) {
-        const res = await api.put(`/menu/${editId}`, payload)
-        setItems(p => p.map(i => i.id === editId ? res.data : i))
-        toast.success('Item updated!')
-      } else {
-        const res = await api.post('/menu', payload)
-        setItems(p => [...p, res.data])
-        toast.success('Item added!')
-      }
-      setForm(EMPTY_ITEM); setEditId(null)
-    } catch (err) { toast.error(err.message) }
-    finally { setSaving(false) }
+      const res = await api.put('/restaurant/mine', form)
+      onSaved(res.data); toast.success('Profile updated!'); onClose()
+    } catch (err) { toast.error(err.message) } finally { setSaving(false) }
   }
-
-  const startEdit = (item) => { setForm({ ...item, price: item.price.toString() }); setEditId(item.id) }
-  const cancelEdit = () => { setForm(EMPTY_ITEM); setEditId(null) }
-
-  const toggleAvailable = async (item) => {
-    try {
-      const res = await api.put(`/menu/${item.id}`, { available: !item.available })
-      setItems(p => p.map(i => i.id === item.id ? res.data : i))
-    } catch (err) { toast.error(err.message) }
-  }
-
-  // Filter items by search
-  const filteredItems = search
-    ? items.filter(i => i.name.toLowerCase().includes(search.toLowerCase()) || i.category.toLowerCase().includes(search.toLowerCase()))
-    : items
-
-  if (loading) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Add/Edit form */}
-      <div className="lg:col-span-1">
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 sticky top-24 shadow-sm">
-          <h3 className="font-bold text-gray-900 mb-4">{editId ? '✏️ Edit Item' : '➕ Add Item'}</h3>
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <input required placeholder="Item name *" className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:ring-brand-500 focus:border-brand-500"
-              value={form.name} onChange={e => setForm(p => ({...p, name: e.target.value}))} />
-            <input type="number" required min="0" step="0.01" placeholder="Price (Rs.) *"
-              className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:ring-brand-500 focus:border-brand-500"
-              value={form.price} onChange={e => setForm(p => ({...p, price: e.target.value}))} />
-            <textarea placeholder="Description (optional)" rows={2}
-              className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm resize-none focus:ring-brand-500 focus:border-brand-500"
-              value={form.description} onChange={e => setForm(p => ({...p, description: e.target.value}))} />
-            <select className="input bg-white border-gray-200 text-gray-900 text-sm"
-              value={form.category} onChange={e => setForm(p => ({...p, category: e.target.value}))}>
-              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-            </select>
-            <input placeholder="Image URL (optional)" className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:ring-brand-500 focus:border-brand-500"
-              value={form.imageUrl} onChange={e => setForm(p => ({...p, imageUrl: e.target.value}))} />
-            <div className="flex gap-2 pt-1">
-              {editId && <button type="button" onClick={cancelEdit} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>}
-              <button type="submit" disabled={saving} className="btn-primary flex-1 py-2.5 text-sm disabled:opacity-50">
-                {saving ? 'Saving…' : editId ? 'Update' : 'Add Item'}
-              </button>
-            </div>
-          </form>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md border border-gray-100 overflow-hidden">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-5 text-white flex items-center justify-between">
+          <div><p className="font-extrabold text-base">Restaurant Profile</p><p className="text-gray-400 text-sm mt-0.5">Update your public info</p></div>
+          <button onClick={onClose} className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center transition-colors"><X className="w-4 h-4" /></button>
         </div>
-      </div>
-
-      {/* Items list with search */}
-      <div className="lg:col-span-2">
-        {/* Search bar */}
-        <div className="relative mb-4">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">🔍</span>
-          <input
-            type="text"
-            placeholder="Search menu items or categories…"
-            className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 pl-9 focus:ring-brand-500 focus:border-brand-500"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-sm">✕</button>
-          )}
-        </div>
-        <p className="text-gray-400 text-xs mb-3">{filteredItems.length} of {items.length} items</p>
-
-        <div className="space-y-3">
-          {CATEGORIES.map(cat => {
-            const catItems = filteredItems.filter(i => i.category === cat)
-            if (!catItems.length) return null
-            return (
-              <div key={cat} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-                <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                  <p className="text-gray-800 font-bold text-sm">{cat}</p>
-                  <span className="text-gray-500 text-xs">{catItems.length}</span>
-                </div>
-                {catItems.map(item => (
-                  <div key={item.id} className={`flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0 transition-opacity ${!item.available ? 'opacity-40' : ''}`}>
-                    {item.imageUrl
-                      ? <img src={item.imageUrl} alt={item.name} className="w-11 h-11 rounded-xl object-cover flex-shrink-0 ring-1 ring-gray-200" />
-                      : <div className="w-11 h-11 bg-gray-100 rounded-xl flex items-center justify-center text-xl flex-shrink-0">🍴</div>
-                    }
-                    <div className="flex-1 min-w-0">
-                      <p className="text-gray-900 text-sm font-semibold truncate">{item.name}</p>
-                      {item.description && <p className="text-gray-400 text-xs truncate">{item.description}</p>}
-                      <p className="text-brand-600 text-xs font-bold mt-0.5">Rs. {item.price}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <button onClick={() => toggleAvailable(item)}
-                        className={`text-[10px] px-2 py-1 rounded-lg font-bold transition-colors ${item.available ? 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-gray-200'}`}>
-                        {item.available ? 'ON' : 'OFF'}
-                      </button>
-                      <button onClick={() => startEdit(item)} className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors text-xs">✏️</button>
-                      <button onClick={() => onDeleteItem(item, (id) => setItems(p => p.filter(i => i.id !== id)))}
-                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 border border-red-100 transition-colors text-xs">🗑</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )
-          })}
-          {filteredItems.length === 0 && (
-            <div className="text-center py-12 text-gray-500">{search ? 'No results for that search.' : 'No menu items yet.'}</div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── QR Tab ───────────────────────────────────────────────────────────────────
-function QRTab({ restaurantId }) {
-  const [baseUrl, setBaseUrl] = useState(window.location.origin)
-  const [tables, setTables]   = useState(10)
-
-  const qrUrl = (table) =>
-    restaurantId
-      ? `${baseUrl}/menu?table=${table}&rid=${restaurantId}`
-      : `${baseUrl}/menu?table=${table}`
-
-  return (
-    <div>
-      <div className="flex flex-wrap gap-4 mb-4 items-end">
-        <div><label className="label text-sm text-gray-600">Base URL</label>
-          <input className="input bg-white border-gray-200 text-gray-900 w-72 text-sm" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} /></div>
-        <div><label className="label text-sm text-gray-600">Tables</label>
-          <input type="number" min={1} max={100} className="input bg-white border-gray-200 text-gray-900 w-24 text-sm"
-            value={tables} onChange={e => setTables(parseInt(e.target.value) || 1)} /></div>
-        <button onClick={() => window.print()} className="btn-primary px-5 py-2.5 text-sm print:hidden">🖨️ Print All</button>
-      </div>
-      <p className="text-gray-600 text-xs mb-4">
-        Each QR includes your restaurant ID — customers see your logo, name and table number automatically.
-      </p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
-        {Array.from({ length: tables }, (_, i) => i + 1).map(t => (
-          <div key={t} className="bg-white border border-gray-200 rounded-2xl p-4 flex flex-col items-center gap-2 hover:border-brand-200 hover:shadow-sm transition-all">
-            <p className="text-gray-900 font-extrabold text-sm">Table {t}</p>
-            <div className="bg-white p-2 rounded-xl"><QRCodeSVG value={qrUrl(t)} size={96} /></div>
-            <p className="text-gray-400 text-[9px] text-center break-all">/menu?table={t}&rid=…</p>
+        <form onSubmit={handleSubmit} className="p-5 space-y-3">
+          <div><label className="label">Restaurant Name</label><input required className="input text-sm" value={form.name} onChange={e => setForm(p=>({...p,name:e.target.value}))} /></div>
+          <div><label className="label">Logo URL</label><input className="input text-sm" placeholder="https://..." value={form.logoUrl} onChange={e => setForm(p=>({...p,logoUrl:e.target.value}))} />
+            {form.logoUrl && <img src={form.logoUrl} alt="" className="w-12 h-12 object-cover rounded-xl mt-2 border border-gray-100" onError={e => e.target.style.display='none'} />}
           </div>
-        ))}
+          <div><label className="label">Address</label><input className="input text-sm" value={form.address} onChange={e => setForm(p=>({...p,address:e.target.value}))} /></div>
+          <div><label className="label">Phone</label><input className="input text-sm" value={form.phone} onChange={e => setForm(p=>({...p,phone:e.target.value}))} /></div>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
+            <button type="submit" disabled={saving} className="btn-primary flex-1 py-2.5 text-sm">{saving?'Saving…':'Save Changes'}</button>
+          </div>
+        </form>
       </div>
     </div>
   )
 }
 
-// ── Staff Tab ────────────────────────────────────────────────────────────────
-function StaffTab() {
-  const [users, setUsers]     = useState([])
-  const [loading, setLoading] = useState(true)
-  useEffect(() => {
-    api.get('/restaurant/staff')
-      .then(r => setUsers(r.data))
-      .catch(() => setUsers([]))
-      .finally(() => setLoading(false))
-  }, [])
-  const COLORS = { OWNER: 'text-brand-600 bg-brand-50 border border-brand-200', KITCHEN: 'text-blue-600 bg-blue-50 border border-blue-200', ADMIN: 'text-purple-600 bg-purple-50 border border-purple-200' }
+// ── Nav config ─────────────────────────────────────────────────────────────────
+const NAV = [
+  { id:'analytics', label:'Analytics',   icon:TrendingUp,   shortcut:'A' },
+  { id:'history',   label:'Orders',      icon:ClipboardList,shortcut:'O' },
+  { id:'menu',      label:'Menu',        icon:Utensils,     shortcut:'M' },
+  { id:'qr',        label:'QR Codes',    icon:QrCode,       shortcut:'Q' },
+  { id:'staff',     label:'Staff',       icon:Users,        shortcut:'S' },
+]
+
+// ── Sidebar ────────────────────────────────────────────────────────────────────
+function Sidebar({ activeTab, onChange, user, restaurant, logoError, onLogoError, pendingCount, onLogout, onProfile, onClose }) {
   return (
-    <div className="max-w-2xl">
-      {loading && (
-        <div className="flex justify-center py-16">
-          <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+    <div className="flex flex-col h-full bg-gray-950 text-white">
+      {/* Brand */}
+      <div className="p-5 border-b border-white/8 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-brand-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-600/25 flex-shrink-0">
+            {restaurant?.logoUrl && !logoError
+              ? <img src={restaurant.logoUrl} alt="" onError={onLogoError} className="w-full h-full rounded-2xl object-cover" />
+              : <Building className="w-5 h-5 text-white" />}
+          </div>
+          <div className="min-w-0">
+            <p className="font-extrabold text-white text-sm leading-none truncate">{restaurant?.name || 'Restaurant'}</p>
+            <p className="text-orange-400 text-xs font-semibold mt-0.5">Owner Portal</p>
+          </div>
         </div>
-      )}
-      {!loading && users.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-3xl border border-gray-200 mb-4 shadow-sm">👥</div>
-          <p className="text-gray-800 font-bold">No staff assigned yet</p>
-          <p className="text-gray-400 text-sm mt-1">Add staff from the Super Admin portal</p>
+        {onClose && <button onClick={onClose} className="w-7 h-7 bg-white/8 hover:bg-white/15 rounded-lg flex items-center justify-center transition-colors ml-2 flex-shrink-0"><X className="w-4 h-4 text-gray-400" /></button>}
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+        <p className="text-gray-600 text-[10px] font-bold uppercase tracking-widest px-3 py-2">Navigation</p>
+        {NAV.map(({ id, label, icon: Icon, shortcut }) => {
+          const isActive = activeTab === id
+          const showBadge = id === 'history' && pendingCount > 0
+          const isLive = id === 'kanban' && pendingCount > 0
+          return (
+            <button key={id} onClick={() => { onChange(id); onClose?.() }}
+              className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 relative ${
+                isActive
+                  ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-600/30'
+                  : 'text-gray-400 hover:text-white hover:bg-white/8'
+              }`}>
+              <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive?'text-white':'text-gray-500 group-hover:text-white'}`} />
+              <span className="flex-1 text-left">{label}</span>
+              {isLive && !isActive && <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />}
+              {showBadge && (
+                <span className="relative flex h-5 w-5 items-center justify-center flex-shrink-0">
+                  <span className="animate-ping absolute h-full w-full rounded-full bg-brand-400 opacity-50" />
+                  <span className="relative bg-brand-500 text-white text-[9px] font-black rounded-full h-5 w-5 flex items-center justify-center">{pendingCount}</span>
+                </span>
+              )}
+              {!showBadge && !isLive && <kbd className="hidden group-hover:flex text-[9px] bg-white/10 px-1.5 py-0.5 rounded font-mono text-gray-400">{shortcut}</kbd>}
+            </button>
+          )
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-white/8 space-y-2 flex-shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-brand-600 rounded-full flex items-center justify-center text-white font-extrabold text-sm flex-shrink-0">
+            {user?.name?.[0]?.toUpperCase() || 'O'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-sm font-semibold leading-none truncate">{user?.name}</p>
+            <p className="text-gray-500 text-xs truncate mt-0.5">{user?.email}</p>
+          </div>
         </div>
-      )}
-      {!loading && users.length > 0 && (
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
-          {users.map(u => (
-            <div key={u.id} className="flex items-center gap-4 px-5 py-4 border-b border-gray-800 last:border-0 hover:bg-gray-800/40 transition-colors">
-              <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">{u.name[0].toUpperCase()}</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-semibold text-sm">{u.name}</p>
-                <p className="text-gray-500 text-xs truncate">{u.email}</p>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${COLORS[u.role] || 'text-gray-400 bg-gray-800'}`}>{u.role}</span>
-                <span className={`text-xs px-2 py-1 rounded-full border ${u.active ? 'text-green-700 bg-green-50 border-green-200' : 'text-red-600 bg-red-50 border-red-200'}`}>{u.active ? 'Active' : 'Inactive'}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+        <button onClick={onProfile} className="w-full flex items-center gap-2 text-xs text-gray-500 hover:text-white transition-colors py-2 px-2 rounded-lg hover:bg-white/8 font-medium">
+          <Settings className="w-4 h-4" /> Edit Profile
+        </button>
+        <button onClick={onLogout} className="w-full flex items-center gap-2 text-xs text-gray-500 hover:text-red-400 transition-colors py-2 px-2 rounded-lg hover:bg-white/8 font-medium">
+          <LogOut className="w-4 h-4" /> Sign Out
+        </button>
+      </div>
     </div>
   )
 }
 
-// ── Main Dashboard ────────────────────────────────────────────────────────────
+// ── Main ───────────────────────────────────────────────────────────────────────
+const MILESTONE = 10000 // Rs. revenue milestone for confetti
+
 export default function OwnerDashboardPage() {
   const { user, logout, loading: authLoading } = useAuth()
-  const navigate          = useNavigate()
+  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('owner_tab') || 'analytics')
+  const changeTab = id => { setActiveTab(id); localStorage.setItem('owner_tab', id) }
 
-  // Tab persisted across refresh
-  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('owner_active_tab') || 'analytics')
-  const changeTab = (id) => { setActiveTab(id); localStorage.setItem('owner_active_tab', id) }
-  const [orders, setOrders]             = useState([])
-  const [loading, setLoading]           = useState(true)
-  const [fetchError, setFetchError]     = useState(null)
-  // Instantly show cached branding from localStorage
-  const [restaurant, setRestaurant]     = useState(() => {
-    try { return JSON.parse(localStorage.getItem('owner_restaurant') || 'null') || { name: 'Restaurant', logoUrl: null } }
-    catch { return { name: 'Restaurant', logoUrl: null } }
-  })
-  const [logoError, setLogoError]       = useState(false)
-  const [confirm, setConfirm]           = useState(null)
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(null)
+  const [restaurant, setRestaurant] = useState(() => { try { return JSON.parse(localStorage.getItem('owner_restaurant')||'null')||{} } catch { return {} } })
+  const [logoError, setLogoError] = useState(false)
+  const [confirm, setConfirm] = useState(null)
   const [pendingCount, setPendingCount] = useState(0)
-  const badgeRef = useRef(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
+  const prevRevRef = useRef(0)
 
-  // Load orders with retry support
   const fetchOrders = useCallback(async () => {
     try {
       setFetchError(null)
       const res = await api.get('/orders')
       setOrders(res.data)
       setPendingCount(res.data.filter(o => o.status === 'PENDING').length)
-    } catch (err) {
-      setFetchError(err.message || 'Failed to load orders')
-    } finally {
-      setLoading(false)
-    }
+    } catch (err) { setFetchError(err.message || 'Could not load orders') }
+    finally { setLoading(false) }
   }, [])
 
-  // Single stable load — runs once after auth fully resolves
   useEffect(() => {
     if (authLoading) return
     fetchOrders()
     api.get('/restaurant/mine').then(r => {
-      const data = { name: r.data.name, logoUrl: r.data.logoUrl }
-      setRestaurant(data)
-      setLogoError(false)
-      localStorage.setItem('owner_restaurant', JSON.stringify(data))
+      const d = { name: r.data.name, logoUrl: r.data.logoUrl, address: r.data.address, phone: r.data.phone }
+      setRestaurant(d); setLogoError(false)
+      localStorage.setItem('owner_restaurant', JSON.stringify(d))
     }).catch(() => {})
+    requestPush()
   }, [authLoading, fetchOrders])
 
-  // Socket
+  // Keyboard shortcuts
   useEffect(() => {
-    socket.emit('join_kitchen')
-    if (user?.restaurantId) socket.emit('join_restaurant', { restaurantId: user.restaurantId })
+    const handler = e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return
+      const nav = NAV.find(n => n.shortcut === e.key.toUpperCase())
+      if (nav) changeTab(nav.id)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
-    const onNewOrder = (order) => {
-      setOrders(prev => prev.find(o => o.id === order.id) ? prev : [order, ...prev])
-      setPendingCount(n => n + 1)
-      clearTimeout(badgeRef.current)
-      toast.success(`🆕 New order — Table #${order.tableNumber}!`, { duration: 6000 })
+  // Check confetti milestone
+  const totalRevenue = orders.filter(o => o.status === 'PAID').reduce((s, o) => s + (o.discountedTotal ?? o.totalPrice), 0)
+  useEffect(() => {
+    const prev = prevRevRef.current
+    const crossed = Math.floor(totalRevenue / MILESTONE) > Math.floor(prev / MILESTONE)
+    if (crossed && totalRevenue > 0) {
+      spawnConfetti()
+      toast.success(`🎉 Rs. ${(Math.floor(totalRevenue/MILESTONE)*MILESTONE).toLocaleString()} milestone reached!`, { duration: 5000 })
     }
-    const onStatus    = ({ orderId, status }) => {
-      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o))
-      if (status !== 'PENDING') setPendingCount(n => Math.max(0, n - 1))
-    }
-    const onBranding  = (data) => {
-      const branding = { name: data.name, logoUrl: data.logoUrl }
-      setRestaurant(branding)
-      setLogoError(false)
-      localStorage.setItem('owner_restaurant', JSON.stringify(branding))
-      toast.success(`Branding updated: "${data.name}"`, { icon: '✨' })
+    prevRevRef.current = totalRevenue
+  }, [totalRevenue])
+
+
+  useEffect(() => {
+    const joinRooms = () => {
+      socket.emit('join_kitchen')
+      if (user?.restaurantId) socket.emit('join_restaurant', { restaurantId: user.restaurantId })
     }
 
-    socket.on('new_order', onNewOrder)
+    joinRooms() // join immediately
+
+    const onNew = order => {
+      setOrders(p => {
+        if (p.find(o => o.id === order.id)) return p
+        const next = [order, ...p]
+        setPendingCount(next.filter(o => o.status === 'PENDING').length)
+        return next
+      })
+      sendPush('New Order!', `Table #${order.tableNumber} — Rs. ${order.totalPrice}`)
+      toast(`New Order — Table #${order.tableNumber}!`, { icon: '🔔', duration: 7000 })
+    }
+
+    const onStatus = ({ orderId, status }) => {
+      setOrders(p => {
+        const next = p.map(o => o.id === orderId ? { ...o, status } : o)
+        // Recalculate pending count from fresh state — avoids double-decrement bugs
+        setPendingCount(next.filter(o => o.status === 'PENDING').length)
+        return next
+      })
+    }
+
+    const onBrand = data => {
+      const d = { name: data.name, logoUrl: data.logoUrl }
+      setRestaurant(p => ({ ...p, ...d })); setLogoError(false)
+      localStorage.setItem('owner_restaurant', JSON.stringify({ ...restaurant, ...d }))
+    }
+
+    // Re-join rooms if socket reconnects (e.g. server restart)
+    const onReconnect = () => joinRooms()
+
+    socket.on('new_order', onNew)
     socket.on('order_status_update', onStatus)
-    socket.on('restaurant_updated', onBranding)
-    return () => { socket.off('new_order', onNewOrder); socket.off('order_status_update', onStatus); socket.off('restaurant_updated', onBranding) }
-  }, [user])
+    socket.on('restaurant_updated', onBrand)
+    socket.on('connect', onReconnect)
+
+    return () => {
+      socket.off('new_order', onNew)
+      socket.off('order_status_update', onStatus)
+      socket.off('restaurant_updated', onBrand)
+      socket.off('connect', onReconnect)
+    }
+  }, [user?.id, user?.restaurantId])  // stable primitive deps — prevents duplicate listeners
+
+
+  const handleStatusChange = (orderId, status) => {
+    setOrders(p => p.map(o => o.id === orderId ? { ...o, status } : o))
+    if (status !== 'PENDING') setPendingCount(n => Math.max(0, n - 1))
+  }
 
   const askDeleteItem = (item, onSuccess) => setConfirm({
-    title: 'Delete Menu Item?',
-    message: `Permanently delete "${item.name}"?`,
+    title: 'Delete Item?', message: `Delete "${item.name}" permanently?`, type: 'danger', confirmLabel: 'Delete',
     onConfirm: async () => {
       try { await api.delete(`/menu/${item.id}`); onSuccess(item.id); toast.success('Deleted') }
-      catch (err) { toast.error(err.message) }
-      finally { setConfirm(null) }
+      catch (err) { toast.error(err.message) } finally { setConfirm(null) }
     },
-    type: 'danger', confirmLabel: 'Delete',
   })
 
-  const askLogout = () => setConfirm({ title: 'Sign Out?', message: 'Sign out of the Owner Portal?', onConfirm: () => { logout(); navigate('/owner/login') }, type: 'danger', confirmLabel: 'Sign Out' })
+  const askLogout = () => setConfirm({
+    title: 'Sign Out?', message: 'Sign out of the Owner Portal?', type: 'danger', confirmLabel: 'Sign Out',
+    onConfirm: () => { logout(); navigate('/owner/login') }
+  })
 
-  const totalRevenue = orders.filter(o => o.status !== 'CANCELLED').reduce((s, o) => s + o.totalPrice, 0)
+  const LIVE_STATS = [
+    { label: 'Orders',  value: orders.length,                 color: 'text-blue-600',  bg: 'bg-blue-50 border-blue-100' },
+    { label: 'Paid',    value: `Rs.${totalRevenue.toFixed(0)}`, color: 'text-green-600', bg: 'bg-green-50 border-green-100' },
+    { label: 'Pending', value: pendingCount, color: pendingCount>0?'text-amber-600':'text-gray-400', bg: pendingCount>0?'bg-amber-50 border-amber-200':'bg-gray-50 border-gray-100' },
+  ]
+
+  const sidebarProps = {
+    activeTab, onChange: changeTab, user, restaurant,
+    logoError, onLogoError: () => setLogoError(true),
+    pendingCount, onLogout: askLogout,
+    onProfile: () => setShowProfile(true),
+  }
+
+  const activeNav = NAV.find(n => n.id === activeTab)
+
+  const TABS = {
+    analytics: <AnalyticsTab allOrders={orders} />,
+    history:   <OrderHistoryTab orders={orders} loading={loading} restaurant={restaurant} onPaid={u => setOrders(p => p.map(o => o.id===u.id?u:o))} onStatusChange={handleStatusChange} />,
+    menu:      <MenuTab restaurantId={user?.restaurantId} onDeleteItem={askDeleteItem} />,
+    qr:        <QRTab restaurantId={user?.restaurantId} />,
+    staff:     <StaffTab />,
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30 flex-shrink-0 shadow-sm">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          {/* Logo (real-time) */}
-          <div className="flex items-center gap-3 min-w-0">
-            {restaurant.logoUrl && !logoError
-              ? <img src={restaurant.logoUrl} alt="logo"
-                  className="w-9 h-9 rounded-xl object-cover ring-2 ring-gray-200 flex-shrink-0"
-                  onError={() => setLogoError(true)} />
-              : <div className="w-9 h-9 bg-gradient-to-br from-brand-600 to-brand-700 rounded-xl flex items-center justify-center text-lg flex-shrink-0 shadow-sm">🏢</div>
-            }
-            <div className="min-w-0">
-              <p className="text-gray-900 font-extrabold text-sm leading-none truncate">{restaurant.name}</p>
-              <p className="text-gray-400 text-xs mt-0.5">Owner Portal</p>
-            </div>
-          </div>
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex w-60 flex-col flex-shrink-0 shadow-xl" style={{ height: '100vh', overflow: 'hidden' }}>
+        <Sidebar {...sidebarProps} />
+      </aside>
 
-          {/* Stats summary */}
-          <div className="hidden md:flex items-center gap-3">
-            {[
-              { label: 'Orders',  v: orders.length,          color: 'text-brand-600'  },
-              { label: 'Revenue', v: `Rs.${totalRevenue.toFixed(0)}`, color: 'text-green-600' },
-            ].map(s => (
-              <div key={s.label} className="text-center px-3 py-1.5 bg-gray-100 rounded-xl border border-gray-200">
-                <p className={`font-extrabold text-base leading-none ${s.color}`}>{s.v}</p>
-                <p className="text-gray-400 text-[9px] mt-0.5 uppercase tracking-wider">{s.label}</p>
-              </div>
-            ))}
-          </div>
+      {/* Mobile overlay */}
+      {sidebarOpen && <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 flex flex-col shadow-2xl transform transition-transform duration-300 lg:hidden ${sidebarOpen?'translate-x-0':'-translate-x-full'}`}>
+        <Sidebar {...sidebarProps} onClose={() => setSidebarOpen(false)} />
+      </aside>
 
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="hidden sm:block text-right">
-              <p className="text-gray-900 text-xs font-semibold">{user?.name}</p>
-              <p className="text-gray-400 text-[10px]">Owner</p>
-            </div>
-            <button onClick={askLogout} className="text-xs text-gray-400 hover:text-brand-600 transition-colors px-2 py-1.5 rounded-lg hover:bg-gray-100">Sign out</button>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 pb-3 flex gap-1 overflow-x-auto">
-          {TABS.map(t => {
-            const showBadge = t.id === 'history' && pendingCount > 0
-            return (
-              <button key={t.id} onClick={() => { changeTab(t.id); if (t.id === 'history') setPendingCount(0) }}
-                className={`relative flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${activeTab === t.id ? 'bg-brand-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100 border border-transparent hover:border-gray-200'}`}>
-                {showBadge && (
-                  <span className="absolute -top-1.5 -right-1 flex h-5 w-5 items-center justify-center">
-                    <span className="animate-ping absolute h-full w-full rounded-full bg-red-400 opacity-60" />
-                    <span className="relative inline-flex rounded-full h-5 w-5 bg-red-500 text-white text-[9px] font-black items-center justify-center">{pendingCount}</span>
-                  </span>
-                )}
-                <span>{t.icon}</span>
-                <span className="hidden sm:inline">{t.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      </header>
-
-      {/* ── Content ─────────────────────────────────────────────────────────── */}
-      <main className="flex-1 max-w-screen-xl mx-auto w-full px-4 sm:px-6 py-5">
-        {/* Error banner */}
-        {fetchError && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-red-600 text-sm">
-              <span>⚠️</span>
-              <span>{fetchError}</span>
-            </div>
-            <button onClick={fetchOrders} className="text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0">
-              Retry
+      {/* Main */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar */}
+        <header className="bg-white/90 backdrop-blur-lg border-b border-gray-100 shadow-sm flex-shrink-0 z-20">
+          <div className="px-4 sm:px-6 py-3 flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors flex-shrink-0">
+              <Menu className="w-4 h-4 text-gray-600" />
             </button>
+            <div className="flex items-center gap-2.5 min-w-0">
+              {activeNav && (
+                <div className="w-8 h-8 bg-brand-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <activeNav.icon className="w-4 h-4 text-brand-600" />
+                </div>
+              )}
+              <h1 className="font-extrabold text-gray-900 text-base truncate">{activeNav?.label}</h1>
+              <span className="hidden sm:flex items-center gap-1 text-xs text-gray-400 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Live
+              </span>
+            </div>
+            {/* Live stats */}
+            <div className="ml-auto hidden md:flex items-center gap-2">
+              {LIVE_STATS.map(s => (
+                <div key={s.label} className={`flex flex-col items-center px-3 py-1.5 rounded-xl border transition-all ${s.bg}`}>
+                  <span className={`font-extrabold text-sm leading-none ${s.color}`}>{s.value}</span>
+                  <span className="text-gray-400 text-[9px] uppercase tracking-wider mt-0.5">{s.label}</span>
+                </div>
+              ))}
+            </div>
+            {/* Keyboard shortcut hint */}
+            <div className="hidden xl:flex items-center gap-1 text-[10px] text-gray-300 ml-2">
+              <kbd className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">A</kbd>
+              <kbd className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">O</kbd>
+              <kbd className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">M</kbd>
+            </div>
           </div>
-        )}
-        {activeTab === 'analytics' && <AnalyticsTab />}
-        {activeTab === 'history'   && <OrderHistoryTab orders={orders} loading={loading} restaurant={restaurant} onPaid={(updated) => setOrders(prev => prev.map(o => o.id === updated.id ? updated : o))} />}
-        {activeTab === 'menu'      && <MenuTab restaurantId={user?.restaurantId} onDeleteItem={askDeleteItem} />}
-        {activeTab === 'qr'        && <QRTab restaurantId={user?.restaurantId} />}
-        {activeTab === 'staff'     && <StaffTab />}
-      </main>
+        </header>
 
-      {confirm && (
-        <ConfirmModal open title={confirm.title} message={confirm.message}
-          confirmLabel={confirm.confirmLabel || 'Confirm'} type={confirm.type || 'danger'}
-          onConfirm={confirm.onConfirm} onCancel={() => setConfirm(null)} />
-      )}
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+          {fetchError && (
+            <div className="mb-5 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-red-600 text-sm"><XCircle className="w-4 h-4" /><span>{fetchError}</span></div>
+              <button onClick={fetchOrders} className="flex items-center gap-1.5 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-lg transition-colors flex-shrink-0">
+                <RefreshCw className="w-3 h-3" /> Retry
+              </button>
+            </div>
+          )}
+          {TABS[activeTab] || null}
+        </main>
+      </div>
+
+      {confirm && <ConfirmModal open title={confirm.title} message={confirm.message} confirmLabel={confirm.confirmLabel||'Confirm'} type={confirm.type||'danger'} onConfirm={confirm.onConfirm} onCancel={() => setConfirm(null)} />}
+      {showProfile && <ProfileModal restaurant={restaurant} onClose={() => setShowProfile(false)} onSaved={data => { setRestaurant(p=>({...p,...data})); localStorage.setItem('owner_restaurant', JSON.stringify({...restaurant,...data})) }} />}
     </div>
   )
 }
