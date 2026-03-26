@@ -192,6 +192,7 @@ export default function OwnerDashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const prevRevRef = useRef(0)
+  const notifiedOrderIds = useRef(new Set())
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -199,6 +200,7 @@ export default function OwnerDashboardPage() {
       const res = await api.get('/orders')
       setOrders(res.data)
       setPendingCount(res.data.filter(o => o.status === 'PENDING').length)
+      res.data.forEach(o => notifiedOrderIds.current.add(o.id))
     } catch (err) { setFetchError(err.message || 'Could not load orders') }
     finally { setLoading(false) }
   }, [])
@@ -246,15 +248,14 @@ export default function OwnerDashboardPage() {
     joinRooms() // join immediately
 
     const onNew = order => {
-      let shouldNotify = false
+      if (notifiedOrderIds.current.has(order.id)) return
+      notifiedOrderIds.current.add(order.id)
       setOrders(p => {
         if (p.find(o => o.id === order.id)) return p
         const next = [order, ...p]
         setPendingCount(next.filter(o => o.status === 'PENDING').length)
-        shouldNotify = true
         return next
       })
-      if (!shouldNotify) return
       sendPush('New Order!', `Table #${order.tableNumber} — Rs. ${order.totalPrice}`)
       toast(`New Order — Table #${order.tableNumber}!`, {
         icon: <FaBell className="w-4 h-4 text-brand-500" />,
