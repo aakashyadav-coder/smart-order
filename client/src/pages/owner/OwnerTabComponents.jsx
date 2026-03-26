@@ -66,6 +66,68 @@ function BarChart({ data, labels, color = '#e11d48' }) {
   )
 }
 
+// Line chart (pro trend)
+function LineChart({ data, labels, color = '#e11d48' }) {
+  const max = Math.max(...data, 1)
+  const min = Math.min(...data, 0)
+  const range = Math.max(max - min, 1)
+  const points = data.map((v, i) => {
+    const x = data.length === 1 ? 50 : (i / (data.length - 1)) * 100
+    const y = 92 - ((v - min) / range) * 72
+    return { x, y, v }
+  })
+  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ')
+  const area = `${line} L 100,100 L 0,100 Z`
+  const showEvery = data.length > 10 ? Math.ceil(data.length / 6) : 1
+  const last = points[points.length - 1] || { x: 0, y: 0, v: 0 }
+  const avg = Math.round(data.reduce((s, v) => s + v, 0) / Math.max(data.length, 1))
+  const gradId = `linegrad-${color.replace('#', '')}`
+  const glowId = `lineglow-${color.replace('#', '')}`
+
+  return (
+    <div className="relative">
+      <div className="relative h-48 rounded-xl bg-gradient-to-b from-gray-50 to-white border border-gray-100 overflow-hidden">
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity="0.35" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+            </linearGradient>
+            <filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          {[20, 40, 60, 80].map(y => (
+            <line key={y} x1="0" x2="100" y1={y} y2={y} stroke="#eef2f7" strokeDasharray="2 3" />
+          ))}
+          <path d={area} fill={`url(#${gradId})`} />
+          <path d={line} stroke={color} strokeWidth="2.6" fill="none" filter={`url(#${glowId})`} />
+          <circle cx={last.x} cy={last.y} r="2.8" fill="white" stroke={color} strokeWidth="2" />
+        </svg>
+        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2.5 py-1 rounded-lg border border-gray-100 text-[11px] font-bold text-gray-700 shadow-sm">
+          {last.v}
+        </div>
+      </div>
+      <div className="flex justify-between text-[9px] text-gray-400 mt-2">
+        {labels.map((l, i) => (
+          <span key={i} style={{ display: (i % showEvery === 0 || i === labels.length - 1) ? 'block' : 'none' }}>
+            {l}
+          </span>
+        ))}
+      </div>
+      <div className="mt-2 flex items-center gap-2 text-[10px] text-gray-500">
+        <span className="px-2 py-0.5 rounded-full bg-gray-100">Min {min}</span>
+        <span className="px-2 py-0.5 rounded-full bg-gray-100">Avg {avg}</span>
+        <span className="px-2 py-0.5 rounded-full bg-gray-100">Max {max}</span>
+      </div>
+    </div>
+  )
+}
+
 // Donut chart (pure SVG)
 function DonutChart({ slices }) {
   const total = slices.reduce((s, x) => s + x.value, 0)
@@ -239,14 +301,14 @@ export function AnalyticsTab({ allOrders = [] }) {
               <div><h3 className="font-bold text-gray-800">Revenue</h3><p className="text-xs text-gray-400 mt-0.5">Rs. {(data.totalPaidRevenue || 0).toFixed(0)} paid</p></div>
               <div className="w-8 h-8 bg-green-50 rounded-xl flex items-center justify-center"><FaChartLine className="w-4 h-4 text-green-600" /></div>
             </div>
-            <BarChart data={data.revenue} labels={data.labels} color="#22c55e" />
+            <LineChart data={data.revenue} labels={data.labels} color="#22c55e" />
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div><h3 className="font-bold text-gray-800">Orders</h3><p className="text-xs text-gray-400 mt-0.5">{data.totalOrders} total</p></div>
               <div className="w-8 h-8 bg-brand-50 rounded-xl flex items-center justify-center"><FaClipboardList className="w-4 h-4 text-brand-600" /></div>
             </div>
-            <BarChart data={data.counts} labels={data.labels} color="#e11d48" />
+            <LineChart data={data.counts} labels={data.labels} color="#e11d48" />
           </div>
         </div>
       ) : null}
