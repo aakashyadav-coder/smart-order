@@ -56,9 +56,14 @@ function useTick(enabled = true) {
 }
 
 function elapsed(createdAt) {
-  const s = Math.floor((Date.now() - new Date(createdAt)) / 1000)
-  const m = Math.floor(s / 60)
-  return { s, m, label: `${m}:${String(s % 60).padStart(2, '0')}` }
+  const totalSeconds = Math.floor((Date.now() - new Date(createdAt)) / 1000)
+  const h = Math.floor(totalSeconds / 3600)
+  const m = Math.floor((totalSeconds % 3600) / 60)
+  const s = totalSeconds % 60
+  const label = h >= 1
+    ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    : `${m}:${String(s).padStart(2, '0')}`
+  return { s, m: Math.floor(totalSeconds / 60), h, label }
 }
 
 function formatServedAt(order) {
@@ -157,6 +162,9 @@ function OrderCard({ order, col, isNew, onAccept, onPrepare, onServe, onCancel }
           <div className="flex items-center gap-2">
             <span className="font-display font-black text-gray-900 text-4xl leading-none tabular-nums tracking-tight">
               {order.tableNumber}
+            </span>
+            <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">
+              Order #{String(order.id).slice(-6)}
             </span>
           </div>
           <p
