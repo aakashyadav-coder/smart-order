@@ -13,7 +13,7 @@ import ConfirmModal from '../components/ConfirmModal'
 import {
   FaBuilding, FaSignOutAlt, FaChartLine, FaClipboardList,
   FaUtensils, FaQrcode, FaUsers, FaTimesCircle, FaSyncAlt, FaBars, FaTimes,
-  FaCog
+  FaCog, FaBell
 } from 'react-icons/fa'
 import {
   AnalyticsTab, OrderHistoryTab, MenuTab, QRTab, StaffTab
@@ -240,21 +240,26 @@ export default function OwnerDashboardPage() {
 
   useEffect(() => {
     const joinRooms = () => {
-      socket.emit('join_kitchen')
       if (user?.restaurantId) socket.emit('join_restaurant', { restaurantId: user.restaurantId })
     }
 
     joinRooms() // join immediately
 
     const onNew = order => {
+      let shouldNotify = false
       setOrders(p => {
         if (p.find(o => o.id === order.id)) return p
         const next = [order, ...p]
         setPendingCount(next.filter(o => o.status === 'PENDING').length)
+        shouldNotify = true
         return next
       })
+      if (!shouldNotify) return
       sendPush('New Order!', `Table #${order.tableNumber} — Rs. ${order.totalPrice}`)
-      toast(`New Order — Table #${order.tableNumber}!`, { icon: '🔔', duration: 7000 })
+      toast(`New Order — Table #${order.tableNumber}!`, {
+        icon: <FaBell className="w-4 h-4 text-brand-500" />,
+        duration: 7000,
+      })
     }
 
     const onStatus = ({ orderId, status }) => {
