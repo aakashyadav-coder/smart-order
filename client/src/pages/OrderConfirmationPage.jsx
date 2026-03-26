@@ -16,10 +16,13 @@ const STATUS_META = {
   ACCEPTED:  { label: 'Order Accepted',    icon: FaCheckCircle, color: 'text-blue-600',   bg: 'bg-blue-50',    border: 'border-blue-200',   step: 2 },
   PREPARING: { label: 'Being Prepared',    icon: FaFire,        color: 'text-purple-600', bg: 'bg-purple-50',  border: 'border-purple-200', step: 3 },
   COMPLETED: { label: 'Ready for Pickup!', icon: FaCheckCircle, color: 'text-green-600',  bg: 'bg-green-50',   border: 'border-green-200',  step: 4 },
+  SERVED:    { label: 'Ready for Pickup!', icon: FaCheckCircle, color: 'text-green-600',  bg: 'bg-green-50',   border: 'border-green-200',  step: 4 },
   CANCELLED: { label: 'Order Cancelled',   icon: FaTimesCircle, color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200',    step: 0 },
 }
 
 const STEPS = ['PENDING', 'ACCEPTED', 'PREPARING', 'COMPLETED']
+
+const normalizeStatus = s => (s === 'SERVED' ? 'COMPLETED' : s)
 
 export default function OrderConfirmationPage() {
   const { id } = useParams()
@@ -30,7 +33,7 @@ export default function OrderConfirmationPage() {
 
   useEffect(() => {
     api.get(`/orders/${id}`)
-      .then(res => { setOrder(res.data); setStatus(res.data.status) })
+      .then(res => { setOrder(res.data); setStatus(normalizeStatus(res.data.status)) })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [id])
@@ -38,7 +41,7 @@ export default function OrderConfirmationPage() {
   useEffect(() => {
     socket.emit('join_order_room', { orderId: id })
     const handleStatusUpdate = ({ orderId, status: newStatus }) => {
-      if (orderId === id) setStatus(newStatus)
+      if (orderId === id) setStatus(normalizeStatus(newStatus))
     }
     socket.on('order_status_update', handleStatusUpdate)
     return () => socket.off('order_status_update', handleStatusUpdate)
