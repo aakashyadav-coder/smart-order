@@ -4,13 +4,13 @@
  */
 import React, { useEffect, useState } from 'react'
 import api from '../../lib/api'
-import { Building, Users, ClipboardList, TrendingUp } from '../../components/Icons'
+import { FaBuilding, FaUsers, FaClipboardList, FaChartLine } from 'react-icons/fa'
 
 const STAT_CARDS = [
-  { key: 'totalRestaurants', label: 'Total Restaurants', icon: Building,    color: 'bg-purple-50 text-purple-600', subKey: 'activeRestaurants', subLabel: 'active' },
-  { key: 'totalUsers',       label: 'Total Users',       icon: Users,       color: 'bg-blue-50 text-blue-600' },
-  { key: 'totalOrders',      label: 'Total Orders',      icon: ClipboardList, color: 'bg-brand-50 text-brand-600' },
-  { key: 'totalRevenue',     label: 'Total Revenue',     icon: TrendingUp,  color: 'bg-green-50 text-green-600', prefix: 'Rs. ', format: true },
+  { key: 'totalRestaurants', label: 'Total Restaurants', icon: FaBuilding,     color: 'bg-purple-50 text-purple-600', subKey: 'activeRestaurants', subLabel: 'active' },
+  { key: 'totalUsers',       label: 'Total Users',       icon: FaUsers,        color: 'bg-blue-50 text-blue-600' },
+  { key: 'totalOrders',      label: 'Total Orders',      icon: FaClipboardList, color: 'bg-brand-50 text-brand-600' },
+  { key: 'totalRevenue',     label: 'Total Revenue',     icon: FaChartLine,    color: 'bg-green-50 text-green-600', prefix: 'Rs. ', format: true },
 ]
 
 const STATUS_STYLES = {

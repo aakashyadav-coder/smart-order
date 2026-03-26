@@ -5,14 +5,14 @@
 import React, { useState } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
-import { CheckCircle, Flame, Clock, XCircle, Users, Phone } from '../../components/Icons'
+import { FaCheckCircle, FaFire, FaClock, FaTimesCircle, FaUsers, FaPhoneAlt } from 'react-icons/fa'
 
 const PIPELINE = [
-  { status: 'PENDING',   label: 'Pending',   color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200',   dot: 'bg-amber-400',   headerBg: 'bg-amber-50 border-amber-200',   icon: Clock,       next: 'ACCEPTED',   nextLabel: 'Accept',       btnClass: 'bg-gradient-to-r from-brand-600 to-brand-500 text-white hover:from-brand-700 hover:to-brand-600' },
-  { status: 'ACCEPTED',  label: 'Accepted',  color: 'text-blue-600',   bg: 'bg-blue-50',    border: 'border-blue-200',    dot: 'bg-blue-400',    headerBg: 'bg-blue-50 border-blue-200',     icon: CheckCircle, next: 'PREPARING',  nextLabel: 'Start Prep',   btnClass: 'bg-orange-500 text-white hover:bg-orange-600' },
-  { status: 'PREPARING', label: 'Preparing', color: 'text-orange-600', bg: 'bg-orange-50',  border: 'border-orange-200',  dot: 'bg-orange-400',  headerBg: 'bg-orange-50 border-orange-200', icon: Flame,       next: 'SERVED',     nextLabel: 'Mark Served',  btnClass: 'bg-green-600 text-white hover:bg-green-700' },
-  { status: 'SERVED',    label: 'Served',    color: 'text-green-600',  bg: 'bg-green-50',   border: 'border-green-200',   dot: 'bg-green-400',   headerBg: 'bg-green-50 border-green-200',   icon: Users,       next: null,          nextLabel: null,           btnClass: '' },
-  { status: 'PAID',      label: 'Paid',      color: 'text-emerald-600',bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500', headerBg: 'bg-emerald-50 border-emerald-200',icon: CheckCircle, next: null,          nextLabel: null,           btnClass: '' },
+  { status: 'PENDING',   label: 'Pending',   color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200',   dot: 'bg-amber-400',   headerBg: 'bg-amber-50 border-amber-200',   icon: FaClock,       next: 'ACCEPTED',   nextLabel: 'Accept',       btnClass: 'bg-gradient-to-r from-brand-600 to-brand-500 text-white hover:from-brand-700 hover:to-brand-600' },
+  { status: 'ACCEPTED',  label: 'Accepted',  color: 'text-blue-600',   bg: 'bg-blue-50',    border: 'border-blue-200',    dot: 'bg-blue-400',    headerBg: 'bg-blue-50 border-blue-200',     icon: FaCheckCircle, next: 'PREPARING',  nextLabel: 'Start Prep',   btnClass: 'bg-orange-500 text-white hover:bg-orange-600' },
+  { status: 'PREPARING', label: 'Preparing', color: 'text-orange-600', bg: 'bg-orange-50',  border: 'border-orange-200',  dot: 'bg-orange-400',  headerBg: 'bg-orange-50 border-orange-200', icon: FaFire,       next: 'SERVED',     nextLabel: 'Mark Served',  btnClass: 'bg-green-600 text-white hover:bg-green-700' },
+  { status: 'SERVED',    label: 'Served',    color: 'text-green-600',  bg: 'bg-green-50',   border: 'border-green-200',   dot: 'bg-green-400',   headerBg: 'bg-green-50 border-green-200',   icon: FaUsers,      next: null,          nextLabel: null,           btnClass: '' },
+  { status: 'PAID',      label: 'Paid',      color: 'text-emerald-600',bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500', headerBg: 'bg-emerald-50 border-emerald-200',icon: FaCheckCircle, next: null,          nextLabel: null,           btnClass: '' },
 ]
 
 function timeAgo(dateStr) {
@@ -87,7 +87,7 @@ function OrderCard({ order, col, onStatusChange }) {
         {/* Phone */}
         {order.phone && (
           <a href={`tel:${order.phone}`} className="flex items-center gap-1.5 text-gray-400 hover:text-brand-600 transition-colors text-xs mb-3 group">
-            <Phone className="w-3 h-3 group-hover:text-brand-600" />
+            <FaPhoneAlt className="w-3 h-3 group-hover:text-brand-600" />
             <span>{order.phone}</span>
           </a>
         )}
@@ -112,10 +112,10 @@ function OrderCard({ order, col, onStatusChange }) {
             {(col.status === 'PENDING' || col.status === 'ACCEPTED') && (
               <button onClick={() => setCancel(true)}
                 className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 border border-red-100 hover:bg-red-100 transition-colors flex-shrink-0">
-                <XCircle className="w-3.5 h-3.5 text-red-500" />
+                <FaTimesCircle className="w-3.5 h-3.5 text-red-500" />
               </button>
             )}
-            {!col.next && <div className="flex-1 flex items-center justify-center gap-1 py-2 text-xs font-bold text-emerald-600 bg-emerald-50 rounded-lg border border-emerald-200"><CheckCircle className="w-3.5 h-3.5" /> Done</div>}
+            {!col.next && <div className="flex-1 flex items-center justify-center gap-1 py-2 text-xs font-bold text-emerald-600 bg-emerald-50 rounded-lg border border-emerald-200"><FaCheckCircle className="w-3.5 h-3.5" /> Done</div>}
           </div>
         )}
       </div>

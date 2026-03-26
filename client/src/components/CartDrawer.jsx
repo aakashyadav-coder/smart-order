@@ -4,7 +4,7 @@
  */
 import React from 'react'
 import { useCart } from '../context/CartContext'
-import { ShoppingCart, X, Trash, Plus, Minus, Utensils } from '../components/Icons'
+import { FaShoppingCart, FaTimes, FaTrash, FaPlus, FaMinus, FaUtensils } from 'react-icons/fa'
 
 export default function CartDrawer({ open, onClose, onCheckout, tableNumber }) {
   const { items, updateQuantity, removeItem, totalItems, totalPrice, clearCart } = useCart()
@@ -22,7 +22,7 @@ export default function CartDrawer({ open, onClose, onCheckout, tableNumber }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
-                <ShoppingCart className="w-5 h-5 text-white" />
+                <FaShoppingCart className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h2 className="text-lg font-extrabold leading-none">Your Cart</h2>
@@ -42,7 +42,7 @@ export default function CartDrawer({ open, onClose, onCheckout, tableNumber }) {
                 onClick={onClose}
                 className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 transition-colors"
               >
-                <X className="w-4 h-4 text-white" />
+                <FaTimes className="w-4 h-4 text-white" />
               </button>
             </div>
           </div>
@@ -53,7 +53,7 @@ export default function CartDrawer({ open, onClose, onCheckout, tableNumber }) {
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-20 h-20 bg-brand-50 rounded-full flex items-center justify-center mb-4">
-                <ShoppingCart className="w-10 h-10 text-brand-300" />
+                <FaShoppingCart className="w-10 h-10 text-brand-300" />
               </div>
               <p className="text-gray-700 font-semibold">Your cart is empty</p>
               <p className="text-gray-400 text-sm mt-1">Add items from the menu</p>
@@ -67,7 +67,7 @@ export default function CartDrawer({ open, onClose, onCheckout, tableNumber }) {
                     <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Utensils className="w-6 h-6 text-brand-300" />
+                      <FaUtensils className="w-6 h-6 text-brand-300" />
                     </div>
                   )}
                 </div>
@@ -86,14 +86,14 @@ export default function CartDrawer({ open, onClose, onCheckout, tableNumber }) {
                     onClick={() => updateQuantity(item.menuItemId, item.quantity - 1)}
                     className="w-8 h-8 rounded-lg bg-white border border-gray-200 text-gray-600 flex items-center justify-center hover:border-brand-300 hover:text-brand-600 transition-colors"
                   >
-                    {item.quantity === 1 ? <Trash className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+                    {item.quantity === 1 ? <FaTrash className="w-3.5 h-3.5" /> : <FaMinus className="w-3.5 h-3.5" />}
                   </button>
                   <span className="w-6 text-center font-bold text-gray-800 text-sm">{item.quantity}</span>
                   <button
                     onClick={() => updateQuantity(item.menuItemId, item.quantity + 1)}
                     className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-600 to-brand-500 text-white flex items-center justify-center hover:from-brand-700 hover:to-brand-600 transition-all"
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <FaPlus className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>

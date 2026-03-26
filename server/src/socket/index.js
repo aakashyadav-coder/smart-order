@@ -38,6 +38,10 @@ const initSocket = (io) => {
 /** Emit new order to the kitchen room */
 const emitNewOrder = (io, order) => {
   io.to("kitchen").emit("new_order", order);
+  // Broadcast to restaurant-specific room (owner who joined via join_restaurant)
+  if (order?.restaurantId) {
+    io.to(`restaurant_${order.restaurantId}`).emit("new_order", order);
+  }
   console.log(`[Socket] new_order → kitchen (Order #${order.id})`);
 };
 

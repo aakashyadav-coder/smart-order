@@ -6,14 +6,17 @@ import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import api from '../lib/api'
 import socket from '../lib/socket'
-import { ArrowLeft, Clock, CheckCircle, Flame, Utensils, XCircle, Phone, User, Table2 } from '../components/Icons'
+import {
+  FaArrowLeft, FaClock, FaCheckCircle, FaFire, FaUtensils,
+  FaTimesCircle, FaPhoneAlt, FaUser, FaTable
+} from 'react-icons/fa'
 
 const STATUS_META = {
-  PENDING:   { label: 'Order Received',    icon: Clock,        color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200', step: 1 },
-  ACCEPTED:  { label: 'Order Accepted',    icon: CheckCircle,  color: 'text-blue-600',   bg: 'bg-blue-50',    border: 'border-blue-200',   step: 2 },
-  PREPARING: { label: 'Being Prepared',    icon: Flame,        color: 'text-purple-600', bg: 'bg-purple-50',  border: 'border-purple-200', step: 3 },
-  COMPLETED: { label: 'Ready for Pickup!', icon: CheckCircle,  color: 'text-green-600',  bg: 'bg-green-50',   border: 'border-green-200',  step: 4 },
-  CANCELLED: { label: 'Order Cancelled',   icon: XCircle,      color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200',    step: 0 },
+  PENDING:   { label: 'Order Received',    icon: FaClock,       color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200', step: 1 },
+  ACCEPTED:  { label: 'Order Accepted',    icon: FaCheckCircle, color: 'text-blue-600',   bg: 'bg-blue-50',    border: 'border-blue-200',   step: 2 },
+  PREPARING: { label: 'Being Prepared',    icon: FaFire,        color: 'text-purple-600', bg: 'bg-purple-50',  border: 'border-purple-200', step: 3 },
+  COMPLETED: { label: 'Ready for Pickup!', icon: FaCheckCircle, color: 'text-green-600',  bg: 'bg-green-50',   border: 'border-green-200',  step: 4 },
+  CANCELLED: { label: 'Order Cancelled',   icon: FaTimesCircle, color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200',    step: 0 },
 }
 
 const STEPS = ['PENDING', 'ACCEPTED', 'PREPARING', 'COMPLETED']
@@ -56,7 +59,7 @@ export default function OrderConfirmationPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="text-center">
-          <XCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
+          <FaTimesCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
           <p className="text-gray-600 font-medium">{error || 'Order not found'}</p>
           <Link to="/menu" className="btn-primary mt-4 inline-flex">Back to Menu</Link>
         </div>
@@ -74,7 +77,7 @@ export default function OrderConfirmationPage() {
       <header className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-20 shadow-sm">
         <div className="max-w-lg mx-auto flex items-center gap-3">
           <Link to={`/menu?table=${order.tableNumber}`} className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors">
-            <ArrowLeft className="w-4 h-4 text-gray-600" />
+            <FaArrowLeft className="w-4 h-4 text-gray-600" />
           </Link>
           <h1 className="text-base font-extrabold text-gray-900">Order Confirmation</h1>
           <div className="ml-auto flex items-center gap-1.5 text-xs text-gray-400">
@@ -96,7 +99,7 @@ export default function OrderConfirmationPage() {
           </p>
           {order.estimatedMinutes && status !== 'COMPLETED' && status !== 'CANCELLED' && (
             <div className="mt-3 inline-flex items-center gap-2 bg-white/70 backdrop-blur px-4 py-2 rounded-full text-sm font-medium text-gray-700 border border-white">
-              <Clock className="w-4 h-4 text-gray-500" />
+              <FaClock className="w-4 h-4 text-gray-500" />
               Est. {order.estimatedMinutes} min
             </div>
           )}
@@ -120,7 +123,7 @@ export default function OrderConfirmationPage() {
                                  : 'bg-gray-100 text-gray-400'
                       }`}>
                         {done
-                          ? <CheckCircle className="w-5 h-5" />
+                          ? <FaCheckCircle className="w-5 h-5" />
                           : <SIcon className="w-5 h-5" />
                         }
                       </div>
@@ -143,7 +146,7 @@ export default function OrderConfirmationPage() {
         {/* Order Details */}
         <div className="card p-5 space-y-3">
           <h3 className="font-bold text-gray-800 flex items-center gap-2">
-            <Utensils className="w-4 h-4 text-brand-500" />
+            <FaUtensils className="w-4 h-4 text-brand-500" />
             Order Details
           </h3>
           <div className="space-y-2">
@@ -165,15 +168,15 @@ export default function OrderConfirmationPage() {
           <h3 className="font-bold text-gray-800 mb-3">Your Details</h3>
           <div className="space-y-2 text-sm text-gray-600">
             <div className="flex items-center gap-2.5">
-              <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <FaUser className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <span>{order.customerName}</span>
             </div>
             <div className="flex items-center gap-2.5">
-              <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <FaPhoneAlt className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <span>{order.phone}</span>
             </div>
             <div className="flex items-center gap-2.5">
-              <Table2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <FaTable className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <span>Table #{order.tableNumber}</span>
             </div>
           </div>
@@ -181,7 +184,7 @@ export default function OrderConfirmationPage() {
 
         {status === 'COMPLETED' && (
           <Link to={`/menu?table=${order.tableNumber}`} className="btn-primary w-full py-3.5 text-center flex items-center justify-center gap-2">
-            <Utensils className="w-4 h-4" />
+            <FaUtensils className="w-4 h-4" />
             Order Again
           </Link>
         )}

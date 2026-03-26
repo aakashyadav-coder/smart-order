@@ -8,9 +8,9 @@ import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import Heatmap from './Heatmap'
 import {
-  TrendingUp, ClipboardList, Utensils, QrCode, Users,
-  XCircle, CheckCircle, Printer, Plus, Trash, RefreshCw, Phone
-} from '../../components/Icons'
+  FaChartLine, FaClipboardList, FaUtensils, FaUsers,
+  FaTimesCircle, FaCheckCircle, FaPrint, FaPlus, FaTrash
+} from 'react-icons/fa'
 import {
   StatCardSkeleton, ChartSkeleton, OrderRowSkeleton, MenuSkeleton
 } from '../../components/Skeleton'
@@ -148,7 +148,7 @@ function TopItems({ orders }) {
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-bold text-gray-900">Top Selling</h3>
-        <div className="w-7 h-7 bg-orange-50 rounded-lg flex items-center justify-center"><Utensils className="w-3.5 h-3.5 text-orange-500" /></div>
+        <div className="w-7 h-7 bg-orange-50 rounded-lg flex items-center justify-center"><FaUtensils className="w-3.5 h-3.5 text-orange-500" /></div>
       </div>
       <div className="space-y-3">
         {ranked.map(([name, qty], i) => (
@@ -222,10 +222,10 @@ export function AnalyticsTab({ allOrders = [] }) {
         </div>
       ) : data ? (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard icon={ClipboardList} label="Total Orders" rawValue={data.totalOrders} iconBg="bg-blue-50" iconColor="text-blue-600" trend={data.ordersTrend} />
-          <StatCard icon={TrendingUp} label="Total Revenue" rawValue={data.totalRevenue || 0} prefix="Rs." iconBg="bg-brand-50" iconColor="text-brand-600" trend={data.revenueTrend} />
-          <StatCard icon={CheckCircle} label="Paid Revenue" rawValue={data.totalPaidRevenue || 0} prefix="Rs." iconBg="bg-green-50" iconColor="text-green-600" />
-          <StatCard icon={TrendingUp} label="Avg Order" rawValue={data.totalOrders ? Math.round((data.totalRevenue || 0) / data.totalOrders) : 0} prefix="Rs." iconBg="bg-purple-50" iconColor="text-purple-600" />
+          <StatCard icon={FaClipboardList} label="Total Orders" rawValue={data.totalOrders} iconBg="bg-blue-50" iconColor="text-blue-600" trend={data.ordersTrend} />
+          <StatCard icon={FaChartLine} label="Total Revenue" rawValue={data.totalRevenue || 0} prefix="Rs." iconBg="bg-brand-50" iconColor="text-brand-600" trend={data.revenueTrend} />
+          <StatCard icon={FaCheckCircle} label="Paid Revenue" rawValue={data.totalPaidRevenue || 0} prefix="Rs." iconBg="bg-green-50" iconColor="text-green-600" />
+          <StatCard icon={FaChartLine} label="Avg Order" rawValue={data.totalOrders ? Math.round((data.totalRevenue || 0) / data.totalOrders) : 0} prefix="Rs." iconBg="bg-purple-50" iconColor="text-purple-600" />
         </div>
       ) : null}
 
@@ -237,14 +237,14 @@ export function AnalyticsTab({ allOrders = [] }) {
           <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div><h3 className="font-bold text-gray-800">Revenue</h3><p className="text-xs text-gray-400 mt-0.5">Rs. {(data.totalPaidRevenue || 0).toFixed(0)} paid</p></div>
-              <div className="w-8 h-8 bg-green-50 rounded-xl flex items-center justify-center"><TrendingUp className="w-4 h-4 text-green-600" /></div>
+              <div className="w-8 h-8 bg-green-50 rounded-xl flex items-center justify-center"><FaChartLine className="w-4 h-4 text-green-600" /></div>
             </div>
             <BarChart data={data.revenue} labels={data.labels} color="#22c55e" />
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <div><h3 className="font-bold text-gray-800">Orders</h3><p className="text-xs text-gray-400 mt-0.5">{data.totalOrders} total</p></div>
-              <div className="w-8 h-8 bg-brand-50 rounded-xl flex items-center justify-center"><ClipboardList className="w-4 h-4 text-brand-600" /></div>
+              <div className="w-8 h-8 bg-brand-50 rounded-xl flex items-center justify-center"><FaClipboardList className="w-4 h-4 text-brand-600" /></div>
             </div>
             <BarChart data={data.counts} labels={data.labels} color="#e11d48" />
           </div>
@@ -256,7 +256,7 @@ export function AnalyticsTab({ allOrders = [] }) {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-gray-900">Order Status</h3>
-            <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center"><ClipboardList className="w-3.5 h-3.5 text-blue-500" /></div>
+            <div className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center"><FaClipboardList className="w-3.5 h-3.5 text-blue-500" /></div>
           </div>
           <DonutChart slices={donutSlices} />
         </div>
@@ -312,7 +312,7 @@ function BillModal({ order, restaurant, onClose, onPaid }) {
             <p className="font-extrabold text-lg leading-none">{order.customerName}</p>
             <p className="text-brand-200 text-sm mt-1">Table #{order.tableNumber} · {fmt(order.createdAt)}</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center"><XCircle className="w-4 h-4" /></button>
+          <button onClick={onClose} className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center"><FaTimesCircle className="w-4 h-4" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           <div className="space-y-2">{order.items?.map(item => (
@@ -342,10 +342,10 @@ function BillModal({ order, restaurant, onClose, onPaid }) {
           {!alreadyPaid ? (
             <>
               <button onClick={handlePay} disabled={paying} className="flex-1 py-3 rounded-xl font-bold text-white bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50 text-sm">{paying ? 'Processing…' : '✓ Mark Paid'}</button>
-              <button onClick={handlePrint} className="flex items-center gap-1.5 px-4 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 text-sm"><Printer className="w-4 h-4" /> Print</button>
+              <button onClick={handlePrint} className="flex items-center gap-1.5 px-4 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 text-sm"><FaPrint className="w-4 h-4" /> Print</button>
             </>
           ) : (
-            <button onClick={handlePrint} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 text-sm"><Printer className="w-4 h-4" /> Reprint Bill</button>
+            <button onClick={handlePrint} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 text-sm"><FaPrint className="w-4 h-4" /> Reprint Bill</button>
           )}
         </div>
       </div>
@@ -418,7 +418,7 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid, onStatusC
       {/* ── Table ── */}
       {loading ? <OrderRowSkeleton count={6} /> : filtered.length === 0 ? (
         <div className="text-center py-24 text-gray-400">
-          <ClipboardList className="w-14 h-14 mx-auto mb-4 opacity-15" />
+          <FaClipboardList className="w-14 h-14 mx-auto mb-4 opacity-15" />
           <p className="font-display font-bold text-gray-500 text-base">No orders found</p>
           <p className="text-sm mt-1">Try adjusting your filters</p>
         </div>
@@ -492,7 +492,7 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid, onStatusC
                       onClick={() => setSelected(o)}
                       className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 text-white hover:from-brand-700 hover:to-brand-600 transition-all shadow-sm whitespace-nowrap"
                     >
-                      <Printer className="w-3.5 h-3.5 flex-shrink-0" /> Bill
+                      <FaPrint className="w-3.5 h-3.5 flex-shrink-0" /> Bill
                     </button>
                   )}
                   {isPaid && (
@@ -500,7 +500,7 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid, onStatusC
                       onClick={() => setSelected(o)}
                       className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors whitespace-nowrap"
                     >
-                      <Printer className="w-3.5 h-3.5 flex-shrink-0" /> Reprint
+                      <FaPrint className="w-3.5 h-3.5 flex-shrink-0" /> Reprint
                     </button>
                   )}
                   {!isServed && !isPaid && !isCancelled && (
@@ -559,7 +559,7 @@ export function MenuTab({ restaurantId, onDeleteItem }) {
       <div className="lg:col-span-1">
         <div className="bg-white rounded-2xl border border-gray-100 p-5 sticky top-24 shadow-sm">
           <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <div className="w-7 h-7 bg-brand-50 rounded-lg flex items-center justify-center"><Plus className="w-3.5 h-3.5 text-brand-600" /></div>
+            <div className="w-7 h-7 bg-brand-50 rounded-lg flex items-center justify-center"><FaPlus className="w-3.5 h-3.5 text-brand-600" /></div>
             {editId ? 'Edit Item' : 'Add New Item'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -581,7 +581,7 @@ export function MenuTab({ restaurantId, onDeleteItem }) {
       <div className="lg:col-span-2 space-y-4">
         <div className="relative">
           <input type="text" placeholder="Search items or categories…" className="input text-sm pr-10" value={search} onChange={e => setSearch(e.target.value)} />
-          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><XCircle className="w-4 h-4" /></button>}
+          {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><FaTimesCircle className="w-4 h-4" /></button>}
         </div>
         <p className="text-gray-400 text-xs">{filtered.length} of {items.length} items</p>
         {CATS.map(cat => {
@@ -597,7 +597,7 @@ export function MenuTab({ restaurantId, onDeleteItem }) {
                 <div key={item.id} className={`flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0 transition-opacity ${!item.available ? 'opacity-40' : ''}`}>
                   {item.imageUrl
                     ? <img src={item.imageUrl} alt={item.name} className="w-11 h-11 rounded-xl object-cover flex-shrink-0 ring-1 ring-gray-100" />
-                    : <div className="w-11 h-11 bg-brand-50 rounded-xl flex items-center justify-center flex-shrink-0"><Utensils className="w-5 h-5 text-brand-300" /></div>
+                    : <div className="w-11 h-11 bg-brand-50 rounded-xl flex items-center justify-center flex-shrink-0"><FaUtensils className="w-5 h-5 text-brand-300" /></div>
                   }
                   <div className="flex-1 min-w-0">
                     <p className="text-gray-900 text-sm font-semibold truncate">{item.name}</p>
@@ -607,14 +607,14 @@ export function MenuTab({ restaurantId, onDeleteItem }) {
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button onClick={() => toggleAvailable(item)} className={`text-[10px] px-2.5 py-1 rounded-lg font-bold border transition-colors ${item.available ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-400 border-gray-200'}`}>{item.available ? 'ON' : 'OFF'}</button>
                     <button onClick={() => { setForm({ ...item, price: item.price.toString() }); setEditId(item.id) }} className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors text-xs font-bold">✏</button>
-                    <button onClick={() => onDeleteItem(item, id => setItems(p => p.filter(i => i.id !== id)))} className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 border border-red-100 transition-colors"><Trash className="w-3.5 h-3.5 text-red-500" /></button>
+                    <button onClick={() => onDeleteItem(item, id => setItems(p => p.filter(i => i.id !== id)))} className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 border border-red-100 transition-colors"><FaTrash className="w-3.5 h-3.5 text-red-500" /></button>
                   </div>
                 </div>
               ))}
             </div>
           )
         })}
-        {filtered.length === 0 && <div className="text-center py-12 text-gray-400"><Utensils className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>{search ? 'No results.' : 'No items yet.'}</p></div>}
+        {filtered.length === 0 && <div className="text-center py-12 text-gray-400"><FaUtensils className="w-10 h-10 mx-auto mb-2 opacity-20" /><p>{search ? 'No results.' : 'No items yet.'}</p></div>}
       </div>
     </div>
   )
@@ -630,7 +630,7 @@ export function QRTab({ restaurantId }) {
       <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm flex flex-wrap gap-4 items-end">
         <div><label className="label">Base URL</label><input className="input w-64 text-sm" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} /></div>
         <div><label className="label">Tables</label><input type="number" min={1} max={100} className="input w-24 text-sm" value={tables} onChange={e => setTables(parseInt(e.target.value) || 1)} /></div>
-        <button onClick={() => window.print()} className="btn-primary px-5 py-2.5 text-sm print:hidden"><Printer className="w-4 h-4" /> Print All</button>
+        <button onClick={() => window.print()} className="btn-primary px-5 py-2.5 text-sm print:hidden"><FaPrint className="w-4 h-4" /> Print All</button>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
         {Array.from({ length: tables }, (_, i) => i + 1).map(t => (
@@ -654,7 +654,7 @@ export function StaffTab() {
   return (
     <div className="max-w-2xl">
       {loading && <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-4"><div className="relative overflow-hidden w-10 h-10 bg-gray-100 rounded-full"><div className="absolute inset-0 -translate-x-full animate-[shimmer_1.4s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" /></div><div className="flex-1 space-y-2"><div className="relative overflow-hidden h-3.5 w-32 bg-gray-100 rounded"><div className="absolute inset-0 -translate-x-full animate-[shimmer_1.4s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" /></div><div className="relative overflow-hidden h-2.5 w-48 bg-gray-100 rounded"><div className="absolute inset-0 -translate-x-full animate-[shimmer_1.4s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" /></div></div></div>)}</div>}
-      {!loading && users.length === 0 && <div className="text-center py-16"><Users className="w-12 h-12 mx-auto mb-3 text-gray-200" /><p className="font-semibold text-gray-500">No staff yet</p><p className="text-gray-400 text-sm mt-1">Add staff from Super Admin portal</p></div>}
+      {!loading && users.length === 0 && <div className="text-center py-16"><FaUsers className="w-12 h-12 mx-auto mb-3 text-gray-200" /><p className="font-semibold text-gray-500">No staff yet</p><p className="text-gray-400 text-sm mt-1">Add staff from Super Admin portal</p></div>}
       {!loading && users.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           {users.map((u, i) => (

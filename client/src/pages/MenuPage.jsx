@@ -12,7 +12,7 @@ import CartDrawer from '../components/CartDrawer'
 import CheckoutModal from '../components/CheckoutModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorState from '../components/ErrorState'
-import { ShoppingCart, MapPin, Utensils } from '../components/Icons'
+import { FaShoppingCart, FaMapMarkerAlt, FaUtensils } from 'react-icons/fa'
 
 const CATEGORY_ICONS = {
   'Drinks':      '🥤',
@@ -101,13 +101,13 @@ export default function MenuPage() {
               />
             ) : (
               <div className="w-24 h-24 bg-gradient-to-br from-brand-500 to-brand-700 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-brand-600/40">
-                <Utensils className="w-12 h-12 text-white" />
+                <FaUtensils className="w-12 h-12 text-white" />
               </div>
             )}
             <h1 className="text-3xl font-black tracking-tight">{restaurant.name}</h1>
             {restaurant.address && (
               <p className="text-gray-400 text-sm mt-2 flex items-center justify-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5" />
+                <FaMapMarkerAlt className="w-3.5 h-3.5" />
                 {restaurant.address}
               </p>
             )}
@@ -127,7 +127,7 @@ export default function MenuPage() {
               {!restaurant && (
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 bg-gradient-to-br from-brand-500 to-brand-700 rounded-lg flex items-center justify-center">
-                    <Utensils className="w-4 h-4 text-white" />
+                    <FaUtensils className="w-4 h-4 text-white" />
                   </div>
                   <h1 className="text-base font-black text-gray-900">Smart Order</h1>
                 </div>
@@ -147,7 +147,7 @@ export default function MenuPage() {
               onClick={() => setCartOpen(true)}
               className="relative flex items-center gap-2 bg-gradient-to-r from-brand-600 to-brand-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm hover:shadow-brand-500/25 hover:shadow-lg transition-all active:scale-[0.97]"
             >
-              <ShoppingCart className="w-4 h-4" />
+              <FaShoppingCart className="w-4 h-4" />
               Cart
               {totalItems > 0 && (
                 <span className="absolute -top-2 -right-2 bg-gray-900 text-white text-xs font-black w-5 h-5 rounded-full flex items-center justify-center animate-bounce-in">
@@ -193,7 +193,7 @@ export default function MenuPage() {
         {categoryList.length === 0 && (
           <div className="text-center py-24 text-gray-400">
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5">
-              <Utensils className="w-10 h-10 text-gray-300" />
+              <FaUtensils className="w-10 h-10 text-gray-300" />
             </div>
             <p className="font-semibold text-gray-500">Menu is being prepared</p>
             <p className="text-sm mt-1">Check back soon!</p>
@@ -212,7 +212,7 @@ export default function MenuPage() {
               <span className="flex items-center justify-between w-full font-semibold">
                 <span className="bg-white/20 rounded-lg px-2.5 py-1 text-sm font-bold">{totalItems} item{totalItems > 1 ? 's' : ''}</span>
                 <span className="flex items-center gap-2">
-                  <ShoppingCart className="w-4 h-4" />
+                  <FaShoppingCart className="w-4 h-4" />
                   View Cart
                 </span>
                 <span className="font-bold">Rs. {totalPrice.toFixed(0)}</span>

@@ -3,7 +3,7 @@
  * Theme: White bg with animated brand logo
  */
 import React from 'react'
-import { Utensils } from './Icons'
+import { FaUtensils } from 'react-icons/fa'
 
 export default function LoadingSpinner() {
   return (
@@ -11,7 +11,7 @@ export default function LoadingSpinner() {
       <div className="flex flex-col items-center gap-5 animate-fade-in">
         <div className="relative">
           <div className="w-16 h-16 bg-gradient-to-br from-brand-500 to-brand-700 rounded-2xl flex items-center justify-center shadow-xl shadow-brand-600/30">
-            <Utensils className="w-8 h-8 text-white" />
+            <FaUtensils className="w-8 h-8 text-white" />
           </div>
           <div className="absolute -inset-2 border-2 border-brand-400/30 rounded-3xl animate-ping-slow" />
         </div>

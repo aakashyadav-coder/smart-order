@@ -5,7 +5,7 @@
 import React, { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, QrCode, Printer } from '../components/Icons'
+import { FaArrowLeft, FaQrcode, FaPrint } from 'react-icons/fa'
 
 const DEFAULT_TABLE_COUNT = 10
 
@@ -44,11 +44,11 @@ export default function QRGeneratorPage() {
             to="/kitchen"
             className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/8 hover:bg-white/15 transition-colors"
           >
-            <ArrowLeft className="w-4 h-4 text-gray-400" />
+            <FaArrowLeft className="w-4 h-4 text-gray-400" />
           </Link>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-700 rounded-lg flex items-center justify-center">
-              <QrCode className="w-4 h-4 text-white" />
+              <FaQrcode className="w-4 h-4 text-white" />
             </div>
             <h1 className="text-base font-extrabold text-white">QR Code Generator</h1>
           </div>
@@ -105,7 +105,7 @@ export default function QRGeneratorPage() {
                   onClick={() => printQR(tableNum)}
                   className="w-full flex items-center justify-center gap-1.5 text-xs bg-brand-50 border border-brand-100 hover:bg-brand-100 text-brand-700 font-semibold py-2 px-3 rounded-xl transition-colors"
                 >
-                  <Printer className="w-3.5 h-3.5" />
+                  <FaPrint className="w-3.5 h-3.5" />
                   Print
                 </button>
               </div>

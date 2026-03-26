@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useCart } from '../context/CartContext'
-import { X, User, Phone, ShoppingCart } from '../components/Icons'
+import { FaTimes, FaUser, FaPhoneAlt, FaShoppingCart } from 'react-icons/fa'
 
 export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
   const navigate = useNavigate()
@@ -68,7 +68,7 @@ export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
-                <ShoppingCart className="w-5 h-5" />
+                <FaShoppingCart className="w-5 h-5" />
               </div>
               <div>
                 <h2 className="text-lg font-extrabold leading-none">Checkout</h2>
@@ -79,7 +79,7 @@ export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
               onClick={onClose}
               className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/20 hover:bg-white/30 transition-colors"
             >
-              <X className="w-4 h-4" />
+              <FaTimes className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -105,7 +105,7 @@ export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
             <label className="label">Your Name</label>
             <div className="relative">
               <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-                <User className="w-4 h-4" />
+                <FaUser className="w-4 h-4" />
               </div>
               <input
                 type="text"
@@ -123,7 +123,7 @@ export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
             <label className="label">Phone Number</label>
             <div className="relative">
               <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-                <Phone className="w-4 h-4" />
+                <FaPhoneAlt className="w-4 h-4" />
               </div>
               <input
                 type="tel"

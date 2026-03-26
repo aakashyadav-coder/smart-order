@@ -6,17 +6,17 @@ import React, { useState } from 'react'
 import { NavLink, useNavigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
-  LayoutDashboard, Building, Users, ClipboardList,
-  Settings, Activity, LogOut, Shield, Menu, X
-} from '../components/Icons'
+  FaThLarge, FaBuilding, FaUsers, FaClipboardList,
+  FaCog, FaHeartbeat, FaSignOutAlt, FaShieldAlt, FaBars
+} from 'react-icons/fa'
 
 const NAV_ITEMS = [
-  { to: '/super',             label: 'Dashboard',    icon: LayoutDashboard, end: true },
-  { to: '/super/restaurants', label: 'Restaurants',  icon: Building },
-  { to: '/super/users',       label: 'Users',        icon: Users },
-  { to: '/super/orders',      label: 'All Orders',   icon: ClipboardList },
-  { to: '/super/features',    label: 'Features',     icon: Settings },
-  { to: '/super/logs',        label: 'Audit Logs',   icon: Activity },
+  { to: '/super',             label: 'Dashboard',    icon: FaThLarge, end: true },
+  { to: '/super/restaurants', label: 'Restaurants',  icon: FaBuilding },
+  { to: '/super/users',       label: 'Users',        icon: FaUsers },
+  { to: '/super/orders',      label: 'All Orders',   icon: FaClipboardList },
+  { to: '/super/features',    label: 'Features',     icon: FaCog },
+  { to: '/super/logs',        label: 'Audit Logs',   icon: FaHeartbeat },
 ]
 
 export default function SuperLayout() {
@@ -32,7 +32,7 @@ export default function SuperLayout() {
       <div className="p-5 border-b border-white/8">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-brand-700 rounded-xl flex items-center justify-center shadow-lg shadow-brand-600/30">
-            <Shield className="w-5 h-5 text-white" />
+            <FaShieldAlt className="w-5 h-5 text-white" />
           </div>
           <div>
             <p className="font-extrabold text-white text-sm leading-none">Smart Order</p>
@@ -85,7 +85,7 @@ export default function SuperLayout() {
           onClick={handleLogout}
           className="w-full flex items-center gap-2 text-xs text-gray-500 hover:text-brand-400 transition-colors py-2 px-2 rounded-lg hover:bg-white/8 font-medium"
         >
-          <LogOut className="w-4 h-4" />
+          <FaSignOutAlt className="w-4 h-4" />
           Sign Out
         </button>
       </div>
@@ -114,7 +114,7 @@ export default function SuperLayout() {
         {/* Top bar (mobile) */}
         <header className="lg:hidden bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 shadow-sm">
           <button onClick={() => setSidebarOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
-            <Menu className="w-4 h-4 text-gray-600" />
+            <FaBars className="w-4 h-4 text-gray-600" />
           </button>
           <span className="font-bold text-gray-900 text-sm">Super Admin</span>
         </header>

@@ -3,12 +3,12 @@
  * Theme: White modal, SVG icons, red danger / brand info
  */
 import React, { useEffect } from 'react'
-import { AlertTriangle, CheckCircle, X } from './Icons'
+import { FaExclamationTriangle, FaCheckCircle, FaTimes } from 'react-icons/fa'
 
 const TYPE_CFG = {
-  danger:  { icon: AlertTriangle, iconBg: 'bg-red-50', iconColor: 'text-red-500', confirmClass: 'bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-red-500/25 hover:shadow-md' },
-  warning: { icon: AlertTriangle, iconBg: 'bg-amber-50', iconColor: 'text-amber-500', confirmClass: 'bg-amber-500 hover:bg-amber-600 text-white' },
-  info:    { icon: CheckCircle,  iconBg: 'bg-brand-50', iconColor: 'text-brand-600', confirmClass: 'bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white shadow-sm' },
+  danger:  { icon: FaExclamationTriangle, iconBg: 'bg-red-50', iconColor: 'text-red-500', confirmClass: 'bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-red-500/25 hover:shadow-md' },
+  warning: { icon: FaExclamationTriangle, iconBg: 'bg-amber-50', iconColor: 'text-amber-500', confirmClass: 'bg-amber-500 hover:bg-amber-600 text-white' },
+  info:    { icon: FaCheckCircle,        iconBg: 'bg-brand-50', iconColor: 'text-brand-600', confirmClass: 'bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white shadow-sm' },
 }
 
 export default function ConfirmModal({
@@ -40,7 +40,7 @@ export default function ConfirmModal({
           onClick={onCancel}
           className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
         >
-          <X className="w-3.5 h-3.5 text-gray-500" />
+          <FaTimes className="w-3.5 h-3.5 text-gray-500" />
         </button>
 
         <div className="p-6">

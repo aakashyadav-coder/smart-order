@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
-import { Building, Eye, EyeOff } from '../components/Icons'
+import { FaBuilding, FaEye, FaEyeSlash } from 'react-icons/fa'
 
 export default function OwnerLoginPage() {
   const navigate = useNavigate()
@@ -57,7 +57,7 @@ export default function OwnerLoginPage() {
         <div className="text-center mb-8">
           <div className="relative inline-flex">
             <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-brand-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-orange-600/40 animate-float">
-              <Building className="w-10 h-10 text-white" />
+              <FaBuilding className="w-10 h-10 text-white" />
             </div>
             <div className="absolute inset-0 w-20 h-20 bg-gradient-to-br from-orange-500 to-brand-600 rounded-3xl mx-auto mb-4 blur-xl opacity-30" />
           </div>
@@ -113,7 +113,7 @@ export default function OwnerLoginPage() {
                   onClick={() => setShowPw(v => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors p-1"
                 >
-                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPw ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
@@ -131,7 +131,7 @@ export default function OwnerLoginPage() {
                 </span>
               ) : (
                 <>
-                  <Building className="w-4 h-4" />
+                  <FaBuilding className="w-4 h-4" />
                   Sign in to Owner Portal
                 </>
               )}

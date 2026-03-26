@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
-import { ChefHat, Eye, EyeOff } from '../components/Icons'
+import { FaConciergeBell, FaEye, FaEyeSlash } from 'react-icons/fa'
 
 export default function KitchenLoginPage() {
   const navigate = useNavigate()
@@ -51,7 +51,7 @@ export default function KitchenLoginPage() {
         <div className="text-center mb-8">
           <div className="relative inline-flex">
             <div className="w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-700 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-brand-600/40 animate-float">
-              <ChefHat className="w-10 h-10 text-white" />
+              <FaConciergeBell className="w-10 h-10 text-white" />
             </div>
             {/* Glow ring */}
             <div className="absolute inset-0 w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-700 rounded-3xl mx-auto mb-4 blur-xl opacity-40" />
@@ -108,7 +108,7 @@ export default function KitchenLoginPage() {
                   onClick={() => setShowPw(v => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors p-1"
                 >
-                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPw ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
@@ -125,7 +125,7 @@ export default function KitchenLoginPage() {
                 </span>
               ) : (
                 <>
-                  <ChefHat className="w-4 h-4" />
+                  <FaConciergeBell className="w-4 h-4" />
                   Login to Kitchen Dashboard
                 </>
               )}
