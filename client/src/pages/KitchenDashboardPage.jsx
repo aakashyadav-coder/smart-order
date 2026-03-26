@@ -164,7 +164,7 @@ function OrderCard({ order, col, isNew, onAccept, onPrepare, onServe, onCancel }
               {order.tableNumber}
             </span>
             <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">
-              Order #{String(order.id).slice(-6)}
+              #{String(order.id).slice(-6)}
             </span>
           </div>
           <p
