@@ -20,33 +20,41 @@ enum Role {
 
 // ── Users ─────────────────────────────────────────────────────────────────────
 model User {
-  id           String      @id @default(cuid())
-  name         String
-  email        String      @unique
-  passwordHash String
-  role         Role        @default(KITCHEN)
-  active       Boolean     @default(true)
-  restaurantId String?
-  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
-  activityLogs ActivityLog[]
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id               String        @id @default(cuid())
+  name             String
+  email            String        @unique
+  passwordHash     String
+  role             Role          @default(KITCHEN)
+  active           Boolean       @default(true)
+  restaurantId     String?
+  restaurant       Restaurant?   @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  activityLogs     ActivityLog[]
+  lastLoginAt      DateTime?
+  totpSecret       String?
+  totpEnabled      Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 }
 
 // ── Restaurant ────────────────────────────────────────────────────────────────
 model Restaurant {
-  id          String          @id @default(cuid())
-  name        String
-  address     String?
-  phone       String?
-  logoUrl     String?
-  active      Boolean         @default(true)
-  users       User[]
-  menuItems   MenuItem[]
-  orders      Order[]
-  features    FeatureToggle?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id               String          @id @default(cuid())
+  name             String
+  address          String?
+  phone            String?
+  logoUrl          String?
+  active           Boolean         @default(true)
+  tableCount       Int?
+  cuisineType      String?
+  openingHours     Json?
+  users            User[]
+  menuItems        MenuItem[]
+  orders           Order[]
+  features         FeatureToggle?
+  announcements    Announcement[]
+  supportTickets   SupportTicket[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 }
 
 // ── Feature Toggles (per restaurant) ─────────────────────────────────────────
@@ -137,4 +145,33 @@ model OTP {
   expiresAt DateTime
   createdAt DateTime @default(now())
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// ── Announcements (super admin → restaurant owners) ───────────────────────────
+model Announcement {
+  id           String      @id @default(cuid())
+  title        String
+  message      String
+  restaurantId String?     // null = broadcast to all
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime    @default(now())
+}
+
+// ── Support Tickets (owners → super admin) ────────────────────────────────────
+model SupportTicket {
+  id           String       @id @default(cuid())
+  subject      String
+  message      String
+  status       TicketStatus @default(OPEN)
+  restaurantId String
+  restaurant   Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  reply        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+enum TicketStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
 }

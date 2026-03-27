@@ -21,13 +21,17 @@ import OwnerLoginPage     from './pages/OwnerLoginPage'
 import OwnerDashboardPage from './pages/OwnerDashboardPage'
 
 // Super Admin pages
-import SuperLoginPage     from './pages/super/SuperLoginPage'
-import SuperDashboardPage from './pages/super/SuperDashboardPage'
-import RestaurantsPage    from './pages/super/RestaurantsPage'
-import UsersPage          from './pages/super/UsersPage'
-import FeaturesPage       from './pages/super/FeaturesPage'
-import GlobalOrdersPage   from './pages/super/GlobalOrdersPage'
-import ActivityLogsPage   from './pages/super/ActivityLogsPage'
+import SuperLoginPage        from './pages/super/SuperLoginPage'
+import SuperDashboardPage    from './pages/super/SuperDashboardPage'
+import RestaurantsPage       from './pages/super/RestaurantsPage'
+import RestaurantDetailPage  from './pages/super/RestaurantDetailPage'
+import UsersPage             from './pages/super/UsersPage'
+import FeaturesPage          from './pages/super/FeaturesPage'
+import GlobalOrdersPage      from './pages/super/GlobalOrdersPage'
+import ActivityLogsPage      from './pages/super/ActivityLogsPage'
+import HealthPage            from './pages/super/HealthPage'
+import AnnouncementsPage     from './pages/super/AnnouncementsPage'
+import SupportTicketsPage    from './pages/super/SupportTicketsPage'
 
 // Route guards & layouts
 import ProtectedRoute  from './components/ProtectedRoute'
@@ -60,12 +64,16 @@ export default function App() {
       <Route path="/super" element={
         <SuperAdminRoute><SuperLayout /></SuperAdminRoute>
       }>
-        <Route index              element={<SuperDashboardPage />} />
-        <Route path="restaurants" element={<RestaurantsPage />} />
-        <Route path="users"       element={<UsersPage />} />
-        <Route path="orders"      element={<GlobalOrdersPage />} />
-        <Route path="features"    element={<FeaturesPage />} />
-        <Route path="logs"        element={<ActivityLogsPage />} />
+        <Route index                       element={<SuperDashboardPage />} />
+        <Route path="restaurants"          element={<RestaurantsPage />} />
+        <Route path="restaurants/:id"      element={<RestaurantDetailPage />} />
+        <Route path="users"                element={<UsersPage />} />
+        <Route path="orders"               element={<GlobalOrdersPage />} />
+        <Route path="features"             element={<FeaturesPage />} />
+        <Route path="logs"                 element={<ActivityLogsPage />} />
+        <Route path="health"               element={<HealthPage />} />
+        <Route path="announcements"        element={<AnnouncementsPage />} />
+        <Route path="tickets"              element={<SupportTicketsPage />} />
       </Route>
 
       {/* ── 404 ──────────────────────────────────────────────── */}

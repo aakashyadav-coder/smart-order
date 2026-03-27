@@ -171,10 +171,17 @@ const getAnalytics = async (req, res, next) => {
     });
   } catch (err) { next(err); }
 };
+
 // ── Restaurant CRUD ────────────────────────────────────────────────────────────
 const getRestaurants = async (req, res, next) => {
   try {
+    const { search } = req.query;
+    const where = search
+      ? { name: { contains: search, mode: "insensitive" } }
+      : {};
+
     const restaurants = await prisma.restaurant.findMany({
+      where,
       include: {
         _count: { select: { users: true, orders: true, menuItems: true } },
         features: true,
@@ -185,9 +192,32 @@ const getRestaurants = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const getRestaurantDetail = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { users: true, orders: true, menuItems: true } },
+        features: true,
+        users: { select: { id: true, name: true, role: true, email: true, active: true, lastLoginAt: true, createdAt: true } },
+      },
+    });
+    if (!restaurant) return res.status(404).json({ message: "Restaurant not found." });
+
+    // Revenue for this restaurant
+    const revenue = await prisma.order.aggregate({
+      where: { restaurantId: id },
+      _sum: { totalPrice: true },
+    });
+
+    res.json({ ...restaurant, totalRevenue: revenue._sum.totalPrice || 0 });
+  } catch (err) { next(err); }
+};
+
 const createRestaurant = async (req, res, next) => {
   try {
-    const { name, address, phone, logoUrl } = req.body;
+    const { name, address, phone, logoUrl, tableCount, cuisineType, openingHours } = req.body;
     if (!name) return res.status(400).json({ message: "Restaurant name is required." });
 
     const restaurant = await prisma.restaurant.create({
@@ -196,6 +226,9 @@ const createRestaurant = async (req, res, next) => {
         address: address?.trim(),
         phone: phone?.trim(),
         logoUrl,
+        tableCount: tableCount ? parseInt(tableCount) : null,
+        cuisineType: cuisineType?.trim() || null,
+        openingHours: openingHours || null,
         features: { create: {} }, // default feature toggles
       },
       include: { features: true },
@@ -209,16 +242,19 @@ const createRestaurant = async (req, res, next) => {
 const updateRestaurant = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, address, phone, logoUrl, active } = req.body;
+    const { name, address, phone, logoUrl, active, tableCount, cuisineType, openingHours } = req.body;
 
     const restaurant = await prisma.restaurant.update({
       where: { id },
       data: {
-        ...(name      !== undefined && { name: name.trim() }),
-        ...(address   !== undefined && { address: address.trim() }),
-        ...(phone     !== undefined && { phone: phone.trim() }),
-        ...(logoUrl   !== undefined && { logoUrl }),
-        ...(active    !== undefined && { active }),
+        ...(name         !== undefined && { name: name.trim() }),
+        ...(address      !== undefined && { address: address.trim() }),
+        ...(phone        !== undefined && { phone: phone.trim() }),
+        ...(logoUrl      !== undefined && { logoUrl }),
+        ...(active       !== undefined && { active }),
+        ...(tableCount   !== undefined && { tableCount: tableCount ? parseInt(tableCount) : null }),
+        ...(cuisineType  !== undefined && { cuisineType: cuisineType?.trim() || null }),
+        ...(openingHours !== undefined && { openingHours }),
       },
       include: { _count: { select: { users: true, orders: true, menuItems: true } }, features: true },
     });
@@ -244,18 +280,36 @@ const deleteRestaurant = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ── Bulk Restaurant Action ─────────────────────────────────────────────────────
+const bulkUpdateRestaurants = async (req, res, next) => {
+  try {
+    const { ids, active } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: "ids array required." });
+    await prisma.restaurant.updateMany({ where: { id: { in: ids } }, data: { active } });
+    await logActivity({ userId: req.user.id, action: "RESTAURANT_BULK_UPDATED", entity: "Restaurant", metadata: { ids, active } });
+    res.json({ updated: ids.length });
+  } catch (err) { next(err); }
+};
+
 // ── User CRUD ──────────────────────────────────────────────────────────────────
 const getUsers = async (req, res, next) => {
   try {
-    const { restaurantId } = req.query;
+    const { restaurantId, search, role } = req.query;
     const where = { role: { not: "SUPER_ADMIN" } };
     if (restaurantId) where.restaurantId = restaurantId;
+    if (role) where.role = role;
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+      ];
+    }
 
     const users = await prisma.user.findMany({
       where,
       select: {
         id: true, name: true, email: true, role: true, active: true,
-        restaurantId: true, createdAt: true,
+        restaurantId: true, createdAt: true, lastLoginAt: true,
         restaurant: { select: { name: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -273,7 +327,7 @@ const createUser = async (req, res, next) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: { name, email, passwordHash, role, restaurantId: restaurantId || null, active: active ?? true },
-      select: { id: true, name: true, email: true, role: true, active: true, restaurantId: true, createdAt: true },
+      select: { id: true, name: true, email: true, role: true, active: true, restaurantId: true, createdAt: true, lastLoginAt: true },
     });
     await logActivity({ userId: req.user.id, action: "USER_CREATED", entity: "User", entityId: user.id, metadata: { email, role } });
     res.status(201).json(user);
@@ -296,7 +350,7 @@ const updateUser = async (req, res, next) => {
     const user = await prisma.user.update({
       where: { id },
       data,
-      select: { id: true, name: true, email: true, role: true, active: true, restaurantId: true, createdAt: true, restaurant: { select: { name: true } } },
+      select: { id: true, name: true, email: true, role: true, active: true, restaurantId: true, createdAt: true, lastLoginAt: true, restaurant: { select: { name: true } } },
     });
     await logActivity({ userId: req.user.id, action: "USER_UPDATED", entity: "User", entityId: id, metadata: { role, active } });
     res.json(user);
@@ -312,13 +366,35 @@ const deleteUser = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ── Bulk User Action ───────────────────────────────────────────────────────────
+const bulkUpdateUsers = async (req, res, next) => {
+  try {
+    const { ids, active } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ message: "ids array required." });
+    await prisma.user.updateMany({ where: { id: { in: ids } }, data: { active } });
+    await logActivity({ userId: req.user.id, action: "USER_BULK_UPDATED", entity: "User", metadata: { ids, active } });
+    res.json({ updated: ids.length });
+  } catch (err) { next(err); }
+};
+
 // ── Global Orders ─────────────────────────────────────────────────────────────
 const getAllOrders = async (req, res, next) => {
   try {
-    const { restaurantId, status, limit = 100 } = req.query;
+    const { restaurantId, status, limit = 100, search, dateFrom, dateTo } = req.query;
     const where = {};
     if (restaurantId) where.restaurantId = restaurantId;
     if (status) where.status = status.toUpperCase();
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo) where.createdAt.lte = new Date(dateTo + "T23:59:59Z");
+    }
+    if (search) {
+      where.OR = [
+        { customerName: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search } },
+      ];
+    }
 
     const orders = await prisma.order.findMany({
       where,
@@ -336,8 +412,17 @@ const getAllOrders = async (req, res, next) => {
 // ── Activity Logs ──────────────────────────────────────────────────────────────
 const getActivityLogs = async (req, res, next) => {
   try {
-    const { limit = 100 } = req.query;
+    const { limit = 200, action, dateFrom, dateTo } = req.query;
+    const where = {};
+    if (action) where.action = action;
+    if (dateFrom || dateTo) {
+      where.createdAt = {};
+      if (dateFrom) where.createdAt.gte = new Date(dateFrom);
+      if (dateTo) where.createdAt.lte = new Date(dateTo + "T23:59:59Z");
+    }
+
     const logs = await prisma.activityLog.findMany({
+      where,
       include: { user: { select: { name: true, email: true, role: true } } },
       orderBy: { createdAt: "desc" },
       take: parseInt(limit),
@@ -346,8 +431,119 @@ const getActivityLogs = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ── System Health ──────────────────────────────────────────────────────────────
+const getHealth = async (req, res, next) => {
+  try {
+    const start = Date.now();
+    await prisma.$queryRaw`SELECT 1`;
+    const dbMs = Date.now() - start;
+
+    const [totalOrders, totalUsers, totalRestaurants, recentErrors] = await Promise.all([
+      prisma.order.count(),
+      prisma.user.count(),
+      prisma.restaurant.count(),
+      prisma.activityLog.findMany({
+        where: { action: { startsWith: "ERROR" } },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+    ]);
+
+    res.json({
+      status: "healthy",
+      dbResponseMs: dbMs,
+      uptime: Math.floor(process.uptime()),
+      memoryMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
+      counts: { totalOrders, totalUsers, totalRestaurants },
+      recentErrors,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ status: "unhealthy", error: err.message });
+  }
+};
+
+// ── Announcements ──────────────────────────────────────────────────────────────
+const getAnnouncements = async (req, res, next) => {
+  try {
+    const announcements = await prisma.announcement.findMany({
+      include: { restaurant: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    res.json(announcements);
+  } catch (err) { next(err); }
+};
+
+const createAnnouncement = async (req, res, next) => {
+  try {
+    const { title, message, restaurantId } = req.body;
+    if (!title || !message) return res.status(400).json({ message: "title and message are required." });
+
+    const ann = await prisma.announcement.create({
+      data: { title, message, restaurantId: restaurantId || null },
+      include: { restaurant: { select: { id: true, name: true } } },
+    });
+    await logActivity({ userId: req.user.id, action: "ANNOUNCEMENT_CREATED", entity: "Announcement", entityId: ann.id, metadata: { title, restaurantId } });
+    res.status(201).json(ann);
+  } catch (err) { next(err); }
+};
+
+const deleteAnnouncement = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await prisma.announcement.delete({ where: { id } });
+    await logActivity({ userId: req.user.id, action: "ANNOUNCEMENT_DELETED", entity: "Announcement", entityId: id });
+    res.json({ message: "Deleted." });
+  } catch (err) { next(err); }
+};
+
+// ── Support Tickets ────────────────────────────────────────────────────────────
+const getTickets = async (req, res, next) => {
+  try {
+    const { status } = req.query;
+    const where = status ? { status } : {};
+    const tickets = await prisma.supportTicket.findMany({
+      where,
+      include: { restaurant: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(tickets);
+  } catch (err) { next(err); }
+};
+
+const updateTicket = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status, reply } = req.body;
+    const ticket = await prisma.supportTicket.update({
+      where: { id },
+      data: {
+        ...(status !== undefined && { status }),
+        ...(reply  !== undefined && { reply }),
+      },
+      include: { restaurant: { select: { id: true, name: true } } },
+    });
+    await logActivity({ userId: req.user.id, action: "TICKET_UPDATED", entity: "SupportTicket", entityId: id, metadata: { status, reply } });
+    res.json(ticket);
+  } catch (err) { next(err); }
+};
+
+const deleteTicket = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await prisma.supportTicket.delete({ where: { id } });
+    res.json({ message: "Ticket deleted." });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
-  getStats, getAnalytics, getRestaurants, createRestaurant, updateRestaurant, deleteRestaurant,
-  getUsers, createUser, updateUser, deleteUser,
-  getAllOrders, getActivityLogs,
+  getStats, getAnalytics,
+  getRestaurants, getRestaurantDetail, createRestaurant, updateRestaurant, deleteRestaurant, bulkUpdateRestaurants,
+  getUsers, createUser, updateUser, deleteUser, bulkUpdateUsers,
+  getAllOrders,
+  getActivityLogs,
+  getHealth,
+  getAnnouncements, createAnnouncement, deleteAnnouncement,
+  getTickets, updateTicket, deleteTicket,
 };

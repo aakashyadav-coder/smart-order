@@ -1,22 +1,25 @@
 /**
- * SuperLayout — Dark red sidebar + content area for Super Admin
- * Theme: Deep dark sidebar with brand red accents
+ * SuperLayout — Dark sidebar + content area for Super Admin
  */
 import React, { useState } from 'react'
 import { NavLink, useNavigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   FaThLarge, FaBuilding, FaUsers, FaClipboardList,
-  FaCog, FaHeartbeat, FaSignOutAlt, FaShieldAlt, FaBars
+  FaCog, FaHeartbeat, FaSignOutAlt, FaShieldAlt, FaBars,
+  FaBullhorn, FaInbox,
 } from 'react-icons/fa'
 
 const NAV_ITEMS = [
-  { to: '/super',             label: 'Dashboard',    icon: FaThLarge, end: true },
-  { to: '/super/restaurants', label: 'Restaurants',  icon: FaBuilding },
-  { to: '/super/users',       label: 'Users',        icon: FaUsers },
-  { to: '/super/orders',      label: 'All Orders',   icon: FaClipboardList },
-  { to: '/super/features',    label: 'Features',     icon: FaCog },
-  { to: '/super/logs',        label: 'Audit Logs',   icon: FaHeartbeat },
+  { to: '/super',              label: 'Dashboard',    icon: FaThLarge,      end: true },
+  { to: '/super/restaurants',  label: 'Restaurants',  icon: FaBuilding },
+  { to: '/super/users',        label: 'Users',        icon: FaUsers },
+  { to: '/super/orders',       label: 'All Orders',   icon: FaClipboardList },
+  { to: '/super/features',     label: 'Features',     icon: FaCog },
+  { to: '/super/logs',         label: 'Audit Logs',   icon: FaHeartbeat },
+  { to: '/super/health',       label: 'Health',       icon: FaHeartbeat },
+  { to: '/super/announcements',label: 'Announcements',icon: FaBullhorn },
+  { to: '/super/tickets',      label: 'Support',      icon: FaInbox },
 ]
 
 export default function SuperLayout() {
@@ -61,7 +64,7 @@ export default function SuperLayout() {
             >
               {({ isActive }) => (
                 <>
-                  <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-white'}`} style={{ width: '18px', height: '18px' }} />
+                  <Icon className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-white'}`} style={{ width: '18px', height: '18px' }} />
                   <span>{item.label}</span>
                 </>
               )}
