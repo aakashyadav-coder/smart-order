@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { PrismaClient } = require("@prisma/client");
 const { z } = require("zod");
+const { emitUserLastLogin } = require("../socket");
 
 const prisma = new PrismaClient();
 
@@ -36,6 +37,14 @@ const login = async (req, res, next) => {
       process.env.JWT_SECRET,
       { expiresIn: "8h" }
     );
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+      select: { id: true, lastLoginAt: true },
+    });
+    const io = req.app.get("io");
+    if (io) emitUserLastLogin(io, { userId: updated.id, lastLoginAt: updated.lastLoginAt });
 
     res.json({
       token,

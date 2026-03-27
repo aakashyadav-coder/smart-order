@@ -7,6 +7,21 @@ const initSocket = (io) => {
   io.on("connection", (socket) => {
     console.log(`[Socket] Client connected: ${socket.id}`);
 
+    // Super admin dashboard room
+    socket.on("join_super_admin", () => {
+      socket.join("super_admin");
+      console.log(`[Socket] ${socket.id} joined super_admin room`);
+    });
+
+    // Owner room (for announcements + owner-specific notifications)
+    socket.on("join_owner", ({ restaurantId }) => {
+      socket.join("owners");
+      if (restaurantId) {
+        socket.join(`owner_${restaurantId}`);
+        console.log(`[Socket] ${socket.id} joined owner_${restaurantId}`);
+      }
+    });
+
     // Kitchen staff join the kitchen room
     socket.on("join_kitchen", () => {
       socket.join("kitchen");
@@ -70,4 +85,27 @@ const emitRestaurantUpdate = (io, restaurant) => {
   console.log(`[Socket] restaurant_updated → kitchen + restaurant_${restaurant.id}: "${restaurant.name}"`);
 };
 
-module.exports = { initSocket, emitNewOrder, emitOrderStatusUpdate, emitRestaurantUpdate };
+/** Emit announcement to owners */
+const emitAnnouncement = (io, announcement) => {
+  if (announcement?.restaurantId) {
+    io.to(`owner_${announcement.restaurantId}`).emit("announcement", announcement);
+  } else {
+    io.to("owners").emit("announcement", announcement);
+  }
+  console.log(`[Socket] announcement → owners${announcement?.restaurantId ? ` (owner_${announcement.restaurantId})` : ""}`);
+};
+
+/** Emit new support ticket to super admin */
+const emitSupportTicket = (io, ticket) => {
+  io.to("super_admin").emit("support_ticket_new", ticket);
+  console.log(`[Socket] support_ticket_new → super_admin (Ticket #${ticket.id})`);
+};
+
+/** Emit user login update to super admin */
+const emitUserLastLogin = (io, payload) => {
+  io.to("super_admin").emit("user_last_login", payload);
+  console.log(`[Socket] user_last_login → super_admin (User #${payload.userId})`);
+};
+
+module.exports = { initSocket, emitNewOrder, emitOrderStatusUpdate, emitRestaurantUpdate, emitAnnouncement, emitSupportTicket, emitUserLastLogin };
+

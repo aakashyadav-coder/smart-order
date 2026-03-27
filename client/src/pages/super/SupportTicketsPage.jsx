@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
+import socket from '../../lib/socket'
 import { FaInbox } from 'react-icons/fa'
 
 const STATUS_STYLES = {
@@ -78,6 +79,19 @@ export default function SupportTicketsPage() {
   }
 
   useEffect(fetchTickets, [statusFilter])
+
+  useEffect(() => {
+    const onNew = (ticket) => {
+      setTickets(p => {
+        if (p.some(t => t.id === ticket.id)) return p
+        if (statusFilter && ticket.status !== statusFilter) return p
+        return [ticket, ...p]
+      })
+      toast.success('New support ticket received')
+    }
+    socket.on('support_ticket_new', onNew)
+    return () => socket.off('support_ticket_new', onNew)
+  }, [statusFilter])
 
   const handleSave = async (id, data) => {
     try {

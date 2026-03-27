@@ -1,9 +1,10 @@
 /**
  * SuperLayout — Dark sidebar + content area for Super Admin
  */
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { NavLink, useNavigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import socket from '../lib/socket'
 import {
   FaThLarge, FaBuilding, FaUsers, FaClipboardList,
   FaCog, FaHeartbeat, FaSignOutAlt, FaShieldAlt, FaBars,
@@ -26,6 +27,14 @@ export default function SuperLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    socket.connect()
+    socket.emit('join_super_admin')
+    const onConnect = () => socket.emit('join_super_admin')
+    socket.on('connect', onConnect)
+    return () => socket.off('connect', onConnect)
+  }, [])
 
   const handleLogout = () => { logout(); navigate('/super/login') }
 

@@ -4,6 +4,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
+import socket from '../../lib/socket'
 import { FaSearch, FaFolder, FaFolderOpen, FaChevronDown, FaChevronRight } from 'react-icons/fa'
 
 const ROLES = ['OWNER', 'KITCHEN', 'ADMIN']
@@ -84,6 +85,14 @@ export default function UsersPage() {
       return next
     })
   }, [groups])
+
+  useEffect(() => {
+    const onLastLogin = ({ userId, lastLoginAt }) => {
+      setUsers(p => p.map(u => u.id === userId ? { ...u, lastLoginAt } : u))
+    }
+    socket.on('user_last_login', onLastLogin)
+    return () => socket.off('user_last_login', onLastLogin)
+  }, [])
 
   const openCreate = () => { setModal({ mode: 'create', user: null }) }
   const openEdit = (u) => { setModal({ mode: 'edit', user: u }) }

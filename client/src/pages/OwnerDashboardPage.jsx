@@ -13,10 +13,10 @@ import ConfirmModal from '../components/ConfirmModal'
 import {
   FaBuilding, FaSignOutAlt, FaChartLine, FaClipboardList,
   FaUtensils, FaQrcode, FaUsers, FaTimesCircle, FaSyncAlt, FaBars, FaTimes,
-  FaCog, FaBell
+  FaCog, FaBell, FaInbox
 } from 'react-icons/fa'
 import {
-  AnalyticsTab, OrderHistoryTab, MenuTab, QRTab, StaffTab
+  AnalyticsTab, OrderHistoryTab, MenuTab, QRTab, StaffTab, SupportTab
 } from './owner/OwnerTabComponents'
 
 // ── Confetti burst ─────────────────────────────────────────────────────────────
@@ -109,6 +109,7 @@ const NAV = [
   { id:'menu',      label:'Menu',        icon:FaUtensils,     shortcut:'M' },
   { id:'qr',        label:'QR Codes',    icon:FaQrcode,       shortcut:'Q' },
   { id:'staff',     label:'Staff',       icon:FaUsers,        shortcut:'S' },
+  { id:'support',   label:'Support',     icon:FaInbox,        shortcut:'H' },
 ]
 
 // ── Sidebar ────────────────────────────────────────────────────────────────────
@@ -242,7 +243,10 @@ export default function OwnerDashboardPage() {
 
   useEffect(() => {
     const joinRooms = () => {
-      if (user?.restaurantId) socket.emit('join_restaurant', { restaurantId: user.restaurantId })
+      if (user?.restaurantId) {
+        socket.emit('join_restaurant', { restaurantId: user.restaurantId })
+        socket.emit('join_owner', { restaurantId: user.restaurantId })
+      }
     }
 
     joinRooms() // join immediately
@@ -278,18 +282,31 @@ export default function OwnerDashboardPage() {
       localStorage.setItem('owner_restaurant', JSON.stringify({ ...restaurant, ...d }))
     }
 
+    const onAnnouncement = (ann) => {
+      if (ann.restaurantId && ann.restaurantId !== user?.restaurantId) return
+      const title = ann.title || 'Announcement'
+      const msg = ann.message || ''
+      sendPush(title, msg)
+      toast(msg ? `${title} — ${msg}` : title, {
+        icon: <FaBell className="w-4 h-4 text-brand-500" />,
+        duration: 8000,
+      })
+    }
+
     // Re-join rooms if socket reconnects (e.g. server restart)
     const onReconnect = () => joinRooms()
 
     socket.on('new_order', onNew)
     socket.on('order_status_update', onStatus)
     socket.on('restaurant_updated', onBrand)
+    socket.on('announcement', onAnnouncement)
     socket.on('connect', onReconnect)
 
     return () => {
       socket.off('new_order', onNew)
       socket.off('order_status_update', onStatus)
       socket.off('restaurant_updated', onBrand)
+      socket.off('announcement', onAnnouncement)
       socket.off('connect', onReconnect)
     }
   }, [user?.id, user?.restaurantId])  // stable primitive deps — prevents duplicate listeners
@@ -334,6 +351,7 @@ export default function OwnerDashboardPage() {
     menu:      <MenuTab restaurantId={user?.restaurantId} onDeleteItem={askDeleteItem} />,
     qr:        <QRTab restaurantId={user?.restaurantId} />,
     staff:     <StaffTab />,
+    support:   <SupportTab />,
   }
 
   return (

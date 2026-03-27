@@ -5,7 +5,8 @@
  */
 const { Router } = require("express");
 const { PrismaClient } = require("@prisma/client");
-const { authenticate } = require("../middleware/auth");
+const { authenticate, requireOwnerOrAbove } = require("../middleware/auth");
+const { emitSupportTicket } = require("../socket");
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -114,5 +115,33 @@ router.get("/staff", authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-module.exports = router;
+// -- Support Tickets (Owner) --
+router.get("/tickets", authenticate, requireOwnerOrAbove, async (req, res, next) => {
+  try {
+    const { restaurantId } = req.user;
+    if (!restaurantId) return res.status(404).json({ message: "No restaurant linked." });
+    const tickets = await prisma.supportTicket.findMany({
+      where: { restaurantId },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(tickets);
+  } catch (err) { next(err); }
+});
 
+router.post("/tickets", authenticate, requireOwnerOrAbove, async (req, res, next) => {
+  try {
+    const { restaurantId } = req.user;
+    const { subject, message } = req.body;
+    if (!restaurantId) return res.status(404).json({ message: "No restaurant linked." });
+    if (!subject || !message) return res.status(400).json({ message: "subject and message are required." });
+    const ticket = await prisma.supportTicket.create({
+      data: { subject, message, restaurantId },
+      include: { restaurant: { select: { id: true, name: true } } },
+    });
+    const io = req.app.get("io");
+    if (io) emitSupportTicket(io, ticket);
+    res.status(201).json(ticket);
+  } catch (err) { next(err); }
+});
+
+module.exports = router;

@@ -5,7 +5,7 @@
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 const { logActivity } = require("../services/activityLogService");
-const { emitRestaurantUpdate } = require("../socket");
+const { emitRestaurantUpdate, emitAnnouncement } = require("../socket");
 
 const prisma = new PrismaClient();
 
@@ -485,6 +485,8 @@ const createAnnouncement = async (req, res, next) => {
       include: { restaurant: { select: { id: true, name: true } } },
     });
     await logActivity({ userId: req.user.id, action: "ANNOUNCEMENT_CREATED", entity: "Announcement", entityId: ann.id, metadata: { title, restaurantId } });
+    const io = req.app.get("io");
+    if (io) emitAnnouncement(io, ann);
     res.status(201).json(ann);
   } catch (err) { next(err); }
 };
