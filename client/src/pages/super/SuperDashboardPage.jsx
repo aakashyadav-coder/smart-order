@@ -1,30 +1,26 @@
 /**
- * SuperDashboardPage — Platform overview for Super Admin
- * Theme: White cards, brand red accents, SVG icons
+ * SuperDashboardPage — Platform overview with enhanced KPI cards
+ * Theme: White cards, brand red accents, SVG charts
  */
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
-import { FaBuilding, FaUsers, FaChartLine } from 'react-icons/fa'
+import {
+  FaBuilding, FaUsers, FaChartLine, FaShoppingBag,
+  FaMoneyBillWave, FaTicketAlt, FaExclamationTriangle,
+  FaArrowUp, FaArrowDown, FaMinus,
+} from 'react-icons/fa'
 import { ChartSkeleton } from '../../components/Skeleton'
 
-const STAT_CARDS = [
-  { key: 'totalRestaurants', label: 'Total Restaurants', icon: FaBuilding,     color: 'bg-purple-50 text-purple-600', subKey: 'activeRestaurants', subLabel: 'active' },
-  { key: 'totalUsers',       label: 'Total Users',       icon: FaUsers,        color: 'bg-blue-50 text-blue-600' },
-  { key: 'totalRevenue',     label: 'Total Revenue',     icon: FaChartLine,    color: 'bg-green-50 text-green-600', prefix: 'Rs. ', format: true },
-]
-
+/* ─── Analytics chart helpers ──────────────────────────────────────────────── */
 const RANGE_OPTIONS = [
   { key: '24h', title: 'Last 24 Hours', subtitle: 'Hourly pulse for top 3 restaurants' },
   { key: '30d', title: 'Last 30 Days',  subtitle: 'Daily trend for top performers' },
   { key: '6m',  title: 'Last 6 Months', subtitle: 'Monthly growth overview' },
 ]
-
 const CHART_COLORS = ['#ef4444', '#0ea5e9', '#22c55e']
 
-function formatNumber(value) {
-  return (value || 0).toLocaleString()
-}
-
+function formatNumber(value) { return (value || 0).toLocaleString() }
 function formatMetric(value, metric) {
   return metric === 'revenue' ? `Rs. ${formatNumber(value)}` : `${formatNumber(value)} customers`
 }
@@ -61,10 +57,7 @@ function MultiLineChart({ labels, series, colors }) {
                 <defs>
                   <filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
                     <feGaussianBlur stdDeviation="1.6" result="blur" />
-                    <feMerge>
-                      <feMergeNode in="blur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
+                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
                   </filter>
                 </defs>
                 <path d={path} stroke={colors[i % colors.length]} strokeWidth="2.6" fill="none" filter={`url(#${glowId})`} />
@@ -75,9 +68,7 @@ function MultiLineChart({ labels, series, colors }) {
       </div>
       <div className="flex justify-between text-[10px] text-gray-400 mt-2">
         {labels.map((l, i) => (
-          <span key={i} style={{ display: (i % showEvery === 0 || i === labels.length - 1) ? "block" : "none" }}>
-            {l}
-          </span>
+          <span key={i} style={{ display: (i % showEvery === 0 || i === labels.length - 1) ? 'block' : 'none' }}>{l}</span>
         ))}
       </div>
     </div>
@@ -121,28 +112,17 @@ function AnalyticsCard({ title, subtitle, data, metric, onMetricChange }) {
           </div>
           <div className="flex items-center gap-1 rounded-full bg-gray-900 text-white text-[10px] px-2 py-1 flex-shrink-0">Top 3</div>
         </div>
-
         <div className="mt-4 flex items-center gap-2 text-[11px]">
-          <button
-            type="button"
-            onClick={() => onMetricChange('revenue')}
-            className={`px-3 py-1 rounded-full border ${metric === 'revenue' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200'}`}
-          >
+          <button type="button" onClick={() => onMetricChange('revenue')}
+            className={`px-3 py-1 rounded-full border ${metric === 'revenue' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200'}`}>
             Revenue
           </button>
-          <button
-            type="button"
-            onClick={() => onMetricChange('customers')}
-            className={`px-3 py-1 rounded-full border ${metric === 'customers' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200'}`}
-          >
+          <button type="button" onClick={() => onMetricChange('customers')}
+            className={`px-3 py-1 rounded-full border ${metric === 'customers' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200'}`}>
             Customers
           </button>
         </div>
-
-        <div className="mt-4">
-          <MultiLineChart labels={labels} series={series} colors={CHART_COLORS} />
-        </div>
-
+        <div className="mt-4"><MultiLineChart labels={labels} series={series} colors={CHART_COLORS} /></div>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
           {series.map((s, i) => (
             <div key={s.name} className="flex items-center gap-2 bg-white/70 border border-gray-100 rounded-2xl px-3 py-2 shadow-[0_1px_0_rgba(17,24,39,0.04)]">
@@ -159,17 +139,40 @@ function AnalyticsCard({ title, subtitle, data, metric, onMetricChange }) {
   )
 }
 
+/* ─── Delta badge ──────────────────────────────────────────────────────────── */
+function DeltaBadge({ delta }) {
+  if (delta === null || delta === undefined) return null
+  if (delta > 0) return (
+    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-600 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded-full">
+      <FaArrowUp className="w-2.5 h-2.5" />{delta}%
+    </span>
+  )
+  if (delta < 0) return (
+    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">
+      <FaArrowDown className="w-2.5 h-2.5" />{Math.abs(delta)}%
+    </span>
+  )
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-gray-400 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded-full">
+      <FaMinus className="w-2.5 h-2.5" /> 0%
+    </span>
+  )
+}
+
+/* ─── Main page ────────────────────────────────────────────────────────────── */
 export default function SuperDashboardPage() {
-  const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [analytics, setAnalytics] = useState({})
+  const navigate = useNavigate()
+  const [stats, setStats]                   = useState(null)
+  const [kpis, setKpis]                     = useState(null)
+  const [loading, setLoading]               = useState(true)
+  const [analytics, setAnalytics]           = useState({})
   const [analyticsLoading, setAnalyticsLoading] = useState(true)
   const [analyticsError, setAnalyticsError] = useState(false)
-  const [metricByRange, setMetricByRange] = useState({ '24h': 'revenue', '30d': 'revenue', '6m': 'revenue' })
+  const [metricByRange, setMetricByRange]   = useState({ '24h': 'revenue', '30d': 'revenue', '6m': 'revenue' })
 
   useEffect(() => {
-    api.get('/super/stats')
-      .then(r => setStats(r.data))
+    Promise.all([api.get('/super/stats'), api.get('/super/dashboard-kpis')])
+      .then(([s, k]) => { setStats(s.data); setKpis(k.data) })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -177,8 +180,7 @@ export default function SuperDashboardPage() {
   useEffect(() => {
     let mounted = true
     const ranges = ['24h', '30d', '6m']
-    setAnalyticsLoading(true)
-    setAnalyticsError(false)
+    setAnalyticsLoading(true); setAnalyticsError(false)
     Promise.all(ranges.map(r => api.get(`/super/analytics?range=${r}`)))
       .then(responses => {
         if (!mounted) return
@@ -190,6 +192,55 @@ export default function SuperDashboardPage() {
       .finally(() => { if (mounted) setAnalyticsLoading(false) })
     return () => { mounted = false }
   }, [])
+
+  /* ── KPI card definitions ───────────────────────────────────────────────── */
+  const kpiCards = [
+    {
+      key: 'totalRestaurants', label: 'Total Restaurants', icon: FaBuilding,
+      iconBg: 'bg-purple-50 text-purple-600',
+      value: stats?.totalRestaurants ?? '—',
+      sub: `${stats?.activeRestaurants ?? 0} active`,
+    },
+    {
+      key: 'totalUsers', label: 'Total Users', icon: FaUsers,
+      iconBg: 'bg-blue-50 text-blue-600',
+      value: stats?.totalUsers ?? '—',
+    },
+    {
+      key: 'totalRevenue', label: 'Total Revenue', icon: FaChartLine,
+      iconBg: 'bg-green-50 text-green-600',
+      value: `Rs. ${(stats?.totalRevenue || 0).toLocaleString()}`,
+    },
+    {
+      key: 'todayOrders', label: "Today's Orders", icon: FaShoppingBag,
+      iconBg: 'bg-amber-50 text-amber-600',
+      value: kpis?.todayOrders ?? '—',
+      sub: `vs ${kpis?.yesterdayOrders ?? 0} yesterday`,
+      delta: kpis?.orderDelta,
+    },
+    {
+      key: 'todayRevenue', label: "Today's Revenue", icon: FaMoneyBillWave,
+      iconBg: 'bg-emerald-50 text-emerald-600',
+      value: kpis != null ? `Rs. ${(kpis.todayRevenue || 0).toLocaleString()}` : '—',
+      sub: `vs Rs. ${(kpis?.yesterdayRevenue || 0).toLocaleString()} yesterday`,
+      delta: kpis?.revenueDelta,
+    },
+    {
+      key: 'openTickets', label: 'Open Tickets', icon: FaTicketAlt,
+      iconBg: 'bg-rose-50 text-rose-600',
+      value: kpis?.openTickets ?? '—',
+      sub: 'support requests',
+      clickTo: '/super/tickets',
+      urgent: (kpis?.openTickets || 0) > 0,
+    },
+    {
+      key: 'inactiveRestaurants', label: 'Inactive Restaurants', icon: FaExclamationTriangle,
+      iconBg: 'bg-orange-50 text-orange-600',
+      value: kpis?.inactiveRestaurants ?? '—',
+      sub: 'need attention',
+      clickTo: '/super/restaurants',
+    },
+  ]
 
   return (
     <div>
@@ -204,27 +255,37 @@ export default function SuperDashboardPage() {
         </div>
       ) : (
         <>
-          {/* Stat Cards */}
+          {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-            {STAT_CARDS.map(({ key, label, icon: Icon, color, subKey, subLabel, prefix, format }) => {
-              const raw = stats?.[key]
-              const value = format ? `${prefix || ''}${(raw || 0).toLocaleString()}` : (raw ?? '—')
-              const sub = subKey ? `${stats?.[subKey] ?? 0} ${subLabel}` : null
+            {kpiCards.map(card => {
+              const Icon = card.icon
+              const isClickable = !!card.clickTo
+              const Tag = isClickable ? 'button' : 'div'
               return (
-                <div key={key} className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                  <div className={`icon-box ${color}`}>
+                <Tag
+                  key={card.key}
+                  onClick={isClickable ? () => navigate(card.clickTo) : undefined}
+                  className={[
+                    'bg-white rounded-2xl border p-5 flex items-center gap-4 shadow-sm transition-all duration-200',
+                    card.urgent ? 'border-rose-200 ring-1 ring-rose-100' : 'border-gray-100',
+                    isClickable ? 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer text-left w-full' : 'hover:shadow-md hover:-translate-y-0.5',
+                  ].join(' ')}
+                >
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${card.iconBg}`}>
                     <Icon className="w-5 h-5" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-gray-400 text-xs font-medium truncate">{label}</p>
-                    <p className="text-gray-900 text-2xl font-extrabold leading-none mt-0.5">{value}</p>
-                    {sub && <p className="text-gray-400 text-xs mt-1">{sub}</p>}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-gray-400 text-xs font-medium truncate">{card.label}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-gray-900 text-2xl font-extrabold leading-none">{card.value}</p>
+                      {card.delta !== undefined && <DeltaBadge delta={card.delta} />}
+                    </div>
+                    {card.sub && <p className="text-gray-400 text-xs mt-1 truncate">{card.sub}</p>}
                   </div>
-                </div>
+                </Tag>
               )
             })}
           </div>
-
 
           {/* Analytics */}
           <div className="mb-4">

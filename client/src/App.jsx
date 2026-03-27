@@ -32,6 +32,7 @@ import ActivityLogsPage      from './pages/super/ActivityLogsPage'
 import HealthPage            from './pages/super/HealthPage'
 import AnnouncementsPage     from './pages/super/AnnouncementsPage'
 import SupportTicketsPage    from './pages/super/SupportTicketsPage'
+import RevenuePage           from './pages/super/RevenuePage'
 
 // Route guards & layouts
 import ProtectedRoute  from './components/ProtectedRoute'
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="health"               element={<HealthPage />} />
         <Route path="announcements"        element={<AnnouncementsPage />} />
         <Route path="tickets"              element={<SupportTicketsPage />} />
+        <Route path="revenue"              element={<RevenuePage />} />
       </Route>
 
       {/* ── 404 ──────────────────────────────────────────────── */}

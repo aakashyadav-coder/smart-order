@@ -539,8 +539,205 @@ const deleteTicket = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ── Dashboard KPIs (today vs yesterday + ticket/restaurant counts) ─────────────
+const getDashboardKPIs = async (req, res, next) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd   = new Date(now); todayEnd.setHours(23, 59, 59, 999);
+    const yestStart  = new Date(todayStart); yestStart.setDate(yestStart.getDate() - 1);
+    const yestEnd    = new Date(todayEnd);   yestEnd.setDate(yestEnd.getDate() - 1);
+
+    const [
+      todayOrdersCount,
+      todayRevenueResult,
+      yestOrdersCount,
+      yestRevenueResult,
+      openTickets,
+      inactiveRestaurants,
+    ] = await Promise.all([
+      prisma.order.count({ where: { createdAt: { gte: todayStart, lte: todayEnd } } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: todayStart, lte: todayEnd } }, _sum: { totalPrice: true } }),
+      prisma.order.count({ where: { createdAt: { gte: yestStart, lte: yestEnd } } }),
+      prisma.order.aggregate({ where: { createdAt: { gte: yestStart, lte: yestEnd } }, _sum: { totalPrice: true } }),
+      prisma.supportTicket.count({ where: { status: 'OPEN' } }),
+      prisma.restaurant.count({ where: { active: false } }),
+    ]);
+
+    const todayRevenue = roundMoney(todayRevenueResult._sum.totalPrice || 0);
+    const yestRevenue  = roundMoney(yestRevenueResult._sum.totalPrice  || 0);
+
+    const orderDelta   = yestOrdersCount  > 0 ? Math.round(((todayOrdersCount - yestOrdersCount)  / yestOrdersCount)  * 100) : null;
+    const revenueDelta = yestRevenue  > 0      ? Math.round(((todayRevenue    - yestRevenue)       / yestRevenue)       * 100) : null;
+
+    res.json({
+      todayOrders: todayOrdersCount,
+      yesterdayOrders: yestOrdersCount,
+      orderDelta,
+      todayRevenue,
+      yesterdayRevenue: yestRevenue,
+      revenueDelta,
+      openTickets,
+      inactiveRestaurants,
+    });
+  } catch (err) { next(err); }
+};
+
+// ── Revenue BI ─────────────────────────────────────────────────────────────────
+const PERIOD_PRESETS = {
+  daily:   { type: 'day',   count: 14 },
+  weekly:  { type: 'week',  count: 8  },
+  monthly: { type: 'month', count: 12 },
+};
+
+function getPeriodBuckets(period) {
+  const preset = PERIOD_PRESETS[period] || PERIOD_PRESETS.daily;
+  const now = new Date();
+  let start, labels = [], bucketMs = 0;
+
+  if (preset.type === 'day') {
+    const aligned = new Date(now); aligned.setHours(0, 0, 0, 0);
+    bucketMs = 24 * 60 * 60 * 1000;
+    start = new Date(aligned.getTime() - (preset.count - 1) * bucketMs);
+    labels = Array.from({ length: preset.count }, (_, i) => {
+      const d = new Date(start.getTime() + i * bucketMs);
+      return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
+    });
+  } else if (preset.type === 'week') {
+    const aligned = new Date(now); aligned.setHours(0, 0, 0, 0);
+    const dow = aligned.getDay(); aligned.setDate(aligned.getDate() - dow);
+    bucketMs = 7 * 24 * 60 * 60 * 1000;
+    start = new Date(aligned.getTime() - (preset.count - 1) * bucketMs);
+    labels = Array.from({ length: preset.count }, (_, i) => {
+      const d = new Date(start.getTime() + i * bucketMs);
+      return `W${Math.ceil(d.getDate() / 7)} ${MONTHS_SHORT[d.getMonth()]}`;
+    });
+  } else {
+    const startMonth = new Date(now.getFullYear(), now.getMonth() - (preset.count - 1), 1);
+    start = startMonth;
+    labels = Array.from({ length: preset.count }, (_, i) => {
+      const d = new Date(startMonth.getFullYear(), startMonth.getMonth() + i, 1);
+      return MONTHS_SHORT[d.getMonth()];
+    });
+    bucketMs = 0; // handled separately for months
+  }
+  return { preset, start, end: now, labels, bucketMs };
+}
+
+function getPeriodBucketIndex(date, start, preset, bucketMs) {
+  if (preset.type === 'month') {
+    return (date.getFullYear() - start.getFullYear()) * 12 + (date.getMonth() - start.getMonth());
+  }
+  return Math.floor((date.getTime() - start.getTime()) / bucketMs);
+}
+
+const getRevenueBI = async (req, res, next) => {
+  try {
+    const period = String(req.query.period || 'daily').toLowerCase();
+    const { preset, start, end, labels, bucketMs } = getPeriodBuckets(period);
+    const bucketCount = labels.length;
+
+    // Previous period window (same length, one period back)
+    const prevStart = preset.type === 'month'
+      ? new Date(start.getFullYear(), start.getMonth() - bucketCount, 1)
+      : new Date(start.getTime() - (end.getTime() - start.getTime()));
+    const prevEnd = new Date(start.getTime() - 1);
+
+    const [currentOrders, prevOrders] = await Promise.all([
+      prisma.order.findMany({
+        where: { createdAt: { gte: start, lte: end } },
+        select: { totalPrice: true, status: true, createdAt: true, restaurantId: true, restaurant: { select: { name: true } } },
+      }),
+      prisma.order.findMany({
+        where: { createdAt: { gte: prevStart, lte: prevEnd } },
+        select: { totalPrice: true, restaurantId: true },
+      }),
+    ]);
+
+    // Aggregate previous period revenue per restaurant
+    const prevRevByRestaurant = new Map();
+    for (const o of prevOrders) {
+      prevRevByRestaurant.set(o.restaurantId, (prevRevByRestaurant.get(o.restaurantId) || 0) + (o.totalPrice || 0));
+    }
+
+    // Peak hours (hour of day → total orders, across current period)
+    const peakHours = Array(24).fill(0);
+
+    // Per-restaurant aggregation
+    const restMap = new Map();
+    for (const order of currentOrders) {
+      const hour = order.createdAt.getHours();
+      peakHours[hour]++;
+
+      const idx = getPeriodBucketIndex(order.createdAt, start, preset, bucketMs);
+      if (idx < 0 || idx >= bucketCount) continue;
+
+      if (!restMap.has(order.restaurantId)) {
+        restMap.set(order.restaurantId, {
+          id: order.restaurantId,
+          name: order.restaurant?.name || 'Unknown',
+          revenueSeries: Array(bucketCount).fill(0),
+          totalRevenue: 0,
+          orderCount: 0,
+          cancelledCount: 0,
+        });
+      }
+      const r = restMap.get(order.restaurantId);
+      r.revenueSeries[idx] += order.totalPrice || 0;
+      r.totalRevenue += order.totalPrice || 0;
+      r.orderCount++;
+      if (order.status === 'CANCELLED') r.cancelledCount++;
+    }
+
+    let platformTotal = 0, platformPrevTotal = 0;
+    prevOrders.forEach(o => { platformPrevTotal += o.totalPrice || 0; });
+
+    const restaurants = Array.from(restMap.values()).map(r => {
+      const prevRev = roundMoney(prevRevByRestaurant.get(r.id) || 0);
+      const growth = prevRev > 0 ? Math.round(((r.totalRevenue - prevRev) / prevRev) * 100) : null;
+      platformTotal += r.totalRevenue;
+      return {
+        id: r.id,
+        name: r.name,
+        revenueSeries: r.revenueSeries.map(v => roundMoney(v)),
+        totalRevenue: roundMoney(r.totalRevenue),
+        previousRevenue: prevRev,
+        orderCount: r.orderCount,
+        aov: r.orderCount > 0 ? roundMoney(r.totalRevenue / r.orderCount) : 0,
+        cancelledCount: r.cancelledCount,
+        cancelRate: r.orderCount > 0 ? Math.round((r.cancelledCount / r.orderCount) * 100) : 0,
+        growth,
+      };
+    }).sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+    const platformGrowth = platformPrevTotal > 0
+      ? Math.round(((platformTotal - platformPrevTotal) / platformPrevTotal) * 100)
+      : null;
+    const platformAov = currentOrders.length > 0 ? roundMoney(platformTotal / currentOrders.filter(o => o.status !== 'CANCELLED').length || 1) : 0;
+    const platformCancelRate = currentOrders.length > 0
+      ? Math.round((currentOrders.filter(o => o.status === 'CANCELLED').length / currentOrders.length) * 100)
+      : 0;
+
+    res.json({
+      period,
+      labels,
+      restaurants,
+      peakHours: peakHours.map((count, hour) => ({ hour, count })),
+      platform: {
+        totalRevenue: roundMoney(platformTotal),
+        previousRevenue: roundMoney(platformPrevTotal),
+        growth: platformGrowth,
+        aov: platformAov,
+        cancelRate: platformCancelRate,
+        totalOrders: currentOrders.length,
+      },
+    });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getStats, getAnalytics,
+  getDashboardKPIs, getRevenueBI,
   getRestaurants, getRestaurantDetail, createRestaurant, updateRestaurant, deleteRestaurant, bulkUpdateRestaurants,
   getUsers, createUser, updateUser, deleteUser, bulkUpdateUsers,
   getAllOrders,

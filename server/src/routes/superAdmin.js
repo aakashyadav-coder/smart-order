@@ -1,6 +1,7 @@
 const { Router } = require("express");
 const {
   getStats, getAnalytics,
+  getDashboardKPIs, getRevenueBI,
   getRestaurants, getRestaurantDetail, createRestaurant, updateRestaurant, deleteRestaurant, bulkUpdateRestaurants,
   getUsers, createUser, updateUser, deleteUser, bulkUpdateUsers,
   getAllOrders,
@@ -19,6 +20,8 @@ router.use(authenticate, requireSuperAdmin);
 // Stats & Analytics
 router.get("/stats", getStats);
 router.get("/analytics", getAnalytics);
+router.get("/dashboard-kpis", getDashboardKPIs);
+router.get("/revenue-bi", getRevenueBI);
 
 // System Health
 router.get("/health", getHealth);
