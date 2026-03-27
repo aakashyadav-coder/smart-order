@@ -8,7 +8,14 @@ import { FaSearch } from 'react-icons/fa'
 
 const ROLES = ['OWNER', 'KITCHEN', 'ADMIN']
 const ROLE_COLORS = { SUPER_ADMIN: 'badge-cancelled', OWNER: 'badge-accepted', KITCHEN: 'badge-preparing', ADMIN: 'badge-pending' }
-const EMPTY = { name: '', email: '', password: '', role: 'KITCHEN', restaurantId: '', active: true }
+const buildForm = (u) => ({
+  name: u?.name || '',
+  email: u?.email || '',
+  password: '',
+  role: u?.role || 'KITCHEN',
+  restaurantId: u?.restaurantId || '',
+  active: typeof u?.active === 'boolean' ? u.active : true,
+})
 
 function fmtDate(d) {
   if (!d) return '—'
@@ -20,7 +27,6 @@ export default function UsersPage() {
   const [restaurants, setRestaurants] = useState([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
-  const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
@@ -43,21 +49,21 @@ export default function UsersPage() {
     })
   }, [users, search, roleFilter])
 
-  const openCreate = () => { setForm(EMPTY); setModal('create') }
-  const openEdit = (u) => { setForm({ name: u.name, email: u.email, password: '', role: u.role, restaurantId: u.restaurantId || '', active: u.active }); setModal(u) }
+  const openCreate = () => { setModal({ mode: 'create', user: null }) }
+  const openEdit = (u) => { setModal({ mode: 'edit', user: u }) }
 
-  const handleSave = async () => {
+  const handleSave = async (mode, user, form) => {
     setSaving(true)
     try {
       const payload = { ...form, restaurantId: form.restaurantId || null }
-      if (modal === 'create') {
+      if (mode === 'create') {
         const res = await api.post('/super/users', payload)
         setUsers(p => [res.data, ...p])
         toast.success('User created!')
       } else {
         if (!payload.password) delete payload.password
-        const res = await api.put(`/super/users/${modal.id}`, payload)
-        setUsers(p => p.map(u => u.id === modal.id ? { ...u, ...res.data } : u))
+        const res = await api.put(`/super/users/${user.id}`, payload)
+        setUsers(p => p.map(u => u.id === user.id ? { ...u, ...res.data } : u))
         toast.success('User updated!')
       }
       setModal(null)
@@ -96,13 +102,62 @@ export default function UsersPage() {
     } catch (e) { toast.error(e.message) }
   }
 
-  const InputField = ({ label, field, type = 'text', placeholder }) => (
+  const InputField = ({ label, field, type = 'text', placeholder, form, setForm }) => (
     <div>
       <label className="label text-gray-600 text-xs">{label}</label>
       <input type={type} placeholder={placeholder} className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:ring-brand-500 focus:border-brand-500"
-        value={form[field]} onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))} />
+        value={form[field] ?? ''} onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))} />
     </div>
   )
+
+  const UserModal = ({ mode, user, restaurants, onClose, onSave, saving }) => {
+    const [form, setForm] = useState(() => buildForm(user))
+
+    useEffect(() => {
+      setForm(buildForm(user))
+    }, [user, mode])
+
+    return (
+      <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-md shadow-2xl">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl">
+            <h3 className="font-bold text-gray-900">{mode === 'create' ? '👤 New User' : `✏️ Edit ${user?.name || ''}`}</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-700 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100">✕</button>
+          </div>
+          <div className="p-5 space-y-3">
+            <InputField label="Full Name *" field="name" placeholder="John Doe" form={form} setForm={setForm} />
+            <InputField label="Email *" field="email" type="email" placeholder="user@restaurant.com" form={form} setForm={setForm} />
+            <InputField label={mode === 'create' ? 'Password *' : 'New Password (leave blank to keep)'} field="password" type="password" placeholder="••••••••" form={form} setForm={setForm} />
+            <div>
+              <label className="label text-gray-600 text-xs">Role *</label>
+              <select className="input bg-white border-gray-200 text-gray-900 text-sm focus:ring-brand-500 focus:border-brand-500"
+                value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
+                {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label text-gray-600 text-xs">Restaurant</label>
+              <select className="input bg-white border-gray-200 text-gray-900 text-sm focus:ring-brand-500 focus:border-brand-500"
+                value={form.restaurantId} onChange={e => setForm(p => ({ ...p, restaurantId: e.target.value }))}>
+                <option value="">— No restaurant —</option>
+                {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" id="active" checked={form.active} onChange={e => setForm(p => ({ ...p, active: e.target.checked }))} className="w-4 h-4 accent-brand-600" />
+              <label htmlFor="active" className="text-gray-700 text-sm">Active account</label>
+            </div>
+          </div>
+          <div className="flex gap-2 px-5 pb-5">
+            <button onClick={onClose} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
+            <button onClick={() => onSave(form)} disabled={saving} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-sm transition-colors shadow-sm">
+              {saving ? 'Saving…' : 'Save User'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -190,44 +245,14 @@ export default function UsersPage() {
 
       {/* Modal */}
       {modal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl">
-              <h3 className="font-bold text-gray-900">{modal === 'create' ? '👤 New User' : `✏️ Edit ${modal.name}`}</h3>
-              <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-700 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100">✕</button>
-            </div>
-            <div className="p-5 space-y-3">
-              <InputField label="Full Name *" field="name" placeholder="John Doe" />
-              <InputField label="Email *" field="email" type="email" placeholder="user@restaurant.com" />
-              <InputField label={modal === 'create' ? 'Password *' : 'New Password (leave blank to keep)'} field="password" type="password" placeholder="••••••••" />
-              <div>
-                <label className="label text-gray-600 text-xs">Role *</label>
-                <select className="input bg-white border-gray-200 text-gray-900 text-sm focus:ring-brand-500 focus:border-brand-500"
-                  value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
-                  {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label text-gray-600 text-xs">Restaurant</label>
-                <select className="input bg-white border-gray-200 text-gray-900 text-sm focus:ring-brand-500 focus:border-brand-500"
-                  value={form.restaurantId} onChange={e => setForm(p => ({ ...p, restaurantId: e.target.value }))}>
-                  <option value="">— No restaurant —</option>
-                  {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" id="active" checked={form.active} onChange={e => setForm(p => ({ ...p, active: e.target.checked }))} className="w-4 h-4 accent-brand-600" />
-                <label htmlFor="active" className="text-gray-700 text-sm">Active account</label>
-              </div>
-            </div>
-            <div className="flex gap-2 px-5 pb-5">
-              <button onClick={() => setModal(null)} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
-              <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-sm transition-colors shadow-sm">
-                {saving ? 'Saving…' : 'Save User'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <UserModal
+          mode={modal.mode}
+          user={modal.user}
+          restaurants={restaurants}
+          onClose={() => setModal(null)}
+          onSave={(form) => handleSave(modal.mode, modal.user, form)}
+          saving={saving}
+        />
       )}
     </div>
   )
