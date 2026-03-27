@@ -115,6 +115,21 @@ router.get("/staff", authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// -- Announcements (Owner) --
+router.get("/announcements", authenticate, requireOwnerOrAbove, async (req, res, next) => {
+  try {
+    const { restaurantId } = req.user;
+    if (!restaurantId) return res.status(404).json({ message: "No restaurant linked." });
+    const announcements = await prisma.announcement.findMany({
+      where: { OR: [{ restaurantId }, { restaurantId: null }] },
+      include: { restaurant: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    res.json(announcements);
+  } catch (err) { next(err); }
+});
+
 // -- Support Tickets (Owner) --
 router.get("/tickets", authenticate, requireOwnerOrAbove, async (req, res, next) => {
   try {

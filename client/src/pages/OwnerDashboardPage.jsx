@@ -3,7 +3,7 @@
  * Features: dark sidebar, kanban live orders, push notifications,
  *           confetti on milestones, profile editor, keyboard shortcuts
  */
-import React, { useEffect, useState, useCallback, useRef } from 'react'
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
@@ -192,8 +192,31 @@ export default function OwnerDashboardPage() {
   const [pendingCount, setPendingCount] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
+  const [announcements, setAnnouncements] = useState([])
+  const [announcementsOpen, setAnnouncementsOpen] = useState(false)
+  const [readAnnIds, setReadAnnIds] = useState(new Set())
   const prevRevRef = useRef(0)
   const notifiedOrderIds = useRef(new Set())
+
+  const readKey = useMemo(() => {
+    if (user?.id) return `owner_ann_read_${user.id}`
+    if (user?.restaurantId) return `owner_ann_read_${user.restaurantId}`
+    return null
+  }, [user?.id, user?.restaurantId])
+
+  useEffect(() => {
+    if (!readKey) return
+    try {
+      const raw = localStorage.getItem(readKey)
+      const arr = raw ? JSON.parse(raw) : []
+      setReadAnnIds(new Set(arr))
+    } catch { setReadAnnIds(new Set()) }
+  }, [readKey])
+
+  useEffect(() => {
+    if (!readKey) return
+    localStorage.setItem(readKey, JSON.stringify([...readAnnIds]))
+  }, [readAnnIds, readKey])
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -214,6 +237,9 @@ export default function OwnerDashboardPage() {
       setRestaurant(d); setLogoError(false)
       localStorage.setItem('owner_restaurant', JSON.stringify(d))
     }).catch(() => {})
+    api.get('/restaurant/announcements')
+      .then(r => setAnnouncements(r.data))
+      .catch(() => setAnnouncements([]))
     requestPush()
   }, [authLoading, fetchOrders])
 
@@ -284,6 +310,11 @@ export default function OwnerDashboardPage() {
 
     const onAnnouncement = (ann) => {
       if (ann.restaurantId && ann.restaurantId !== user?.restaurantId) return
+      setAnnouncements(p => {
+        if (p.some(a => a.id === ann.id)) return p
+        return [ann, ...p]
+      })
+      setAnnouncementsOpen(true)
       const title = ann.title || 'Announcement'
       const msg = ann.message || ''
       sendPush(title, msg)
@@ -310,6 +341,15 @@ export default function OwnerDashboardPage() {
       socket.off('connect', onReconnect)
     }
   }, [user?.id, user?.restaurantId])  // stable primitive deps — prevents duplicate listeners
+  const unreadCount = useMemo(() => announcements.filter(a => !readAnnIds.has(a.id)).length, [announcements, readAnnIds])
+  const announcementsPanelOpen = announcementsOpen || unreadCount > 0
+  const markAnnouncementRead = (id) => setReadAnnIds(prev => new Set(prev).add(id))
+  const markAllAnnouncementsRead = () => setReadAnnIds(new Set(announcements.map(a => a.id)))
+  const fmtAnn = (d) => new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+  const handleBellClick = () => {
+    if (unreadCount > 0) return setAnnouncementsOpen(true)
+    setAnnouncementsOpen(p => !p)
+  }
 
 
   const handleStatusChange = (orderId, status) => {
@@ -386,20 +426,89 @@ export default function OwnerDashboardPage() {
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Live
               </span>
             </div>
-            {/* Live stats */}
-            <div className="ml-auto hidden md:flex items-center gap-2">
-              {LIVE_STATS.map(s => (
-                <div key={s.label} className={`flex flex-col items-center px-3 py-1.5 rounded-xl border transition-all ${s.bg}`}>
-                  <span className={`font-extrabold text-sm leading-none ${s.color}`}>{s.value}</span>
-                  <span className="text-gray-400 text-[9px] uppercase tracking-wider mt-0.5">{s.label}</span>
-                </div>
-              ))}
-            </div>
-            {/* Keyboard shortcut hint */}
-            <div className="hidden xl:flex items-center gap-1 text-[10px] text-gray-300 ml-2">
-              <kbd className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">A</kbd>
-              <kbd className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">O</kbd>
-              <kbd className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">M</kbd>
+            <div className="ml-auto flex items-center gap-3">
+              {/* Notifications */}
+              <div className="relative">
+                <button
+                  onClick={handleBellClick}
+                  className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors relative"
+                  title="Announcements"
+                >
+                  <FaBell className="w-4 h-4 text-gray-600" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {announcementsPanelOpen && (
+                  <div className="absolute right-0 mt-3 w-96 max-w-[90vw] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-30">
+                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
+                      <div>
+                        <p className="text-sm font-bold text-gray-900">Announcements</p>
+                        <p className="text-[11px] text-gray-400">{unreadCount} unread</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {unreadCount > 0 && (
+                          <button onClick={markAllAnnouncementsRead} className="text-[10px] font-semibold text-brand-600 hover:text-brand-700">
+                            Mark all read
+                          </button>
+                        )}
+                        {unreadCount === 0 && (
+                          <button onClick={() => setAnnouncementsOpen(false)} className="text-[10px] text-gray-400 hover:text-gray-600">
+                            Close
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                      {announcements.length === 0 ? (
+                        <div className="p-6 text-center text-gray-400 text-sm">No announcements</div>
+                      ) : (
+                        announcements.map(a => {
+                          const isRead = readAnnIds.has(a.id)
+                          return (
+                            <div key={a.id} className={`px-4 py-3 ${isRead ? 'bg-white' : 'bg-brand-50/40'}`}>
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-gray-900 text-sm truncate">{a.title}</p>
+                                  <p className="text-gray-500 text-xs mt-1">{a.message}</p>
+                                  <p className="text-[10px] text-gray-400 mt-1">{fmtAnn(a.createdAt)}</p>
+                                </div>
+                                {!isRead && (
+                                  <button
+                                    onClick={() => markAnnouncementRead(a.id)}
+                                    className="text-[10px] font-semibold text-brand-600 hover:text-brand-700 whitespace-nowrap"
+                                  >
+                                    Mark read
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Live stats */}
+              <div className="hidden md:flex items-center gap-2">
+                {LIVE_STATS.map(s => (
+                  <div key={s.label} className={`flex flex-col items-center px-3 py-1.5 rounded-xl border transition-all ${s.bg}`}>
+                    <span className={`font-extrabold text-sm leading-none ${s.color}`}>{s.value}</span>
+                    <span className="text-gray-400 text-[9px] uppercase tracking-wider mt-0.5">{s.label}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Keyboard shortcut hint */}
+              <div className="hidden xl:flex items-center gap-1 text-[10px] text-gray-300">
+                <kbd className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">A</kbd>
+                <kbd className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">O</kbd>
+                <kbd className="bg-gray-100 px-1.5 py-0.5 rounded font-mono">M</kbd>
+              </div>
             </div>
 
           </div>
@@ -424,3 +533,4 @@ export default function OwnerDashboardPage() {
     </div>
   )
 }
+
