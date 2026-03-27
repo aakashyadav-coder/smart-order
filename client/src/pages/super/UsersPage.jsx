@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
-import { FaSearch } from 'react-icons/fa'
+import { FaSearch, FaFolder, FaFolderOpen, FaChevronDown, FaChevronRight } from 'react-icons/fa'
 
 const ROLES = ['OWNER', 'KITCHEN', 'ADMIN']
 const ROLE_COLORS = { SUPER_ADMIN: 'badge-cancelled', OWNER: 'badge-accepted', KITCHEN: 'badge-preparing', ADMIN: 'badge-pending' }
@@ -31,6 +31,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
   const [selected, setSelected] = useState(new Set())
+  const [openGroups, setOpenGroups] = useState(new Set())
 
   const fetchData = async () => {
     const [u, r] = await Promise.all([api.get('/super/users'), api.get('/super/restaurants')])
@@ -48,6 +49,41 @@ export default function UsersPage() {
       return matchSearch && matchRole
     })
   }, [users, search, roleFilter])
+
+  const restaurantById = useMemo(() => {
+    return new Map(restaurants.map(r => [r.id, r]))
+  }, [restaurants])
+
+  const groups = useMemo(() => {
+    const map = new Map()
+    filtered.forEach(u => {
+      const key = u.restaurantId || 'unassigned'
+      let group = map.get(key)
+      if (!group) {
+        const r = u.restaurantId ? restaurantById.get(u.restaurantId) : null
+        const name = u.restaurant?.name || r?.name || 'No restaurant'
+        group = { key, name, users: [] }
+        map.set(key, group)
+      }
+      group.users.push(u)
+    })
+    const list = [...map.values()]
+    list.sort((a, b) => {
+      if (a.key === 'unassigned') return 1
+      if (b.key === 'unassigned') return -1
+      return a.name.localeCompare(b.name)
+    })
+    return list
+  }, [filtered, restaurantById])
+
+  useEffect(() => {
+    const keys = new Set(groups.map(g => g.key))
+    setOpenGroups(prev => {
+      const next = new Set()
+      prev.forEach(k => { if (keys.has(k)) next.add(k) })
+      return next
+    })
+  }, [groups])
 
   const openCreate = () => { setModal({ mode: 'create', user: null }) }
   const openEdit = (u) => { setModal({ mode: 'edit', user: u }) }
@@ -91,6 +127,22 @@ export default function UsersPage() {
   const toggleSelect = (id) => setSelected(prev => {
     const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n
   })
+
+  const toggleGroup = (key) => {
+    setOpenGroups(prev => {
+      const n = new Set(prev)
+      n.has(key) ? n.delete(key) : n.add(key)
+      return n
+    })
+  }
+
+  const toggleGroupSelect = (groupUsers, checked) => {
+    setSelected(prev => {
+      const n = new Set(prev)
+      groupUsers.forEach(u => checked ? n.add(u.id) : n.delete(u.id))
+      return n
+    })
+  }
 
   const handleBulk = async (active) => {
     if (selected.size === 0) return
@@ -196,50 +248,92 @@ export default function UsersPage() {
 
       {loading ? (
         <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-200 py-16 text-center text-gray-400">No users found</div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="px-4 py-3 w-8"><input type="checkbox" className="accent-brand-600"
-                    checked={selected.size === filtered.length && filtered.length > 0}
-                    onChange={e => setSelected(e.target.checked ? new Set(filtered.map(u => u.id)) : new Set())} /></th>
-                  {['Name', 'Role', 'Restaurant', 'Last Login', 'Status', 'Actions'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={7} className="text-center py-12 text-gray-400">No users found</td></tr>
-                ) : filtered.map(u => (
-                  <tr key={u.id} className={`hover:bg-gray-50 transition-colors ${selected.has(u.id) ? 'bg-brand-50' : ''}`}>
-                    <td className="px-4 py-3">
-                      <input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleSelect(u.id)} className="accent-brand-600" />
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="text-gray-900 font-medium">{u.name}</p>
-                      <p className="text-gray-400 text-xs">{u.email}</p>
-                    </td>
-                    <td className="px-4 py-3"><span className={`badge text-xs ${ROLE_COLORS[u.role] || 'badge-pending'}`}>{u.role}</span></td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">{u.restaurant?.name || <span className="text-gray-300">—</span>}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{fmtDate(u.lastLoginAt)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`badge text-xs ${u.active ? 'badge-completed' : 'badge-cancelled'}`}>{u.active ? 'Active' : 'Inactive'}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => openEdit(u)} className="text-xs text-gray-400 hover:text-gray-700 transition-colors">✏️</button>
-                        <button onClick={() => handleToggleActive(u)} className="text-xs text-gray-400 hover:text-amber-500 transition-colors">{u.active ? '🔴' : '🟢'}</button>
-                        <button onClick={() => handleDelete(u.id)} className="text-xs text-gray-400 hover:text-red-500 transition-colors">🗑</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="space-y-3">
+          {groups.map(group => {
+            const isOpen = openGroups.has(group.key)
+            const allSelected = group.users.length > 0 && group.users.every(u => selected.has(u.id))
+            const someSelected = group.users.some(u => selected.has(u.id))
+            const roleCounts = group.users.reduce((acc, u) => {
+              acc[u.role] = (acc[u.role] || 0) + 1
+              return acc
+            }, {})
+
+            return (
+              <div key={group.key} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.key)}
+                  className="w-full flex items-center justify-between px-5 py-4 bg-gray-50/70 border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {isOpen ? <FaFolderOpen className="text-brand-600 w-4 h-4" /> : <FaFolder className="text-gray-500 w-4 h-4" />}
+                    <div className="min-w-0 text-left">
+                      <p className="font-semibold text-gray-900 truncate">{group.name}</p>
+                      <p className="text-xs text-gray-400">{group.users.length} user(s)</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {Object.keys(roleCounts).map(role => (
+                      <span key={role} className={`badge text-[10px] ${ROLE_COLORS[role] || 'badge-pending'}`}>{role} {roleCounts[role]}</span>
+                    ))}
+                    {isOpen ? <FaChevronDown className="text-gray-400 w-3 h-3" /> : <FaChevronRight className="text-gray-400 w-3 h-3" />}
+                  </div>
+                </button>
+
+                {isOpen && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100 bg-white">
+                          <th className="px-4 py-3 w-8">
+                            <input
+                              type="checkbox"
+                              className="accent-brand-600"
+                              checked={allSelected}
+                              ref={el => { if (el) el.indeterminate = !allSelected && someSelected }}
+                              onChange={e => toggleGroupSelect(group.users, e.target.checked)}
+                            />
+                          </th>
+                          {['Name', 'Role', 'Restaurant', 'Last Login', 'Status', 'Actions'].map(h => (
+                            <th key={h} className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {group.users.map(u => (
+                          <tr key={u.id} className={`hover:bg-gray-50 transition-colors ${selected.has(u.id) ? 'bg-brand-50' : ''}`}>
+                            <td className="px-4 py-3">
+                              <input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleSelect(u.id)} className="accent-brand-600" />
+                            </td>
+                            <td className="px-4 py-3">
+                              <p className="text-gray-900 font-medium">{u.name}</p>
+                              <p className="text-gray-400 text-xs">{u.email}</p>
+                            </td>
+                            <td className="px-4 py-3"><span className={`badge text-xs ${ROLE_COLORS[u.role] || 'badge-pending'}`}>{u.role}</span></td>
+                            <td className="px-4 py-3 text-gray-400 text-xs">{u.restaurant?.name || group.name || <span className="text-gray-300">-</span>}</td>
+                            <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{fmtDate(u.lastLoginAt)}</td>
+                            <td className="px-4 py-3">
+                              <span className={`badge text-xs ${u.active ? 'badge-completed' : 'badge-cancelled'}`}>{u.active ? 'Active' : 'Inactive'}</span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <button onClick={() => openEdit(u)} className="text-xs text-gray-400 hover:text-gray-700 transition-colors">✏️</button>
+                                <button onClick={() => handleToggleActive(u)} className="text-xs text-gray-400 hover:text-amber-500 transition-colors">{u.active ? '🔴' : '🟢'}</button>
+                                <button onClick={() => handleDelete(u.id)} className="text-xs text-gray-400 hover:text-red-500 transition-colors">🗑</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -257,3 +351,5 @@ export default function UsersPage() {
     </div>
   )
 }
+
+
