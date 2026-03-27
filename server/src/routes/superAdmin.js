@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const {
-  getStats, getRestaurants, createRestaurant, updateRestaurant, deleteRestaurant,
+  getStats, getAnalytics, getRestaurants, createRestaurant, updateRestaurant, deleteRestaurant,
   getUsers, createUser, updateUser, deleteUser,
   getAllOrders, getActivityLogs,
 } = require("../controllers/superAdminController");
@@ -13,6 +13,7 @@ router.use(authenticate, requireSuperAdmin);
 
 // Stats
 router.get("/stats", getStats);
+router.get("/analytics", getAnalytics);
 
 // Restaurants
 router.get("/restaurants", getRestaurants);

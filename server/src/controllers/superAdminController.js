@@ -9,6 +9,68 @@ const { emitRestaurantUpdate } = require("../socket");
 
 const prisma = new PrismaClient();
 
+const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const RANGE_PRESETS = {
+  "24h": { type: "hour", count: 24 },
+  "30d": { type: "day", count: 30 },
+  "6m":  { type: "month", count: 6 },
+};
+
+function getRangeBuckets(range) {
+  const preset = RANGE_PRESETS[range] || RANGE_PRESETS["24h"];
+  const now = new Date();
+  let start;
+  let labels = [];
+  let bucketMs = 0;
+
+  if (preset.type === "hour") {
+    const aligned = new Date(now);
+    aligned.setMinutes(0, 0, 0);
+    bucketMs = 60 * 60 * 1000;
+    start = new Date(aligned.getTime() - (preset.count - 1) * bucketMs);
+    labels = Array.from({ length: preset.count }, (_, i) => {
+      const d = new Date(start.getTime() + i * bucketMs);
+      const h = String(d.getHours()).padStart(2, "0");
+      return `${h}:00`;
+    });
+  }
+
+  if (preset.type === "day") {
+    const aligned = new Date(now);
+    aligned.setHours(0, 0, 0, 0);
+    bucketMs = 24 * 60 * 60 * 1000;
+    start = new Date(aligned.getTime() - (preset.count - 1) * bucketMs);
+    labels = Array.from({ length: preset.count }, (_, i) => {
+      const d = new Date(start.getTime() + i * bucketMs);
+      return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
+    });
+  }
+
+  if (preset.type === "month") {
+    const startMonth = new Date(now.getFullYear(), now.getMonth() - (preset.count - 1), 1);
+    start = startMonth;
+    labels = Array.from({ length: preset.count }, (_, i) => {
+      const d = new Date(startMonth.getFullYear(), startMonth.getMonth() + i, 1);
+      return `${MONTHS_SHORT[d.getMonth()]}`;
+    });
+  }
+
+  return { preset, start, end: now, labels, bucketMs };
+}
+
+function roundMoney(value) {
+  return Math.round((value || 0) * 100) / 100;
+}
+
+function getBucketIndex(date, start, preset, bucketMs) {
+  if (preset.type === "hour" || preset.type === "day") {
+    const diff = date.getTime() - start.getTime();
+    return Math.floor(diff / bucketMs);
+  }
+  const monthDiff = (date.getFullYear() - start.getFullYear()) * 12 + (date.getMonth() - start.getMonth());
+  return monthDiff;
+}
+
 // ── Global Stats ──────────────────────────────────────────────────────────────
 const getStats = async (req, res, next) => {
   try {
@@ -43,6 +105,72 @@ const getStats = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+
+// -- Super Analytics (top 3 restaurants) ---------------------------------------
+const getAnalytics = async (req, res, next) => {
+  try {
+    const range = String(req.query.range || "24h").toLowerCase();
+    const { preset, start, end, labels, bucketMs } = getRangeBuckets(range);
+
+    const orders = await prisma.order.findMany({
+      where: { createdAt: { gte: start, lte: end } },
+      select: {
+        totalPrice: true,
+        createdAt: true,
+        phone: true,
+        restaurantId: true,
+        restaurant: { select: { name: true } },
+      },
+    });
+
+    const bucketCount = labels.length;
+    const map = new Map();
+
+    for (const order of orders) {
+      const idx = getBucketIndex(order.createdAt, start, preset, bucketMs);
+      if (idx < 0 || idx >= bucketCount) continue;
+
+      if (!map.has(order.restaurantId)) {
+        map.set(order.restaurantId, {
+          id: order.restaurantId,
+          name: order.restaurant?.name || "Unknown",
+          revenue: Array(bucketCount).fill(0),
+          customerBuckets: Array.from({ length: bucketCount }, () => new Set()),
+          customerAll: new Set(),
+          totalRevenue: 0,
+        });
+      }
+      const entry = map.get(order.restaurantId);
+      entry.revenue[idx] += order.totalPrice || 0;
+      entry.totalRevenue += order.totalPrice || 0;
+      if (order.phone) {
+        entry.customerBuckets[idx].add(order.phone);
+        entry.customerAll.add(order.phone);
+      }
+    }
+
+    const restaurants = Array.from(map.values()).map(r => ({
+      id: r.id,
+      name: r.name,
+      series: {
+        revenue: r.revenue.map(v => roundMoney(v)),
+        customers: r.customerBuckets.map(s => s.size),
+      },
+      totals: {
+        revenue: roundMoney(r.totalRevenue),
+        customers: r.customerAll.size,
+      },
+    }));
+
+    restaurants.sort((a, b) => (b.totals.revenue - a.totals.revenue) || (b.totals.customers - a.totals.customers));
+
+    res.json({
+      range,
+      labels,
+      restaurants: restaurants.slice(0, 3),
+    });
+  } catch (err) { next(err); }
+};
 // ── Restaurant CRUD ────────────────────────────────────────────────────────────
 const getRestaurants = async (req, res, next) => {
   try {
@@ -219,7 +347,7 @@ const getActivityLogs = async (req, res, next) => {
 };
 
 module.exports = {
-  getStats, getRestaurants, createRestaurant, updateRestaurant, deleteRestaurant,
+  getStats, getAnalytics, getRestaurants, createRestaurant, updateRestaurant, deleteRestaurant,
   getUsers, createUser, updateUser, deleteUser,
   getAllOrders, getActivityLogs,
 };
