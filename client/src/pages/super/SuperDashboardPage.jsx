@@ -375,23 +375,43 @@ export default function SuperDashboardPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-brand-50" />
       </div>
 
-      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm">
-              <FaUserShield className="w-4 h-4" />
+      <div className="super-card p-6 md:p-7 mb-8 relative overflow-hidden">
+        <div className="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-brand-100/70 blur-3xl" />
+        <div className="absolute -left-10 -bottom-10 w-56 h-56 rounded-full bg-sky-100/70 blur-3xl" />
+        <div className="relative flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-600/30">
+              <FaUserShield className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-2xl font-extrabold text-gray-900">Super Admin Dashboard</h1>
+              <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">Super Admin Dashboard</h1>
               <p className="text-gray-500 text-sm mt-1">Real-time platform intelligence and system health</p>
             </div>
           </div>
+          {!loading && stats && (
+            <button onClick={generatePDFReport}
+              className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-2.5 rounded-xl text-sm shadow-sm transition-colors">
+              <FaFilePdf className="w-3.5 h-3.5 text-red-500" /> Monthly Report
+            </button>
+          )}
         </div>
         {!loading && stats && (
-          <button onClick={generatePDFReport}
-            className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-2.5 rounded-xl text-sm shadow-sm transition-colors">
-            <FaFilePdf className="w-3.5 h-3.5 text-red-500" /> Monthly Report
-          </button>
+          <div className="relative mt-4 flex flex-wrap gap-2">
+            <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/80 border border-gray-200 text-gray-700">
+              Restaurants: {stats.totalRestaurants}
+            </span>
+            <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/80 border border-gray-200 text-gray-700">
+              Users: {stats.totalUsers}
+            </span>
+            <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/80 border border-gray-200 text-gray-700">
+              Revenue: Rs. {(stats.totalRevenue || 0).toLocaleString()}
+            </span>
+            {kpis?.openTickets > 0 && (
+              <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-50 border border-rose-200 text-rose-700">
+                Open tickets: {kpis.openTickets}
+              </span>
+            )}
+          </div>
         )}
       </div>
 
@@ -402,7 +422,7 @@ export default function SuperDashboardPage() {
       ) : (
         <>
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
             {kpiCards.map(card => {
               const Icon = card.icon
               const isClickable = !!card.clickTo
@@ -412,15 +432,17 @@ export default function SuperDashboardPage() {
                   key={card.key}
                   onClick={isClickable ? () => navigate(card.clickTo) : undefined}
                   className={[
-                    'bg-white/95 rounded-2xl border p-5 flex items-center gap-4 shadow-sm transition-all duration-200',
+                    'super-card-hover relative p-5 flex items-center gap-4 w-full text-left',
                     card.urgent ? 'border-rose-200 ring-1 ring-rose-100' : 'border-gray-100',
-                    isClickable ? 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer text-left w-full' : 'hover:shadow-md hover:-translate-y-0.5',
+                    isClickable ? 'cursor-pointer' : '',
                   ].join(' ')}
                 >
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${card.iconBg}`}>
-                    <Icon className="w-5 h-5" />
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-500 via-amber-400 to-sky-400 opacity-70" />
+                  <div className="absolute -right-10 -top-10 w-24 h-24 bg-brand-100/60 rounded-full blur-2xl" />
+                  <div className="relative z-10 w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 bg-white/80 border border-gray-200">
+                    <Icon className="w-5 h-5 text-gray-700" />
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div className="relative z-10 min-w-0 flex-1">
                     <p className="text-gray-400 text-xs font-medium truncate">{card.label}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-gray-900 text-2xl font-extrabold leading-none">{card.value}</p>
@@ -434,19 +456,22 @@ export default function SuperDashboardPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className="mb-7">
-            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Quick Actions</h2>
+          <div className="super-card p-5 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Quick Actions</h2>
+              <span className="text-xs text-gray-400">Shortcuts for daily admin work</span>
+            </div>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => navigate('/super/restaurants', { state: { openCreate: true } })}
-                className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm hover:shadow-md"
+                className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-sm hover:shadow-md"
               >
                 <FaPlus className="w-3 h-3" /> New Restaurant
               </button>
 
               <button
                 onClick={() => navigate('/super/announcements')}
-                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-purple-50 hover:border-purple-200 text-gray-700 hover:text-purple-700 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm"
+                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-purple-50 hover:border-purple-200 text-gray-700 hover:text-purple-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-sm"
               >
                 <FaBullhorn className="w-3.5 h-3.5" /> Send Announcement
               </button>
@@ -472,28 +497,28 @@ export default function SuperDashboardPage() {
                   const a    = document.createElement('a'); a.href = url; a.download = `platform_stats_${Date.now()}.csv`; a.click()
                   URL.revokeObjectURL(url)
                 }}
-                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-green-50 hover:border-green-200 text-gray-700 hover:text-green-700 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm"
+                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-green-50 hover:border-green-200 text-gray-700 hover:text-green-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-sm"
               >
                 <FaDownload className="w-3.5 h-3.5" /> Export Stats CSV
               </button>
 
               <button
                 onClick={() => navigate('/super/health')}
-                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-blue-50 hover:border-blue-200 text-gray-700 hover:text-blue-700 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm"
+                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-blue-50 hover:border-blue-200 text-gray-700 hover:text-blue-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-sm"
               >
                 <FaSyncAlt className="w-3.5 h-3.5" /> System Health
               </button>
 
               <button
                 onClick={() => navigate('/super/onboarding')}
-                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-amber-50 hover:border-amber-200 text-gray-700 hover:text-amber-700 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm"
+                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-amber-50 hover:border-amber-200 text-gray-700 hover:text-amber-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-sm"
               >
                 <FaRocket className="w-3.5 h-3.5" /> Onboarding Pipeline
               </button>
 
               <button
                 onClick={() => navigate('/super/tickets')}
-                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-rose-50 hover:border-rose-200 text-gray-700 hover:text-rose-700 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm"
+                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-rose-50 hover:border-rose-200 text-gray-700 hover:text-rose-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-sm"
               >
                 <FaTicketAlt className="w-3.5 h-3.5" /> Support Tickets
                 {kpis?.openTickets > 0 && (

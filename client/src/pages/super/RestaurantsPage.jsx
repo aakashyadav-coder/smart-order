@@ -254,20 +254,23 @@ export default function RestaurantsPage() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-gray-500">No restaurants found.</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filtered.map(r => (
             <div
               key={r.id}
-              className={`super-card transition-all ${selected.has(r.id) ? 'border-brand-400 ring-2 ring-brand-200' : r.active ? 'border-gray-200' : 'border-red-200'} p-5 flex flex-col gap-2`}
+              className={`super-card-hover transition-all ${selected.has(r.id) ? 'border-brand-400 ring-2 ring-brand-200' : r.active ? 'border-gray-200' : 'border-red-200'} p-6 flex flex-col gap-4`}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
                   <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSelect(r.id)} className="mt-1 accent-brand-600" />
+                  <div className="w-11 h-11 rounded-2xl bg-gray-100 text-gray-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    {r.name?.slice(0, 2).toUpperCase()}
+                  </div>
                   <div>
                     <h3 className="font-bold text-gray-900">{r.name}</h3>
                     {r.cuisineType && <p className="text-brand-600 text-xs font-medium">{r.cuisineType}</p>}
                     {r.address && (
-                      <p className="text-gray-400 text-xs mt-0.5 inline-flex items-center gap-1.5">
+                      <p className="text-gray-400 text-xs mt-1 inline-flex items-center gap-1.5">
                         <FaMapMarkerAlt className="w-3 h-3" /> {r.address}
                       </p>
                     )}
@@ -301,16 +304,16 @@ export default function RestaurantsPage() {
                 }
               </div>
 
-              <div className="flex gap-3 text-xs text-gray-400 border-t border-gray-100 pt-2">
+              <div className="flex gap-3 text-xs text-gray-400 border-t border-gray-100 pt-3">
                 <span className="inline-flex items-center gap-1.5"><FaUsers className="w-3 h-3" /> {r._count?.users} users</span>
                 <span className="inline-flex items-center gap-1.5"><FaClipboardList className="w-3 h-3" /> {r._count?.orders} orders</span>
                 <span className="inline-flex items-center gap-1.5"><FaUtensils className="w-3 h-3" /> {r._count?.menuItems} items</span>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => navigate(`/super/restaurants/${r.id}`)} className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 py-2 rounded-lg transition-colors border border-gray-200 inline-flex items-center justify-center gap-1.5">
+              <div className="flex gap-2 bg-gray-50/80 border border-gray-100 rounded-xl p-2">
+                <button onClick={() => navigate(`/super/restaurants/${r.id}`)} className="flex-1 text-xs bg-white hover:bg-gray-50 text-gray-600 py-2 rounded-lg transition-colors border border-gray-200 inline-flex items-center justify-center gap-1.5">
                   <FaChartLine className="w-3 h-3" /> Detail
                 </button>
-                <button onClick={() => openEdit(r)} className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 py-2 rounded-lg transition-colors border border-gray-200 inline-flex items-center justify-center gap-1.5">
+                <button onClick={() => openEdit(r)} className="flex-1 text-xs bg-white hover:bg-gray-50 text-gray-600 py-2 rounded-lg transition-colors border border-gray-200 inline-flex items-center justify-center gap-1.5">
                   <FaEdit className="w-3 h-3" /> Edit
                 </button>
                 <button onClick={() => handleToggleActive(r)} className={`flex-1 text-xs py-2 rounded-lg transition-colors border inline-flex items-center justify-center gap-1.5 ${r.active ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200' : 'bg-green-50 hover:bg-green-100 text-green-700 border-green-200'}`}>
