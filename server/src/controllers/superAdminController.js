@@ -912,6 +912,82 @@ const purgeOrders = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+
+// ── Super Admin Settings ────────────────────────────────────────────────────────
+const getSuperProfile = async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, name: true, email: true, role: true, totpEnabled: true, lastLoginAt: true, createdAt: true },
+    });
+    res.json(user);
+  } catch (err) { next(err); }
+};
+
+const updateSuperProfile = async (req, res, next) => {
+  try {
+    const { name, email } = req.body;
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { ...(name && { name }), ...(email && { email }) },
+      select: { id: true, name: true, email: true, role: true, totpEnabled: true },
+    });
+    await logActivity({ userId: req.user.id, action: 'USER_UPDATED', entity: 'User', entityId: req.user.id });
+    res.json(updated);
+  } catch (err) { next(err); }
+};
+
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ message: 'currentPassword and newPassword required' });
+    if (newPassword.length < 8) return res.status(400).json({ message: 'New password must be at least 8 characters' });
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) return res.status(401).json({ message: 'Current password is incorrect' });
+
+    const hashed = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({ where: { id: req.user.id }, data: { password: hashed } });
+    await logActivity({ userId: req.user.id, action: 'USER_UPDATED', entity: 'User', entityId: req.user.id, metadata: { action: 'password_change' } });
+    res.json({ message: 'Password changed successfully' });
+  } catch (err) { next(err); }
+};
+
+// ── Global Search ───────────────────────────────────────────────────────────────
+const globalSearch = async (req, res, next) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    if (q.length < 2) return res.json({ restaurants: [], users: [], orders: [] });
+
+    const [restaurants, users, orders] = await Promise.all([
+      prisma.restaurant.findMany({
+        where: { name: { contains: q, mode: 'insensitive' } },
+        take: 5,
+        select: { id: true, name: true, active: true },
+      }),
+      prisma.user.findMany({
+        where: {
+          OR: [
+            { name: { contains: q, mode: 'insensitive' } },
+            { email: { contains: q, mode: 'insensitive' } },
+          ],
+          role: { not: 'SUPER_ADMIN' },
+        },
+        take: 5,
+        select: { id: true, name: true, email: true, role: true },
+      }),
+      prisma.order.findMany({
+        where: { id: { contains: q, mode: 'insensitive' } },
+        take: 5,
+        select: { id: true, status: true, totalPrice: true, restaurant: { select: { name: true } }, createdAt: true },
+      }),
+    ]);
+
+    res.json({ restaurants, users, orders });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getStats, getAnalytics,
   getDashboardKPIs, getRevenueBI,
@@ -925,4 +1001,6 @@ module.exports = {
   getMaintenanceStatus, setMaintenanceMode, getMaintenancePublic,
   getOnboardingPipeline, nudgeRestaurants,
   purgeLogs, purgeOrders,
+  getSuperProfile, updateSuperProfile, changePassword,
+  globalSearch,
 };

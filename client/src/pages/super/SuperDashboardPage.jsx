@@ -9,7 +9,7 @@ import socket from '../../lib/socket'
 import {
   FaBuilding, FaUsers, FaChartLine, FaShoppingBag,
   FaMoneyBillWave, FaTicketAlt, FaExclamationTriangle,
-  FaArrowUp, FaArrowDown, FaMinus, FaCircle,
+  FaArrowUp, FaArrowDown, FaMinus, FaCircle, FaFilePdf,
 } from 'react-icons/fa'
 import { ChartSkeleton } from '../../components/Skeleton'
 
@@ -297,11 +297,74 @@ export default function SuperDashboardPage() {
     },
   ]
 
+  /* ── PDF Report generator ──────────────────────────────────────────────────── */
+  const generatePDFReport = () => {
+    const now = new Date()
+    const month = now.toLocaleString('en-IN', { month: 'long', year: 'numeric' })
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Smart Order — Platform Report ${month}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111; padding: 40px; }
+    h1 { font-size: 24px; font-weight: 900; color: #dc2626; margin-bottom: 4px; }
+    .subtitle { color: #6b7280; font-size: 13px; margin-bottom: 32px; }
+    .section { margin-bottom: 28px; }
+    .section h2 { font-size: 14px; font-weight: 700; color: #374151; border-bottom: 2px solid #f3f4f6; padding-bottom: 6px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .kpi { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; }
+    .kpi-label { font-size: 11px; color: #9ca3af; font-weight: 600; margin-bottom: 4px; }
+    .kpi-value { font-size: 20px; font-weight: 900; color: #111; }
+    .footer { margin-top: 40px; font-size: 11px; color: #9ca3af; border-top: 1px solid #f3f4f6; padding-top: 12px; }
+    @media print { body { padding: 28px; } }
+  </style>
+</head>
+<body>
+  <h1>Smart Order — Platform Report</h1>
+  <p class="subtitle">Generated: ${now.toLocaleString('en-IN')} · Period: ${month}</p>
+
+  <div class="section">
+    <h2>Platform KPIs</h2>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Total Restaurants</div><div class="kpi-value">${stats?.totalRestaurants ?? '—'}</div></div>
+      <div class="kpi"><div class="kpi-label">Active Restaurants</div><div class="kpi-value">${stats?.activeRestaurants ?? '—'}</div></div>
+      <div class="kpi"><div class="kpi-label">Total Users</div><div class="kpi-value">${stats?.totalUsers ?? '—'}</div></div>
+      <div class="kpi"><div class="kpi-label">Total Revenue</div><div class="kpi-value">Rs. ${(stats?.totalRevenue || 0).toLocaleString()}</div></div>
+      <div class="kpi"><div class="kpi-label">Today's Orders</div><div class="kpi-value">${kpis?.todayOrders ?? '—'}</div></div>
+      <div class="kpi"><div class="kpi-label">Today's Revenue</div><div class="kpi-value">Rs. ${(kpis?.todayRevenue || 0).toLocaleString()}</div></div>
+      <div class="kpi"><div class="kpi-label">Open Tickets</div><div class="kpi-value">${kpis?.openTickets ?? '—'}</div></div>
+      <div class="kpi"><div class="kpi-label">Inactive Restaurants</div><div class="kpi-value">${kpis?.inactiveRestaurants ?? '—'}</div></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Smart Order SaaS · Super Admin Platform Report · ${now.toISOString()} · Confidential
+  </div>
+</body>
+</html>`
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:absolute;left:-9999px;width:0;height:0;border:0;'
+    document.body.appendChild(iframe)
+    iframe.contentDocument.open()
+    iframe.contentDocument.write(html)
+    iframe.contentDocument.close()
+    setTimeout(() => { iframe.contentWindow.print(); document.body.removeChild(iframe) }, 300)
+  }
+
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-900">Platform Overview</h1>
-        <p className="text-gray-400 text-sm mt-1">Real-time stats across all restaurants</p>
+      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold text-gray-900">Platform Overview</h1>
+          <p className="text-gray-400 text-sm mt-1">Real-time stats across all restaurants</p>
+        </div>
+        {!loading && stats && (
+          <button onClick={generatePDFReport}
+            className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-2.5 rounded-xl text-sm shadow-sm transition-colors">
+            <FaFilePdf className="w-3.5 h-3.5 text-red-500" /> Monthly Report
+          </button>
+        )}
       </div>
 
       {loading ? (

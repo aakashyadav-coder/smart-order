@@ -12,6 +12,8 @@ const {
   getMaintenanceStatus, setMaintenanceMode,
   getOnboardingPipeline, nudgeRestaurants,
   purgeLogs, purgeOrders,
+  getSuperProfile, updateSuperProfile, changePassword,
+  globalSearch,
 } = require("../controllers/superAdminController");
 const { authenticate, requireSuperAdmin } = require("../middleware/auth");
 
@@ -25,6 +27,14 @@ router.get("/stats", getStats);
 router.get("/analytics", getAnalytics);
 router.get("/dashboard-kpis", getDashboardKPIs);
 router.get("/revenue-bi", getRevenueBI);
+
+// Global Search
+router.get("/search", globalSearch);
+
+// Settings — profile & password
+router.get("/settings/profile", getSuperProfile);
+router.put("/settings/profile", updateSuperProfile);
+router.post("/settings/password", changePassword);
 
 // System Health
 router.get("/health", getHealth);

@@ -1,18 +1,21 @@
 /**
  * SuperLayout — Dark sidebar + content area for Super Admin
+ * Includes: NotificationCenter bell, ⌘K CommandPalette, Settings nav item
  */
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { NavLink, useNavigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import socket from '../lib/socket'
 import {
   FaThLarge, FaBuilding, FaUsers, FaClipboardList,
   FaCog, FaHeartbeat, FaSignOutAlt, FaShieldAlt, FaBars,
-  FaBullhorn, FaInbox, FaChartBar, FaRocket,
+  FaBullhorn, FaInbox, FaChartBar, FaRocket, FaSearch, FaUserCog,
 } from 'react-icons/fa'
+import NotificationCenter from './NotificationCenter'
+import CommandPalette from './CommandPalette'
 
 const NAV_ITEMS = [
-  { to: '/super',              label: 'Dashboard',    icon: FaThLarge,      end: true },
+  { to: '/super',              label: 'Dashboard',    icon: FaThLarge,    end: true },
   { to: '/super/revenue',      label: 'Revenue BI',   icon: FaChartBar },
   { to: '/super/onboarding',   label: 'Onboarding',   icon: FaRocket },
   { to: '/super/restaurants',  label: 'Restaurants',  icon: FaBuilding },
@@ -23,12 +26,14 @@ const NAV_ITEMS = [
   { to: '/super/health',       label: 'Health',       icon: FaHeartbeat },
   { to: '/super/announcements',label: 'Announcements',icon: FaBullhorn },
   { to: '/super/tickets',      label: 'Support',      icon: FaInbox },
+  { to: '/super/settings',     label: 'Settings',     icon: FaUserCog },
 ]
 
 export default function SuperLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
   useEffect(() => {
     socket.connect()
@@ -36,6 +41,18 @@ export default function SuperLayout() {
     const onConnect = () => socket.emit('join_super_admin')
     socket.on('connect', onConnect)
     return () => socket.off('connect', onConnect)
+  }, [])
+
+  // ⌘K / Ctrl+K global shortcut
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setPaletteOpen(p => !p)
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
   }, [])
 
   const handleLogout = () => { logout(); navigate('/super/login') }
@@ -55,8 +72,18 @@ export default function SuperLayout() {
         </div>
       </div>
 
+      {/* Search shortcut hint */}
+      <div className="px-3 pt-3">
+        <button onClick={() => setPaletteOpen(true)}
+          className="w-full flex items-center gap-2 text-xs text-gray-500 hover:text-gray-300 bg-white/5 hover:bg-white/10 border border-white/8 rounded-lg px-3 py-2 transition-all">
+          <FaSearch className="w-3 h-3" />
+          <span className="flex-1 text-left">Search…</span>
+          <span className="bg-white/10 text-gray-400 px-1.5 py-0.5 rounded text-[10px] font-mono">⌘K</span>
+        </button>
+      </div>
+
       {/* Nav */}
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto mt-1">
         {NAV_ITEMS.map(item => {
           const Icon = item.icon
           return (
@@ -125,12 +152,34 @@ export default function SuperLayout() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar (mobile) */}
-        <header className="lg:hidden bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 shadow-sm">
-          <button onClick={() => setSidebarOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
+        {/* Top bar */}
+        <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 shadow-sm">
+          {/* Mobile hamburger */}
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
             <FaBars className="w-4 h-4 text-gray-600" />
           </button>
-          <span className="font-bold text-gray-900 text-sm">Super Admin</span>
+
+          <span className="font-bold text-gray-900 text-sm lg:hidden">Super Admin</span>
+
+          {/* Desktop search button */}
+          <button
+            onClick={() => setPaletteOpen(true)}
+            className="hidden lg:flex items-center gap-2 text-xs text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg px-3 py-2 transition-all"
+          >
+            <FaSearch className="w-3 h-3" />
+            <span>Search anything…</span>
+            <span className="bg-white border border-gray-200 text-gray-400 px-1.5 py-0.5 rounded text-[10px] font-mono ml-1">⌘K</span>
+          </button>
+
+          {/* Right side — notification + settings */}
+          <div className="ml-auto flex items-center gap-2">
+            <NotificationCenter />
+            <button onClick={() => navigate('/super/settings')}
+              title="Settings"
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm">
+              <FaUserCog className="w-4 h-4 text-gray-600" />
+            </button>
+          </div>
         </header>
 
         {/* Page content */}
@@ -138,6 +187,9 @@ export default function SuperLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Global Command Palette */}
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   )
 }
