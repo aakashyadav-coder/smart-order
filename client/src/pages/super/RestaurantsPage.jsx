@@ -1,4 +1,4 @@
-﻿/**
+/**
  * RestaurantsPage - CRUD + search + bulk + onboarding tracker + restaurant detail link
  */
 import React, { useEffect, useState, useMemo } from 'react'
@@ -270,18 +270,18 @@ export default function RestaurantsPage() {
                     <h3 className="font-bold text-gray-900">{r.name}</h3>
                     {r.cuisineType && <p className="text-brand-600 text-xs font-medium">{r.cuisineType}</p>}
                     {r.address && (
-                      <p className="text-gray-400 text-xs mt-1 inline-flex items-center gap-1.5">
-                        <FaMapMarkerAlt className="w-3 h-3" /> {r.address}
+                      <p className="text-gray-400 text-xs mt-1 flex items-center gap-1.5">
+                        <FaMapMarkerAlt className="w-3 h-3 flex-shrink-0" /> {r.address}
                       </p>
                     )}
                     {r.phone && (
-                      <p className="text-gray-400 text-xs inline-flex items-center gap-1.5">
-                        <FaPhoneAlt className="w-3 h-3" /> {r.phone}
+                      <p className="text-gray-400 text-xs mt-1 flex items-center gap-1.5">
+                        <FaPhoneAlt className="w-3 h-3 flex-shrink-0" /> {r.phone}
                       </p>
                     )}
                     {r.tableCount && (
-                      <p className="text-gray-400 text-xs inline-flex items-center gap-1.5">
-                        <FaTable className="w-3 h-3" /> {r.tableCount} tables
+                      <p className="text-gray-400 text-xs mt-1 flex items-center gap-1.5">
+                        <FaTable className="w-3 h-3 flex-shrink-0" /> {r.tableCount} tables
                       </p>
                     )}
                   </div>

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SuperDashboardPage - Platform overview with enhanced KPI cards
  * Theme: Soft gradients, premium white cards, bold accents
  */
@@ -26,130 +26,199 @@ import {
   FaRocket,
   FaUserShield,
 } from 'react-icons/fa'
-import { ChartSkeleton } from '../../components/Skeleton'
+
 
 /* ---------------- Analytics chart helpers ---------------- */
 const RANGE_OPTIONS = [
-  { key: '24h', title: 'Last 24 Hours', subtitle: 'Hourly pulse for top 3 restaurants' },
-  { key: '30d', title: 'Last 30 Days', subtitle: 'Daily trend for top performers' },
-  { key: '6m', title: 'Last 6 Months', subtitle: 'Monthly growth overview' },
+  { key: '24h', label: '24H', title: 'Last 24 Hours' },
+  { key: '30d', label: '30D', title: 'Last 30 Days' },
+  { key: '6m',  label: '6M',  title: 'Last 6 Months' },
 ]
-const CHART_COLORS = ['#ef4444', '#0ea5e9', '#22c55e']
+const CHART_COLORS = ['#ef4444', '#0ea5e9', '#22c55e', '#f59e0b']
 
 function formatNumber(value) { return (value || 0).toLocaleString() }
 function formatMetric(value, metric) {
-  return metric === 'revenue' ? `Rs. ${formatNumber(value)}` : `${formatNumber(value)} customers`
+  return metric === 'revenue' ? `Rs. ${formatNumber(value)}` : `${formatNumber(value)}`
 }
 
-function MultiLineChart({ labels, series, colors }) {
-  const allValues = series.flatMap(s => s.data)
-  const max = Math.max(...allValues, 1)
-  const min = Math.min(...allValues, 0)
-  const range = Math.max(max - min, 1)
-  const showEvery = labels.length > 12 ? Math.ceil(labels.length / 6) : 1
+/* Single unified analytics dashboard card */
+function AnalyticsDashboard({ analytics, analyticsLoading, analyticsError }) {
+  const [range, setRange]   = React.useState('30d')
+  const [metric, setMetric] = React.useState('revenue')
 
-  const buildPath = data => {
-    const points = data.map((v, i) => {
-      const x = data.length === 1 ? 50 : (i / (data.length - 1)) * 100
-      const y = 92 - ((v - min) / range) * 72
-      return { x, y }
-    })
-    return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ')
-  }
-
-  return (
-    <div className="relative">
-      <div className="relative h-52 rounded-2xl bg-gradient-to-b from-gray-50 via-white to-white border border-gray-100 overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(14,165,233,0.12),transparent_55%),radial-gradient(circle_at_80%_0%,rgba(34,197,94,0.12),transparent_40%)]" />
-        <svg viewBox="0 0 100 100" className="relative w-full h-full">
-          {[20, 40, 60, 80].map(y => (
-            <line key={y} x1="0" x2="100" y1={y} y2={y} stroke="#eef2f7" strokeDasharray="2 3" />
-          ))}
-          {series.map((s, i) => {
-            const path = buildPath(s.data)
-            const glowId = `glow-${i}`
-            return (
-              <g key={s.name}>
-                <defs>
-                  <filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="1.6" result="blur" />
-                    <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                  </filter>
-                </defs>
-                <path d={path} stroke={colors[i % colors.length]} strokeWidth="2.6" fill="none" filter={`url(#${glowId})`} />
-              </g>
-            )
-          })}
-        </svg>
-      </div>
-      <div className="flex justify-between text-[10px] text-gray-400 mt-2">
-        {labels.map((l, i) => (
-          <span key={i} style={{ display: (i % showEvery === 0 || i === labels.length - 1) ? 'block' : 'none' }}>{l}</span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function AnalyticsCard({ title, subtitle, data, metric, onMetricChange }) {
-  const restaurants = data?.restaurants || []
-  const labels = data?.labels || []
-
-  if (restaurants.length === 0) {
-    return (
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-base font-extrabold text-gray-900">{title}</h3>
-            <p className="text-xs text-gray-400 mt-1">{subtitle}</p>
-          </div>
-          <div className="flex items-center gap-1 rounded-full bg-gray-900 text-white text-[10px] px-2 py-1">Top 3</div>
-        </div>
-        <div className="h-40 flex items-center justify-center text-sm text-gray-400">No analytics data yet</div>
-      </div>
-    )
-  }
+  const data        = analytics[range] || {}
+  const restaurants = data.restaurants || []
+  const labels      = data.labels || []
 
   const series = restaurants.map(r => ({
-    name: r.name,
-    data: metric === 'revenue' ? r.series.revenue : r.series.customers,
-    total: metric === 'revenue' ? r.totals.revenue : r.totals.customers,
+    name:  r.name,
+    data:  metric === 'revenue' ? (r.series?.revenue || []) : (r.series?.customers || []),
+    total: metric === 'revenue' ? (r.totals?.revenue  || 0)  : (r.totals?.customers  || 0),
   }))
 
+  /* aggregate total across all top restaurantss */
+  const grandTotal = series.reduce((s, r) => s + r.total, 0)
+  const topRest    = series[0] || null
+
+  /* chart geometry */
+  const allValues = series.flatMap(s => s.data)
+  const max   = Math.max(...allValues, 1)
+  const min   = Math.min(...allValues, 0)
+  const range_ = Math.max(max - min, 1)
+  const showEvery = labels.length > 12 ? Math.ceil(labels.length / 6) : 1
+
+  const buildPath = (data, forArea = false) => {
+    if (!data.length) return ''
+    const pts = data.map((v, i) => {
+      const x = data.length === 1 ? 50 : (i / (data.length - 1)) * 100
+      const y = 88 - ((v - min) / range_) * 75
+      return { x, y }
+    })
+    const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')
+    if (forArea) return `${line} L ${pts[pts.length - 1].x.toFixed(2)},96 L 0,96 Z`
+    return line
+  }
+
   return (
-    <div className="relative bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-rose-100/60 blur-3xl" />
-      <div className="absolute -bottom-16 -left-16 w-52 h-52 rounded-full bg-sky-100/60 blur-3xl" />
-      <div className="relative p-5">
-        <div className="flex items-start justify-between gap-3">
+    <div className="super-card overflow-hidden">
+      {/* Card header */}
+      <div className="px-6 pt-5 pb-4 border-b border-gray-100">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h3 className="text-base font-extrabold text-gray-900">{title}</h3>
-            <p className="text-xs text-gray-400 mt-1">{subtitle}</p>
+            <h2 className="text-lg font-extrabold text-gray-900">Analytics Pulse</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Top restaurant performance across time windows</p>
           </div>
-          <div className="flex items-center gap-1 rounded-full bg-gray-900 text-white text-[10px] px-2 py-1 flex-shrink-0">Top 3</div>
+          {/* Range tabs */}
+          <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-0.5">
+            {RANGE_OPTIONS.map(opt => (
+              <button key={opt.key} type="button"
+                onClick={() => setRange(opt.key)}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  range === opt.key
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-400 hover:text-gray-700'
+                }`}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="mt-4 flex items-center gap-2 text-[11px]">
-          <button type="button" onClick={() => onMetricChange('revenue')}
-            className={`px-3 py-1 rounded-full border ${metric === 'revenue' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200'}`}>
-            Revenue
-          </button>
-          <button type="button" onClick={() => onMetricChange('customers')}
-            className={`px-3 py-1 rounded-full border ${metric === 'customers' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200'}`}>
-            Customers
-          </button>
-        </div>
-        <div className="mt-4"><MultiLineChart labels={labels} series={series} colors={CHART_COLORS} /></div>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {series.map((s, i) => (
-            <div key={s.name} className="flex items-center gap-2 bg-white/70 border border-gray-100 rounded-2xl px-3 py-2 shadow-[0_1px_0_rgba(17,24,39,0.04)]">
-              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
-              <div className="min-w-0">
-                <p className="text-[11px] text-gray-500 truncate">{s.name}</p>
-                <p className="text-sm font-bold text-gray-900">{formatMetric(s.total, metric)}</p>
+
+        {/* Metric toggle + aggregate summary */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <button type="button" onClick={() => setMetric('revenue')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                metric === 'revenue'
+                  ? 'bg-gray-900 text-white border-gray-900 shadow-sm'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+              }`}>Revenue</button>
+            <button type="button" onClick={() => setMetric('customers')}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                metric === 'customers'
+                  ? 'bg-gray-900 text-white border-gray-900 shadow-sm'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+              }`}>Customers</button>
+          </div>
+          {/* Summary pills */}
+          {!analyticsLoading && !analyticsError && restaurants.length > 0 && (
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Total ({RANGE_OPTIONS.find(o=>o.key===range)?.title})</p>
+                <p className="text-base font-extrabold text-gray-900 leading-tight">
+                  {metric === 'revenue' ? `Rs. ${formatNumber(grandTotal)}` : formatNumber(grandTotal)}
+                </p>
               </div>
+              {topRest && (
+                <div className="text-right border-l border-gray-200 pl-3">
+                  <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Top Performer</p>
+                  <p className="text-sm font-bold text-gray-900 leading-tight truncate max-w-[140px]">{topRest.name}</p>
+                </div>
+              )}
             </div>
-          ))}
+          )}
         </div>
+      </div>
+
+      {/* Chart body */}
+      <div className="px-6 py-5">
+        {analyticsLoading ? (
+          <div className="h-52 flex items-center justify-center">
+            <div className="w-7 h-7 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : analyticsError ? (
+          <div className="h-52 flex items-center justify-center text-sm text-gray-400">Unable to load analytics right now.</div>
+        ) : restaurants.length === 0 ? (
+          <div className="h-52 flex flex-col items-center justify-center text-gray-300 gap-2">
+            <FaChartLine className="w-8 h-8" />
+            <p className="text-sm font-medium">No analytics data yet</p>
+          </div>
+        ) : (
+          <>
+            {/* SVG chart with area fill */}
+            <div className="relative h-52 rounded-2xl bg-gradient-to-b from-gray-50/60 to-white border border-gray-100 overflow-hidden">
+              <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
+                <defs>
+                  {CHART_COLORS.map((color, i) => (
+                    <linearGradient key={i} id={`grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%"   stopColor={color} stopOpacity="0.22" />
+                      <stop offset="100%" stopColor={color} stopOpacity="0" />
+                    </linearGradient>
+                  ))}
+                </defs>
+                {/* Grid lines */}
+                {[25, 50, 75].map(y => (
+                  <line key={y} x1="0" x2="100" y1={y} y2={y} stroke="#f1f5f9" strokeWidth="0.5" />
+                ))}
+                {/* Area fills then lines */}
+                {series.map((s, i) => (
+                  <g key={s.name}>
+                    <path d={buildPath(s.data, true)} fill={`url(#grad-${i})`} />
+                    <path d={buildPath(s.data)}       fill="none" stroke={CHART_COLORS[i % CHART_COLORS.length]} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    {/* End dot */}
+                    {s.data.length > 0 && (() => {
+                      const lastIdx = s.data.length - 1
+                      const x = lastIdx === 0 ? 50 : (lastIdx / (s.data.length - 1)) * 100
+                      const y = 88 - ((s.data[lastIdx] - min) / range_) * 75
+                      return <circle cx={x.toFixed(2)} cy={y.toFixed(2)} r="1.4" fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    })()}
+                  </g>
+                ))}
+              </svg>
+            </div>
+            {/* X-axis labels */}
+            <div className="flex justify-between text-[10px] text-gray-400 mt-2 px-0.5">
+              {labels.map((l, i) => (
+                <span key={i} style={{ visibility: (i % showEvery === 0 || i === labels.length - 1) ? 'visible' : 'hidden' }}>{l}</span>
+              ))}
+            </div>
+
+            {/* Restaurant leaderboard */}
+            <div className="mt-5 space-y-2">
+              {series.map((s, i) => {
+                const pct = grandTotal > 0 ? Math.round((s.total / grandTotal) * 100) : 0
+                return (
+                  <div key={s.name} className="flex items-center gap-3">
+                    <span className="w-5 text-[10px] font-black text-gray-300">#{i + 1}</span>
+                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <p className="text-xs font-semibold text-gray-700 truncate">{s.name}</p>
+                        <p className="text-xs font-bold text-gray-900 ml-2 whitespace-nowrap">
+                          {metric === 'revenue' ? `Rs. ${formatNumber(s.total)}` : formatNumber(s.total)}
+                          <span className="text-[10px] text-gray-400 font-medium ml-1">{pct}%</span>
+                        </p>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1">
+                        <div className="h-1 rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
@@ -201,7 +270,6 @@ export default function SuperDashboardPage() {
   const [analytics, setAnalytics]           = useState({})
   const [analyticsLoading, setAnalyticsLoading] = useState(true)
   const [analyticsError, setAnalyticsError] = useState(false)
-  const [metricByRange, setMetricByRange]   = useState({ '24h': 'revenue', '30d': 'revenue', '6m': 'revenue' })
   const [feed, setFeed]                     = useState([])
   const [, setTick]                         = useState(0) // force re-render for relative timestamps
   const feedRef = useRef(null)
@@ -529,33 +597,11 @@ export default function SuperDashboardPage() {
           </div>
 
           {/* Analytics */}
-          <div className="mb-4">
-            <h2 className="text-lg font-extrabold text-gray-900">Analytics Pulse</h2>
-            <p className="text-xs text-gray-400 mt-1">Top 3 restaurants by revenue and customers across key time windows</p>
-          </div>
-
-          {analyticsLoading ? (
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-              {RANGE_OPTIONS.map(r => <ChartSkeleton key={r.key} />)}
-            </div>
-          ) : analyticsError ? (
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 text-sm text-gray-400">
-              Unable to load analytics right now.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-              {RANGE_OPTIONS.map(r => (
-                <AnalyticsCard
-                  key={r.key}
-                  title={r.title}
-                  subtitle={r.subtitle}
-                  data={analytics[r.key]}
-                  metric={metricByRange[r.key]}
-                  onMetricChange={metric => setMetricByRange(prev => ({ ...prev, [r.key]: metric }))}
-                />
-              ))}
-            </div>
-          )}
+          <AnalyticsDashboard
+            analytics={analytics}
+            analyticsLoading={analyticsLoading}
+            analyticsError={analyticsError}
+          />
 
           {/* Live Activity Feed */}
           <div className="mt-8">
