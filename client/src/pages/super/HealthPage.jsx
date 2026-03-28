@@ -1,11 +1,21 @@
-/**
- * HealthPage — System health monitor + Maintenance Mode controls
+﻿/**
+ * HealthPage - System health monitor + Maintenance Mode controls
  */
 import React, { useEffect, useState, useCallback } from 'react'
 import api from '../../lib/api'
 import {
-  FaHeartbeat, FaDatabase, FaDesktop, FaMicrochip,
-  FaSyncAlt, FaTools, FaClock, FaToggleOn, FaToggleOff,
+  FaHeartbeat,
+  FaDatabase,
+  FaDesktop,
+  FaMicrochip,
+  FaSyncAlt,
+  FaTools,
+  FaClock,
+  FaToggleOn,
+  FaToggleOff,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaSave,
 } from 'react-icons/fa'
 
 function StatusDot({ ok }) {
@@ -27,7 +37,7 @@ function MetricCard({ icon: Icon, label, value, sub, color = 'text-gray-900', ic
   )
 }
 
-/* ─── Maintenance Mode Panel ─────────────────────────────────────────────────── */
+/* ---------------- Maintenance Mode Panel ---------------- */
 function MaintenancePanel() {
   const [mode, setMode] = useState({ active: false, message: '', scheduledAt: null })
   const [loadingMode, setLoadingMode] = useState(true)
@@ -124,7 +134,7 @@ function MaintenancePanel() {
           }`}
         >
           {mode.active ? <FaToggleOn className="w-4 h-4" /> : <FaToggleOff className="w-4 h-4" />}
-          {saving ? 'Saving…' : mode.active ? 'Deactivate' : 'Activate Maintenance'}
+          {saving ? 'Saving...' : mode.active ? 'Deactivate' : 'Activate Maintenance'}
         </button>
       </div>
 
@@ -143,7 +153,7 @@ function MaintenancePanel() {
         {/* Scheduled downtime */}
         <div>
           <label className="label text-gray-600 text-xs flex items-center gap-1">
-            <FaClock className="w-3 h-3" /> Scheduled downtime (optional — sets countdown timer)
+            <FaClock className="w-3 h-3" /> Scheduled downtime (optional - sets countdown timer)
           </label>
           <div className="flex gap-2">
             <input type="date" className="input bg-white border-gray-200 text-gray-900 text-sm flex-1"
@@ -163,20 +173,21 @@ function MaintenancePanel() {
           )}
           {mode.scheduledAt && mode.active && (
             <span className="text-xs text-red-600 font-medium">
-              Maintenance started · scheduled end: {new Date(mode.scheduledAt).toLocaleString('en-IN')}
+              Maintenance started - scheduled end: {new Date(mode.scheduledAt).toLocaleString('en-IN')}
             </span>
           )}
         </div>
         <button onClick={handleSaveSettings} disabled={saving}
-          className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50">
-          {saving ? 'Saving…' : '💾 Save Settings'}
+          className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-2 rounded-lg border border-gray-200 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5">
+          <FaSave className="w-3 h-3" />
+          {saving ? 'Saving...' : 'Save Settings'}
         </button>
       </div>
     </div>
   )
 }
 
-/* ─── Main Page ─────────────────────────────────────────────────────────────── */
+/* ---------------- Main Page ---------------- */
 export default function HealthPage() {
   const [health, setHealth] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -206,7 +217,7 @@ export default function HealthPage() {
           <h1 className="text-2xl font-extrabold text-gray-900">System Health</h1>
           <p className="text-gray-400 text-sm mt-1">
             Auto-refreshes every 30s
-            {lastChecked && ` · Last checked: ${lastChecked.toLocaleTimeString('en-IN')}`}
+            {lastChecked && ` - Last checked: ${lastChecked.toLocaleTimeString('en-IN')}`}
           </p>
         </div>
         <button onClick={fetchHealth}
@@ -215,7 +226,7 @@ export default function HealthPage() {
         </button>
       </div>
 
-      {/* ── Maintenance Mode Panel ── */}
+      {/* Maintenance Mode Panel */}
       <MaintenancePanel />
 
       {/* Overall Status Banner */}
@@ -224,8 +235,16 @@ export default function HealthPage() {
           <FaHeartbeat className={`w-6 h-6 ${isHealthy ? 'text-green-600' : 'text-red-600'}`} />
         </div>
         <div>
-          <p className={`text-lg font-extrabold ${isHealthy ? 'text-green-800' : 'text-red-800'}`}>
-            {loading ? 'Checking…' : isHealthy ? '✅ All Systems Operational' : '❌ System Unhealthy'}
+          <p className={`text-lg font-extrabold ${isHealthy ? 'text-green-800' : 'text-red-800'} flex items-center gap-2`}>
+            {loading ? 'Checking...' : isHealthy ? (
+              <>
+                <FaCheckCircle className="w-4 h-4" /> All Systems Operational
+              </>
+            ) : (
+              <>
+                <FaTimesCircle className="w-4 h-4" /> System Unhealthy
+              </>
+            )}
           </p>
           {health?.timestamp && (
             <p className={`text-sm mt-0.5 ${isHealthy ? 'text-green-600' : 'text-red-600'}`}>
@@ -238,21 +257,21 @@ export default function HealthPage() {
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <MetricCard icon={FaDatabase} label="DB Response"
-          value={loading ? '…' : `${dbMs ?? '—'}ms`}
+          value={loading ? '...' : `${dbMs ?? '-'}ms`}
           sub={dbMs !== undefined ? (dbMs < 100 ? 'Excellent' : dbMs < 300 ? 'Good' : 'Slow') : ''}
           color={dbMs !== undefined ? (dbMs < 100 ? 'text-green-600' : dbMs < 300 ? 'text-amber-500' : 'text-red-500') : 'text-gray-400'}
           iconBg="bg-purple-50 text-purple-600"
         />
         <MetricCard icon={FaDesktop} label="Server Uptime"
-          value={loading ? '…' : health?.uptime ? `${Math.floor(health.uptime / 3600)}h ${Math.floor((health.uptime % 3600) / 60)}m` : '—'}
+          value={loading ? '...' : health?.uptime ? `${Math.floor(health.uptime / 3600)}h ${Math.floor((health.uptime % 3600) / 60)}m` : '-'}
           sub="Node.js process" iconBg="bg-blue-50 text-blue-600"
         />
         <MetricCard icon={FaMicrochip} label="Memory Usage"
-          value={loading ? '…' : health?.memoryMb ? `${health.memoryMb} MB` : '—'}
+          value={loading ? '...' : health?.memoryMb ? `${health.memoryMb} MB` : '-'}
           sub="RSS (resident set)" iconBg="bg-amber-50 text-amber-600"
         />
         <MetricCard icon={FaHeartbeat} label="Status"
-          value={loading ? '…' : isHealthy ? 'Healthy' : 'Unhealthy'}
+          value={loading ? '...' : isHealthy ? 'Healthy' : 'Unhealthy'}
           color={isHealthy ? 'text-green-600' : 'text-red-600'}
           iconBg={isHealthy ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}
         />
@@ -283,7 +302,7 @@ export default function HealthPage() {
         <div className="space-y-3">
           {[
             { label: 'API Server', ok: true, detail: 'Express.js running' },
-            { label: 'PostgreSQL Database', ok: health && dbMs !== undefined, detail: health?.dbResponseMs ? `${health.dbResponseMs}ms response` : 'Checking…' },
+            { label: 'PostgreSQL Database', ok: health && dbMs !== undefined, detail: health?.dbResponseMs ? `${health.dbResponseMs}ms response` : 'Checking...' },
             { label: 'Prisma ORM', ok: true, detail: 'Connected' },
             { label: 'WebSocket (Socket.io)', ok: true, detail: 'Real-time events active' },
           ].map(s => (

@@ -1,18 +1,19 @@
-/**
- * SupportTicketsPage — view and manage support tickets from restaurant owners
+﻿/**
+ * SupportTicketsPage - view and manage support tickets from restaurant owners
  */
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import socket from '../../lib/socket'
-import { FaInbox } from 'react-icons/fa'
+import { FaInbox, FaTicketAlt, FaTimes, FaTrash, FaBuilding, FaSyncAlt, FaCheckCircle } from 'react-icons/fa'
 
 const STATUS_STYLES = {
   OPEN: 'bg-red-50 text-red-600 border-red-200',
   IN_REVIEW: 'bg-amber-50 text-amber-600 border-amber-200',
   RESOLVED: 'bg-green-50 text-green-700 border-green-200',
 }
-const STATUS_LABEL = { OPEN: '🔴 Open', IN_REVIEW: '🟡 In Review', RESOLVED: '✅ Resolved' }
+const STATUS_LABEL = { OPEN: 'Open', IN_REVIEW: 'In Review', RESOLVED: 'Resolved' }
+const STATUS_ICON = { OPEN: FaTimes, IN_REVIEW: FaSyncAlt, RESOLVED: FaCheckCircle }
 const STATUSES = ['OPEN', 'IN_REVIEW', 'RESOLVED']
 
 function TicketModal({ ticket, onClose, onSave }) {
@@ -32,8 +33,12 @@ function TicketModal({ ticket, onClose, onSave }) {
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-lg shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl">
-          <h3 className="font-bold text-gray-900">🎫 Ticket — {ticket.subject}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100">✕</button>
+          <h3 className="font-bold text-gray-900 flex items-center gap-2">
+            <FaTicketAlt className="text-brand-600 w-4 h-4" /> Ticket - {ticket.subject}
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100">
+            <FaTimes className="w-3.5 h-3.5" />
+          </button>
         </div>
         <div className="p-5 space-y-4">
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
@@ -49,7 +54,7 @@ function TicketModal({ ticket, onClose, onSave }) {
           </div>
           <div>
             <label className="label text-gray-600 text-xs">Reply to Restaurant</label>
-            <textarea rows={4} placeholder="Type your reply here…"
+            <textarea rows={4} placeholder="Type your reply here..."
               className="input bg-white border-gray-200 text-gray-900 text-sm resize-none"
               value={reply} onChange={e => setReply(e.target.value)} />
           </div>
@@ -58,7 +63,7 @@ function TicketModal({ ticket, onClose, onSave }) {
           <button onClick={onClose} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
           <button onClick={handleSave} disabled={saving}
             className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-sm transition-colors shadow-sm">
-            {saving ? 'Saving…' : 'Save & Reply'}
+            {saving ? 'Saving...' : 'Save & Reply'}
           </button>
         </div>
       </div>
@@ -117,20 +122,30 @@ export default function SupportTicketsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-900">Support Tickets</h1>
-        <p className="text-gray-400 text-sm mt-1">Manage help requests from restaurant owners</p>
+      <div className="mb-6 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm">
+          <FaTicketAlt className="w-4 h-4" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-extrabold text-gray-900">Support Tickets</h1>
+          <p className="text-gray-400 text-sm mt-1">Manage help requests from restaurant owners</p>
+        </div>
       </div>
 
       {/* Status Summary */}
       <div className="grid grid-cols-3 gap-3 mb-5">
-        {STATUSES.map(s => (
-          <button key={s} onClick={() => setStatusFilter(statusFilter === s ? '' : s)}
-            className={`rounded-2xl border p-4 text-left transition-all ${statusFilter === s ? 'ring-2 ring-brand-400' : ''} ${STATUS_STYLES[s]}`}>
-            <p className="text-xl font-extrabold">{counts[s]}</p>
-            <p className="text-xs font-semibold mt-0.5">{STATUS_LABEL[s]}</p>
-          </button>
-        ))}
+        {STATUSES.map(s => {
+          const Icon = STATUS_ICON[s]
+          return (
+            <button key={s} onClick={() => setStatusFilter(statusFilter === s ? '' : s)}
+              className={`rounded-2xl border p-4 text-left transition-all ${statusFilter === s ? 'ring-2 ring-brand-400' : ''} ${STATUS_STYLES[s]}`}>
+              <p className="text-xl font-extrabold">{counts[s]}</p>
+              <p className="text-xs font-semibold mt-0.5 inline-flex items-center gap-1.5">
+                <Icon className="w-3 h-3" /> {STATUS_LABEL[s]}
+              </p>
+            </button>
+          )
+        })}
       </div>
 
       {/* Filter bar */}
@@ -165,7 +180,9 @@ export default function SupportTicketsPage() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-bold text-gray-900 text-sm">{t.subject}</p>
-                    <p className="text-gray-400 text-xs mt-0.5">🏢 {t.restaurant?.name} · {fmt(t.createdAt)}</p>
+                    <p className="text-gray-400 text-xs mt-0.5 inline-flex items-center gap-1.5">
+                      <FaBuilding className="w-3 h-3" /> {t.restaurant?.name} - {fmt(t.createdAt)}
+                    </p>
                     <p className="text-gray-600 text-sm mt-1.5 line-clamp-2">{t.message}</p>
                     {t.reply && (
                       <div className="mt-2 bg-brand-50 border border-brand-100 rounded-lg px-3 py-2">
@@ -175,9 +192,15 @@ export default function SupportTicketsPage() {
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${STATUS_STYLES[t.status]}`}>
-                      {STATUS_LABEL[t.status]}
-                    </span>
+                    {(() => {
+                      const StatusIcon = STATUS_ICON[t.status]
+                      return (
+                        <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold inline-flex items-center gap-1.5 ${STATUS_STYLES[t.status]}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {STATUS_LABEL[t.status]}
+                        </span>
+                      )
+                    })()}
                     <div className="flex gap-1.5">
                       <button onClick={() => setActiveTicket(t)}
                         className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2.5 py-1.5 rounded-lg border border-gray-200 transition-colors">
@@ -185,7 +208,7 @@ export default function SupportTicketsPage() {
                       </button>
                       <button onClick={() => handleDelete(t.id)}
                         className="text-xs bg-red-50 hover:bg-red-100 text-red-500 px-2 py-1.5 rounded-lg border border-red-100 transition-colors">
-                        🗑
+                        <FaTrash className="w-3 h-3" />
                       </button>
                     </div>
                   </div>

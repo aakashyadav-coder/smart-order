@@ -1,28 +1,42 @@
-/**
- * ActivityLogsPage — audit trail + Data Retention / Cleanup tools
+﻿/**
+ * ActivityLogsPage - audit trail + data retention / cleanup tools
  */
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
-import { FaDownload, FaTrash, FaExclamationTriangle } from 'react-icons/fa'
+import {
+  FaDownload,
+  FaTrash,
+  FaExclamationTriangle,
+  FaClipboardList,
+  FaSyncAlt,
+  FaUserPlus,
+  FaEdit,
+  FaUsers,
+  FaBuilding,
+  FaCog,
+  FaBullhorn,
+  FaTicketAlt,
+  FaCheckCircle,
+} from 'react-icons/fa'
 
 const ACTION_ICON = {
-  ORDER_STATUS_UPDATE:    '📦',
-  USER_CREATED:           '👤',
-  USER_UPDATED:           '✏️',
-  USER_DELETED:           '🗑️',
-  USER_BULK_UPDATED:      '👥',
-  RESTAURANT_CREATED:     '🏢',
-  RESTAURANT_UPDATED:     '🏢',
-  RESTAURANT_DELETED:     '🗑️',
-  RESTAURANT_BULK_UPDATED:'🏢',
-  FEATURE_TOGGLE_UPDATED: '⚙️',
-  ANNOUNCEMENT_CREATED:   '📢',
-  ANNOUNCEMENT_DELETED:   '🗑️',
-  TICKET_UPDATED:         '🎫',
-  SYSTEM_SEEDED:          '🌱',
-  LOGS_PURGED:            '🧹',
-  ORDERS_PURGED:          '🧹',
+  ORDER_STATUS_UPDATE:     FaSyncAlt,
+  USER_CREATED:            FaUserPlus,
+  USER_UPDATED:            FaEdit,
+  USER_DELETED:            FaTrash,
+  USER_BULK_UPDATED:       FaUsers,
+  RESTAURANT_CREATED:      FaBuilding,
+  RESTAURANT_UPDATED:      FaBuilding,
+  RESTAURANT_DELETED:      FaTrash,
+  RESTAURANT_BULK_UPDATED: FaBuilding,
+  FEATURE_TOGGLE_UPDATED:  FaCog,
+  ANNOUNCEMENT_CREATED:    FaBullhorn,
+  ANNOUNCEMENT_DELETED:    FaTrash,
+  TICKET_UPDATED:          FaTicketAlt,
+  SYSTEM_SEEDED:           FaCheckCircle,
+  LOGS_PURGED:             FaTrash,
+  ORDERS_PURGED:           FaTrash,
 }
 const ALL_ACTIONS = Object.keys(ACTION_ICON)
 
@@ -41,7 +55,7 @@ function exportCSV(logs) {
   URL.revokeObjectURL(url)
 }
 
-/* ─── Purge Panel ─────────────────────────────────────────────────────────── */
+/* ---------------- Purge Panel ---------------- */
 function PurgePanel({ restaurants, onPurged }) {
   const [logDays, setLogDays] = useState(90)
   const [orderRestId, setOrderRestId] = useState('')
@@ -56,7 +70,7 @@ function PurgePanel({ restaurants, onPurged }) {
     setPurgingLogs(true)
     try {
       const res = await api.delete(`/super/logs/purge`, { data: { days: logDays } })
-      toast.success(`🧹 Deleted ${res.data.deleted} log entries older than ${logDays} days`)
+      toast.success(`Deleted ${res.data.deleted} log entries older than ${logDays} days`)
       setConfirmLogs(false)
       onPurged()
     } catch (e) { toast.error('Failed to purge logs') }
@@ -70,7 +84,7 @@ function PurgePanel({ restaurants, onPurged }) {
     try {
       const res = await api.delete(`/super/orders/purge`, { data: { restaurantId: orderRestId, days: orderDays } })
       const restName = restaurants.find(r => r.id === orderRestId)?.name || 'Restaurant'
-      toast.success(`🧹 Deleted ${res.data.deleted} old orders from ${restName}`)
+      toast.success(`Deleted ${res.data.deleted} old orders from ${restName}`)
       setConfirmOrders(false)
     } catch (e) { toast.error('Failed to purge orders') }
     finally { setPurgingOrders(false) }
@@ -85,7 +99,7 @@ function PurgePanel({ restaurants, onPurged }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Log Purge */}
         <div className="border border-gray-100 rounded-xl p-4">
-          <p className="text-sm font-bold text-gray-800 mb-1">🧹 Purge Audit Logs</p>
+          <p className="text-sm font-bold text-gray-800 mb-1">Purge Audit Logs</p>
           <p className="text-xs text-gray-400 mb-3">Permanently delete activity log entries older than N days.</p>
           <div className="flex items-center gap-2 mb-3">
             <label className="text-xs text-gray-500 font-medium whitespace-nowrap">Older than</label>
@@ -106,18 +120,18 @@ function PurgePanel({ restaurants, onPurged }) {
                 ? 'bg-red-600 hover:bg-red-700 text-white border-red-600'
                 : 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200'
             }`}>
-            {purgingLogs ? 'Purging…' : confirmLogs ? '⚠️ Confirm Purge Logs' : '🗑 Purge Logs'}
+            {purgingLogs ? 'Purging...' : confirmLogs ? 'Confirm Purge Logs' : 'Purge Logs'}
           </button>
         </div>
 
         {/* Order Purge */}
         <div className="border border-gray-100 rounded-xl p-4">
-          <p className="text-sm font-bold text-gray-800 mb-1">🧹 Purge Old Orders</p>
+          <p className="text-sm font-bold text-gray-800 mb-1">Purge Old Orders</p>
           <p className="text-xs text-gray-400 mb-3">Delete PAID/CANCELLED/SERVED orders older than N days from a specific restaurant.</p>
           <div className="space-y-2 mb-3">
             <select className="input bg-white border-gray-200 text-gray-900 text-sm"
               value={orderRestId} onChange={e => { setOrderRestId(e.target.value); setConfirmOrders(false) }}>
-              <option value="">Select restaurant…</option>
+              <option value="">Select restaurant...</option>
               {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
             <div className="flex items-center gap-2">
@@ -140,7 +154,7 @@ function PurgePanel({ restaurants, onPurged }) {
                 ? 'bg-red-600 hover:bg-red-700 text-white border-red-600'
                 : 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200'
             }`}>
-            {purgingOrders ? 'Purging…' : confirmOrders ? '⚠️ Confirm Purge Orders' : '🗑 Purge Orders'}
+            {purgingOrders ? 'Purging...' : confirmOrders ? 'Confirm Purge Orders' : 'Purge Orders'}
           </button>
         </div>
       </div>
@@ -148,7 +162,7 @@ function PurgePanel({ restaurants, onPurged }) {
   )
 }
 
-/* ─── Main Page ─────────────────────────────────────────────────────────────── */
+/* ---------------- Main Page ---------------- */
 export default function ActivityLogsPage() {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -172,9 +186,14 @@ export default function ActivityLogsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900">Audit Logs</h1>
-          <p className="text-gray-400 text-sm mt-1">Complete record of platform actions · {logs.length} entries</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm">
+            <FaClipboardList className="w-4 h-4" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-extrabold text-gray-900">Audit Logs</h1>
+            <p className="text-gray-400 text-sm mt-1">Complete record of platform actions - {logs.length} entries</p>
+          </div>
         </div>
         <button onClick={() => exportCSV(logs)}
           className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors shadow-sm">
@@ -182,7 +201,7 @@ export default function ActivityLogsPage() {
         </button>
       </div>
 
-      {/* ── Data Retention Panel ── */}
+      {/* Data Retention Panel */}
       <PurgePanel restaurants={restaurants} onPurged={fetchLogs} />
 
       {/* Filters */}
@@ -211,29 +230,32 @@ export default function ActivityLogsPage() {
           <div className="divide-y divide-gray-100">
             {logs.length === 0 ? (
               <div className="text-center py-12 text-gray-400">No activity found</div>
-            ) : logs.map(log => (
-              <div key={log.id} className="flex items-start gap-3 px-5 py-3 hover:bg-gray-50 transition-colors">
-                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 text-sm mt-0.5">
-                  {ACTION_ICON[log.action] || '📋'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-gray-900 font-semibold text-sm">{log.action.replace(/_/g, ' ')}</span>
-                    {log.entity && <span className="text-gray-400 text-xs">· {log.entity}</span>}
-                    {log.entityId && <span className="text-gray-300 font-mono text-xs">#{log.entityId.slice(-8).toUpperCase()}</span>}
+            ) : logs.map(log => {
+              const Icon = ACTION_ICON[log.action] || FaClipboardList
+              return (
+                <div key={log.id} className="flex items-start gap-3 px-5 py-3 hover:bg-gray-50 transition-colors">
+                  <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 text-sm mt-0.5">
+                    <Icon className="w-3.5 h-3.5 text-gray-600" />
                   </div>
-                  {log.user && (
-                    <p className="text-gray-400 text-xs mt-0.5">
-                      by <span className="text-gray-600 font-medium">{log.user.name}</span> ({log.user.role})
-                    </p>
-                  )}
-                  {log.metadata && Object.keys(log.metadata).length > 0 && (
-                    <p className="text-gray-300 text-xs mt-0.5 font-mono truncate">{JSON.stringify(log.metadata)}</p>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-gray-900 font-semibold text-sm">{log.action.replace(/_/g, ' ')}</span>
+                      {log.entity && <span className="text-gray-400 text-xs">- {log.entity}</span>}
+                      {log.entityId && <span className="text-gray-300 font-mono text-xs">#{log.entityId.slice(-8).toUpperCase()}</span>}
+                    </div>
+                    {log.user && (
+                      <p className="text-gray-400 text-xs mt-0.5">
+                        by <span className="text-gray-600 font-medium">{log.user.name}</span> ({log.user.role})
+                      </p>
+                    )}
+                    {log.metadata && Object.keys(log.metadata).length > 0 && (
+                      <p className="text-gray-300 text-xs mt-0.5 font-mono truncate">{JSON.stringify(log.metadata)}</p>
+                    )}
+                  </div>
+                  <span className="text-gray-400 text-xs whitespace-nowrap flex-shrink-0">{fmt(log.createdAt)}</span>
                 </div>
-                <span className="text-gray-400 text-xs whitespace-nowrap flex-shrink-0">{fmt(log.createdAt)}</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

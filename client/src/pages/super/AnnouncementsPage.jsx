@@ -1,10 +1,10 @@
-/**
- * AnnouncementsPage — super admin broadcasts to restaurant owners
+﻿/**
+ * AnnouncementsPage - super admin broadcasts to restaurant owners
  */
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
-import { FaBullhorn } from 'react-icons/fa'
+import { FaBullhorn, FaPaperPlane, FaTrash, FaBuilding } from 'react-icons/fa'
 
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState([])
@@ -52,9 +52,14 @@ export default function AnnouncementsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-900">Announcements</h1>
-        <p className="text-gray-400 text-sm mt-1">Broadcast messages to restaurant owners</p>
+      <div className="mb-6 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm">
+          <FaBullhorn className="w-4 h-4" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-extrabold text-gray-900">Announcements</h1>
+          <p className="text-gray-400 text-sm mt-1">Broadcast messages to restaurant owners</p>
+        </div>
       </div>
 
       {/* Compose */}
@@ -71,7 +76,7 @@ export default function AnnouncementsPage() {
           </div>
           <div>
             <label className="label text-gray-600 text-xs">Message *</label>
-            <textarea rows={3} placeholder="Write your message here…"
+            <textarea rows={3} placeholder="Write your message here..."
               className="input bg-white border-gray-200 text-gray-900 text-sm resize-none"
               value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))} />
           </div>
@@ -79,14 +84,15 @@ export default function AnnouncementsPage() {
             <label className="label text-gray-600 text-xs">Target (optional)</label>
             <select className="input bg-white border-gray-200 text-gray-900 text-sm"
               value={form.restaurantId} onChange={e => setForm(p => ({ ...p, restaurantId: e.target.value }))}>
-              <option value="">📢 Broadcast to ALL restaurants</option>
-              {restaurants.map(r => <option key={r.id} value={r.id}>🏢 {r.name}</option>)}
+              <option value="">Broadcast to all restaurants</option>
+              {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
           </div>
           <div className="flex justify-end">
             <button onClick={handleSend} disabled={saving || !form.title || !form.message}
-              className="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50 shadow-sm">
-              {saving ? 'Sending…' : '📤 Send Announcement'}
+              className="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50 shadow-sm inline-flex items-center gap-2">
+              <FaPaperPlane className="w-3.5 h-3.5" />
+              {saving ? 'Sending...' : 'Send Announcement'}
             </button>
           </div>
         </div>
@@ -113,11 +119,14 @@ export default function AnnouncementsPage() {
                     <p className="font-bold text-gray-900 text-sm">{a.title}</p>
                     <p className="text-gray-500 text-sm mt-1 leading-relaxed">{a.message}</p>
                   </div>
-                  <button onClick={() => handleDelete(a.id)} className="text-gray-300 hover:text-red-400 transition-colors text-xs flex-shrink-0 mt-0.5">🗑</button>
+                  <button onClick={() => handleDelete(a.id)} className="text-gray-300 hover:text-red-400 transition-colors text-xs flex-shrink-0 mt-0.5">
+                    <FaTrash className="w-3.5 h-3.5" />
+                  </button>
                 </div>
                 <div className="flex items-center gap-3 mt-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${a.restaurantId ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-700'}`}>
-                    {a.restaurant ? `🏢 ${a.restaurant.name}` : '📢 All Restaurants'}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1.5 ${a.restaurantId ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-700'}`}>
+                    <FaBuilding className="w-3 h-3" />
+                    {a.restaurant ? a.restaurant.name : 'All Restaurants'}
                   </span>
                   <span className="text-gray-400 text-xs">{fmt(a.createdAt)}</span>
                 </div>

@@ -1,17 +1,23 @@
-/**
- * RevenuePage — Business Intelligence for Super Admin
- * Sections: Platform KPI Strip · Revenue Bar Chart · Leaderboard · Peak Hours Heatmap
- * Pure SVG/CSS — no external chart libraries
+﻿/**
+ * RevenuePage - Business Intelligence for Super Admin
+ * Sections: Platform KPI Strip, Revenue Bar Chart, Leaderboard, Peak Hours Heatmap
+ * Pure SVG/CSS - no external chart libraries
  */
 import React, { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
 import {
-  FaArrowUp, FaArrowDown, FaMinus, FaDownload,
-  FaTrophy, FaChartBar, FaFire, FaTimesCircle,
+  FaArrowUp,
+  FaArrowDown,
+  FaMinus,
+  FaDownload,
+  FaTrophy,
+  FaChartBar,
+  FaFire,
+  FaTimesCircle,
 } from 'react-icons/fa'
 
-/* ─── Constants ─────────────────────────────────────────────────────────────── */
+/* ---------------- Constants ---------------- */
 const PERIODS = [
   { key: 'daily',   label: 'Daily',   sub: 'Last 14 days' },
   { key: 'weekly',  label: 'Weekly',  sub: 'Last 8 weeks'  },
@@ -23,12 +29,18 @@ const REST_COLORS = [
   '#ec4899', '#14b8a6', '#f97316',
 ]
 
-/* ─── Helpers ───────────────────────────────────────────────────────────────── */
+const MEDAL = [
+  { Icon: FaTrophy, color: 'text-amber-500' },
+  { Icon: FaTrophy, color: 'text-gray-400' },
+  { Icon: FaTrophy, color: 'text-orange-500' },
+]
+
+/* ---------------- Helpers ---------------- */
 function fmtMoney(v) { return `Rs. ${(v || 0).toLocaleString()}` }
 function fmtNum(v)   { return (v || 0).toLocaleString() }
 
 function DeltaBadge({ value, className = '' }) {
-  if (value === null || value === undefined) return <span className="text-xs text-gray-300">—</span>
+  if (value === null || value === undefined) return <span className="text-xs text-gray-300">-</span>
   if (value > 0) return (
     <span className={`inline-flex items-center gap-0.5 text-xs font-bold text-green-600 ${className}`}>
       <FaArrowUp className="w-2.5 h-2.5" />{value}%
@@ -46,7 +58,7 @@ function DeltaBadge({ value, className = '' }) {
   )
 }
 
-/* ─── Platform KPI Strip ────────────────────────────────────────────────────── */
+/* ---------------- Platform KPI Strip ---------------- */
 function KpiStrip({ platform }) {
   const kpis = [
     {
@@ -83,7 +95,7 @@ function KpiStrip({ platform }) {
   )
 }
 
-/* ─── Revenue Bar Chart (pure SVG) ─────────────────────────────────────────── */
+/* ---------------- Revenue Bar Chart (pure SVG) ---------------- */
 function RevenueBarChart({ labels, restaurants, colors }) {
   const [hoveredBucket, setHoveredBucket] = useState(null)
   const top5 = restaurants.slice(0, 5)
@@ -138,7 +150,7 @@ function RevenueBarChart({ labels, restaurants, colors }) {
                 const barH = maxBucketTotal > 0 ? (v / maxBucketTotal) * chartH : 0
                 const x = gx + ri * barW
                 const y = stackY - barH
-                stackY -= 0  // not stacked — grouped
+                stackY -= 0  // not stacked - grouped
                 const thisBarH = barH
                 const thisY = padT + chartH - thisBarH
                 return (
@@ -179,9 +191,7 @@ function RevenueBarChart({ labels, restaurants, colors }) {
   )
 }
 
-/* ─── Leaderboard ───────────────────────────────────────────────────────────── */
-const MEDAL = ['🥇', '🥈', '🥉']
-
+/* ---------------- Leaderboard ---------------- */
 function Leaderboard({ restaurants, colors }) {
   const navigate = useNavigate()
   if (!restaurants.length) return (
@@ -198,13 +208,19 @@ function Leaderboard({ restaurants, colors }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {restaurants.map((r, i) => (
-            <tr key={r.id} className="hover:bg-gray-50 transition-colors group">
+          {restaurants.map((r, i) => {
+            const MedalIcon = MEDAL[i]?.Icon
+            const medalColor = MEDAL[i]?.color || ''
+            return (
+              <tr key={r.id} className="hover:bg-gray-50 transition-colors group">
               <td className="px-4 py-3">
-                {i < 3
-                  ? <span className="text-lg">{MEDAL[i]}</span>
-                  : <span className="text-xs text-gray-400 font-bold w-6 h-6 flex items-center justify-center rounded-full bg-gray-100">#{i + 1}</span>
-                }
+                {i < 3 && MedalIcon ? (
+                  <span className={`w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center ${medalColor}`}>
+                    <MedalIcon className="w-3.5 h-3.5" />
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-400 font-bold w-6 h-6 flex items-center justify-center rounded-full bg-gray-100">#{i + 1}</span>
+                )}
               </td>
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -230,15 +246,16 @@ function Leaderboard({ restaurants, colors }) {
                 </div>
               </td>
               <td className="px-4 py-3"><DeltaBadge value={r.growth} /></td>
-            </tr>
-          ))}
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
   )
 }
 
-/* ─── Peak Hours Heatmap ────────────────────────────────────────────────────── */
+/* ---------------- Peak Hours Heatmap ---------------- */
 function PeakHoursHeatmap({ peakHours }) {
   if (!peakHours || peakHours.length === 0) return (
     <div className="text-center py-8 text-gray-400 text-sm">No hourly data available</div>
@@ -264,7 +281,7 @@ function PeakHoursHeatmap({ peakHours }) {
 
   // Group hours into rows of 8 for readability
   const rows = [peakHours.slice(0, 8), peakHours.slice(8, 16), peakHours.slice(16, 24)]
-  const rowLabels = ['Night (12am–7am)', 'Morning (8am–3pm)', 'Evening (4pm–11pm)']
+  const rowLabels = ['Night (12am-7am)', 'Morning (8am-3pm)', 'Evening (4pm-11pm)']
 
   return (
     <div className="space-y-4">
@@ -285,7 +302,9 @@ function PeakHoursHeatmap({ peakHours }) {
                   <span className="text-[10px] font-bold leading-none" style={{ color: text }}>{count}</span>
                   <span className="text-[9px] mt-0.5 opacity-75 font-medium" style={{ color: text }}>{formatHour(hour)}</span>
                   {intensity >= 0.8 && (
-                    <span className="absolute -top-1 -right-1 text-[8px]">🔥</span>
+                    <span className="absolute -top-1 -right-1 text-[8px]">
+                      <FaFire className="w-2.5 h-2.5" />
+                    </span>
                   )}
                   {/* Tooltip */}
                   <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] rounded-lg px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
@@ -311,7 +330,7 @@ function PeakHoursHeatmap({ peakHours }) {
   )
 }
 
-/* ─── CSV Export ─────────────────────────────────────────────────────────── */
+/* ---------------- CSV Export ---------------- */
 function exportCSV(data) {
   if (!data?.restaurants?.length) return
   const headers = ['Rank', 'Restaurant', 'Total Revenue (Rs.)', 'Orders', 'AOV (Rs.)', 'Cancelled', 'Cancel Rate %', 'Growth %']
@@ -325,7 +344,7 @@ function exportCSV(data) {
   URL.revokeObjectURL(url)
 }
 
-/* ─── Main Page ─────────────────────────────────────────────────────────────── */
+/* ---------------- Main Page ---------------- */
 export default function RevenuePage() {
   const [period, setPeriod]     = useState('daily')
   const [data, setData]         = useState(null)
@@ -354,7 +373,7 @@ export default function RevenuePage() {
             Revenue Business Intelligence
           </h1>
           <p className="text-gray-400 text-sm mt-1">
-            Platform-wide revenue analytics · {currentPeriodLabel}
+            Platform-wide revenue analytics - {currentPeriodLabel}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

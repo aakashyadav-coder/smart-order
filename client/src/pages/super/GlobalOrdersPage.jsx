@@ -1,5 +1,5 @@
-/**
- * GlobalOrdersPage — all orders, paginated, with filters + CSV export
+﻿/**
+ * GlobalOrdersPage - all orders, paginated, with filters + CSV export
  * Server-side pagination: page / limit / total from backend
  */
 import React, { useEffect, useState, useCallback } from 'react'
@@ -89,7 +89,7 @@ export default function GlobalOrdersPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 mb-5">
         <div className="relative">
           <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
-          <input type="text" placeholder="Search customer…"
+          <input type="text" placeholder="Search customer..."
             className="input bg-white border-gray-200 text-gray-900 text-sm pl-9 w-full"
             value={filter.search} onChange={e => setFilter(p => ({ ...p, search: e.target.value }))} />
         </div>
@@ -155,7 +155,7 @@ export default function GlobalOrdersPage() {
             {/* left: range info + per-page */}
             <div className="flex items-center gap-3">
               <p className="text-xs text-gray-500">
-                {meta.total === 0 ? '0 orders' : `${start}–${end} of ${meta.total.toLocaleString()} orders`}
+                {meta.total === 0 ? '0 orders' : `${start}-${end} of ${meta.total.toLocaleString()} orders`}
               </p>
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <span>Show</span>
@@ -173,7 +173,7 @@ export default function GlobalOrdersPage() {
             <div className="flex items-center gap-1">
               <button onClick={() => changePage(1)} disabled={page === 1}
                 className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-200 disabled:opacity-30 transition-colors text-xs font-bold">
-                «
+                {'<<'}
               </button>
               <button onClick={() => changePage(page - 1)} disabled={page === 1}
                 className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-200 disabled:opacity-30 transition-colors">
@@ -184,12 +184,12 @@ export default function GlobalOrdersPage() {
               {Array.from({ length: meta.totalPages }, (_, i) => i + 1)
                 .filter(p => p === 1 || p === meta.totalPages || Math.abs(p - page) <= 1)
                 .reduce((acc, p, idx, arr) => {
-                  if (idx > 0 && p - arr[idx - 1] > 1) acc.push('…')
+                  if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...')
                   acc.push(p)
                   return acc
                 }, [])
-                .map((p, i) => p === '…' ? (
-                  <span key={`ellipsis-${i}`} className="w-7 text-center text-xs text-gray-400">…</span>
+                .map((p, i) => p === '...' ? (
+                  <span key={`ellipsis-${i}`} className="w-7 text-center text-xs text-gray-400">...</span>
                 ) : (
                   <button key={p} onClick={() => changePage(p)}
                     className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
@@ -208,7 +208,7 @@ export default function GlobalOrdersPage() {
               </button>
               <button onClick={() => changePage(meta.totalPages)} disabled={page === meta.totalPages}
                 className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-200 disabled:opacity-30 transition-colors text-xs font-bold">
-                »
+                {'>>'}
               </button>
             </div>
           </div>

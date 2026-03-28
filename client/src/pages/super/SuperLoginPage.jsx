@@ -1,5 +1,5 @@
-/**
- * SuperLoginPage — Premium dark login for Super Admin
+﻿/**
+ * SuperLoginPage - Premium dark login for Super Admin
  * Theme: Same dark template, purple-red accent
  */
 import React, { useState, useEffect } from 'react'
@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
-import { FaShieldAlt, FaEye, FaEyeSlash } from 'react-icons/fa'
+import { FaShieldAlt, FaEye, FaEyeSlash, FaArrowLeft } from 'react-icons/fa'
 
 export default function SuperLoginPage() {
   const navigate = useNavigate()
@@ -100,7 +100,7 @@ export default function SuperLoginPage() {
                   type={showPw ? 'text' : 'password'}
                   required
                   autoComplete="current-password"
-                  placeholder="••••••••"
+                  placeholder="********"
                   className="input-dark w-full pr-11"
                   value={form.password}
                   onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
@@ -124,7 +124,7 @@ export default function SuperLoginPage() {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Authenticating…
+                  Authenticating...
                 </span>
               ) : (
                 <>
@@ -136,13 +136,15 @@ export default function SuperLoginPage() {
           </form>
 
           <p className="text-gray-600 text-xs text-center mt-5">
-            superadmin@smartorder.dev · super123
+            superadmin@smartorder.dev - super123
           </p>
         </div>
 
         {/* Portal links */}
         <div className="text-center mt-6">
-          <a href="/kitchen/login" className="text-xs text-gray-600 hover:text-gray-400 transition-colors">← Kitchen staff login</a>
+          <a href="/kitchen/login" className="text-xs text-gray-600 hover:text-gray-400 transition-colors inline-flex items-center gap-1.5">
+            <FaArrowLeft className="w-3 h-3" /> Kitchen staff login
+          </a>
         </div>
       </div>
     </div>

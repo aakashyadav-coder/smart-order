@@ -1,12 +1,18 @@
-/**
- * SettingsPage — Super Admin profile, password change, 2FA status
+﻿/**
+ * SettingsPage - Super Admin profile, password change, 2FA status
  */
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import {
-  FaUser, FaLock, FaShieldAlt, FaSave, FaCheckCircle, FaTimesCircle,
+  FaUser,
+  FaLock,
+  FaShieldAlt,
+  FaSave,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaExclamationTriangle,
 } from 'react-icons/fa'
 
 function Section({ icon: Icon, title, children }) {
@@ -100,7 +106,7 @@ export default function SettingsPage() {
         <div className="mt-4 flex items-center gap-3">
           <button onClick={handleSaveProfile} disabled={saving}
             className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50">
-            <FaSave className="w-3.5 h-3.5" /> {saving ? 'Saving…' : 'Save Profile'}
+            <FaSave className="w-3.5 h-3.5" /> {saving ? 'Saving...' : 'Save Profile'}
           </button>
           <span className="text-xs text-gray-400">Role: <strong className="text-gray-700">SUPER_ADMIN</strong></span>
         </div>
@@ -112,7 +118,7 @@ export default function SettingsPage() {
           <Field label="Current Password">
             <input type="password" className="input bg-white border-gray-200 text-gray-900"
               value={pwForm.currentPassword} onChange={e => setPwForm(p => ({ ...p, currentPassword: e.target.value }))}
-              placeholder="••••••••" />
+              placeholder="********" />
           </Field>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="New Password">
@@ -138,7 +144,7 @@ export default function SettingsPage() {
         <div className="mt-4">
           <button onClick={handleChangePassword} disabled={changingPw}
             className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50">
-            <FaLock className="w-3.5 h-3.5" /> {changingPw ? 'Changing…' : 'Change Password'}
+            <FaLock className="w-3.5 h-3.5" /> {changingPw ? 'Changing...' : 'Change Password'}
           </button>
         </div>
       </Section>
@@ -150,8 +156,8 @@ export default function SettingsPage() {
             <FaShieldAlt className={`w-4 h-4 ${twoFA ? 'text-green-600' : 'text-amber-600'}`} />
           </div>
           <div>
-            <p className={`font-bold text-sm ${twoFA ? 'text-green-800' : 'text-amber-800'}`}>
-              {twoFA ? '✅ 2FA is Enabled' : '⚠️ 2FA is Not Enabled'}
+            <p className={`font-bold text-sm ${twoFA ? 'text-green-800' : 'text-amber-800'} flex items-center gap-2`}>
+              {twoFA ? <><FaCheckCircle className="w-3.5 h-3.5" /> 2FA is Enabled</> : <><FaExclamationTriangle className="w-3.5 h-3.5" /> 2FA is Not Enabled</>}
             </p>
             <p className={`text-xs mt-1 ${twoFA ? 'text-green-700' : 'text-amber-700'}`}>
               {twoFA
@@ -159,8 +165,9 @@ export default function SettingsPage() {
                 : 'Your account does not have 2FA enabled. Contact your system administrator to set up TOTP for added security.'}
             </p>
             {!twoFA && (
-              <p className="text-xs text-amber-600 mt-2 font-medium">
-                💡 TOTP secret setup is managed server-side via the <code className="bg-amber-100 px-1 rounded">totpSecret</code> field on your user record.
+              <p className="text-xs text-amber-600 mt-2 font-medium flex items-center gap-1.5">
+                <FaExclamationTriangle className="w-3 h-3" />
+                TOTP secret setup is managed server-side via the <code className="bg-amber-100 px-1 rounded">totpSecret</code> field on your user record.
               </p>
             )}
           </div>

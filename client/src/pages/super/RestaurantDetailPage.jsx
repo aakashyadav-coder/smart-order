@@ -1,16 +1,16 @@
-/**
- * RestaurantDetailPage — deep profile: hours, tables, staff, revenue, QR codes
+﻿/**
+ * RestaurantDetailPage - deep profile: hours, tables, staff, revenue, QR codes
  */
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
-import { FaArrowLeft, FaQrcode, FaDownload } from 'react-icons/fa'
+import { FaArrowLeft, FaQrcode, FaDownload, FaMapMarkerAlt, FaPhoneAlt, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
 
 const DAY_LABELS = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' }
 const ROLE_COLORS = { OWNER: 'badge-accepted', KITCHEN: 'badge-preparing', ADMIN: 'badge-pending' }
 
 function fmtDate(d) {
-  if (!d) return '—'
+  if (!d) return '-'
   return new Date(d).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })
 }
 
@@ -71,8 +71,16 @@ export default function RestaurantDetailPage() {
             <span className={`badge text-xs ${r.active ? 'badge-completed' : 'badge-cancelled'}`}>{r.active ? 'Active' : 'Inactive'}</span>
             {r.cuisineType && <span className="text-xs bg-brand-50 text-brand-600 border border-brand-200 px-2 py-0.5 rounded-full font-medium">{r.cuisineType}</span>}
           </div>
-          {r.address && <p className="text-gray-400 text-sm mt-1">📍 {r.address}</p>}
-          {r.phone && <p className="text-gray-400 text-sm">📞 {r.phone}</p>}
+          {r.address && (
+            <p className="text-gray-400 text-sm mt-1 inline-flex items-center gap-1.5">
+              <FaMapMarkerAlt className="w-3.5 h-3.5" /> {r.address}
+            </p>
+          )}
+          {r.phone && (
+            <p className="text-gray-400 text-sm inline-flex items-center gap-1.5">
+              <FaPhoneAlt className="w-3.5 h-3.5" /> {r.phone}
+            </p>
+          )}
         </div>
       </div>
 
@@ -112,7 +120,7 @@ export default function RestaurantDetailPage() {
               ].map(item => (
                 <div key={item.label} className="flex items-center gap-2.5">
                   <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${item.done ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                    {item.done ? '✓' : '○'}
+                    {item.done ? <FaCheckCircle className="w-3 h-3" /> : <FaTimesCircle className="w-3 h-3" />}
                   </span>
                   <span className={`text-sm ${item.done ? 'text-gray-700' : 'text-gray-400'}`}>{item.label}</span>
                 </div>
@@ -138,9 +146,9 @@ export default function RestaurantDetailPage() {
                     {h?.closed ? (
                       <span className="text-xs text-red-400 font-medium">Closed</span>
                     ) : h ? (
-                      <span className="text-sm text-gray-600">{h.open} – {h.close}</span>
+                      <span className="text-sm text-gray-600">{h.open} - {h.close}</span>
                     ) : (
-                      <span className="text-xs text-gray-300">—</span>
+                      <span className="text-xs text-gray-300">-</span>
                     )}
                   </div>
                 )

@@ -1,11 +1,28 @@
-/**
- * RestaurantsPage — CRUD + search + bulk + onboarding tracker + restaurant detail link
+﻿/**
+ * RestaurantsPage - CRUD + search + bulk + onboarding tracker + restaurant detail link
  */
 import React, { useEffect, useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
-import { FaSearch, FaBuilding, FaCheckCircle, FaTimesCircle, FaMoneyBillWave } from 'react-icons/fa'
+import {
+  FaSearch,
+  FaBuilding,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaMoneyBillWave,
+  FaPlus,
+  FaTimes,
+  FaEdit,
+  FaTrash,
+  FaMapMarkerAlt,
+  FaPhoneAlt,
+  FaTable,
+  FaUsers,
+  FaClipboardList,
+  FaUtensils,
+  FaChartLine,
+} from 'react-icons/fa'
 
 const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
 const DAY_LABELS = { mon:'Mon', tue:'Tue', wed:'Wed', thu:'Thu', fri:'Fri', sat:'Sat', sun:'Sun' }
@@ -47,8 +64,10 @@ const Modal = ({ title, form, setForm, onSave, onClose, saving }) => (
   <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
     <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl sticky top-0">
-        <h3 className="font-bold text-gray-900">{title}</h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-700 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100">✕</button>
+        <h3 className="font-bold text-gray-900 flex items-center gap-2">{title}</h3>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-700 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100">
+          <FaTimes className="w-3.5 h-3.5" />
+        </button>
       </div>
       <div className="p-5 space-y-3">
         {[
@@ -88,7 +107,7 @@ const Modal = ({ title, form, setForm, onSave, onClose, saving }) => (
                     <input type="time" value={form.openingHours?.[d]?.open || '09:00'}
                       className="input bg-white border-gray-200 text-gray-900 text-xs py-1 px-2 h-7 flex-1"
                       onChange={e => setForm(p => ({ ...p, openingHours: { ...p.openingHours, [d]: { ...p.openingHours[d], open: e.target.value } } }))} />
-                    <span className="text-xs text-gray-400">–</span>
+                    <span className="text-xs text-gray-400">-</span>
                     <input type="time" value={form.openingHours?.[d]?.close || '22:00'}
                       className="input bg-white border-gray-200 text-gray-900 text-xs py-1 px-2 h-7 flex-1"
                       onChange={e => setForm(p => ({ ...p, openingHours: { ...p.openingHours, [d]: { ...p.openingHours[d], close: e.target.value } } }))} />
@@ -102,7 +121,7 @@ const Modal = ({ title, form, setForm, onSave, onClose, saving }) => (
       <div className="flex gap-2 px-5 pb-5">
         <button onClick={onClose} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
         <button onClick={onSave} disabled={saving || !form.name} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-sm transition-colors shadow-sm">
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? 'Saving...' : 'Save'}
         </button>
       </div>
     </div>
@@ -199,8 +218,8 @@ export default function RestaurantsPage() {
           <h1 className="text-2xl font-extrabold text-gray-900">Restaurants</h1>
           <p className="text-gray-400 text-sm mt-1">{filtered.length} of {restaurants.length} restaurant(s)</p>
         </div>
-        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors shadow-sm">
-          + New Restaurant
+        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors shadow-sm inline-flex items-center gap-2">
+          <FaPlus className="w-3.5 h-3.5" /> New Restaurant
         </button>
       </div>
 
@@ -209,7 +228,7 @@ export default function RestaurantsPage() {
         <div className="relative flex-1 min-w-48">
           <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
           <input
-            type="text" placeholder="Search restaurants…"
+            type="text" placeholder="Search restaurants..."
             className="input bg-white border-gray-200 text-gray-900 text-sm pl-9"
             value={search} onChange={e => setSearch(e.target.value)}
           />
@@ -217,9 +236,15 @@ export default function RestaurantsPage() {
         {selected.size > 0 && (
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 font-medium">{selected.size} selected</span>
-            <button onClick={() => handleBulk(true)} className="text-xs bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg hover:bg-green-100 transition-colors">🟢 Activate All</button>
-            <button onClick={() => handleBulk(false)} className="text-xs bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-lg hover:bg-red-100 transition-colors">🔴 Deactivate All</button>
-            <button onClick={() => setSelected(new Set())} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-2">✕ Clear</button>
+            <button onClick={() => handleBulk(true)} className="text-xs bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg hover:bg-green-100 transition-colors inline-flex items-center gap-1.5">
+              <FaCheckCircle className="w-3 h-3" /> Activate All
+            </button>
+            <button onClick={() => handleBulk(false)} className="text-xs bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-lg hover:bg-red-100 transition-colors inline-flex items-center gap-1.5">
+              <FaTimesCircle className="w-3 h-3" /> Deactivate All
+            </button>
+            <button onClick={() => setSelected(new Set())} className="text-xs text-gray-400 hover:text-gray-600 px-2 py-2 inline-flex items-center gap-1.5">
+              <FaTimes className="w-3 h-3" /> Clear
+            </button>
           </div>
         )}
       </div>
@@ -241,9 +266,21 @@ export default function RestaurantsPage() {
                   <div>
                     <h3 className="font-bold text-gray-900">{r.name}</h3>
                     {r.cuisineType && <p className="text-brand-600 text-xs font-medium">{r.cuisineType}</p>}
-                    {r.address && <p className="text-gray-400 text-xs mt-0.5">📍 {r.address}</p>}
-                    {r.phone && <p className="text-gray-400 text-xs">📞 {r.phone}</p>}
-                    {r.tableCount && <p className="text-gray-400 text-xs">🪑 {r.tableCount} tables</p>}
+                    {r.address && (
+                      <p className="text-gray-400 text-xs mt-0.5 inline-flex items-center gap-1.5">
+                        <FaMapMarkerAlt className="w-3 h-3" /> {r.address}
+                      </p>
+                    )}
+                    {r.phone && (
+                      <p className="text-gray-400 text-xs inline-flex items-center gap-1.5">
+                        <FaPhoneAlt className="w-3 h-3" /> {r.phone}
+                      </p>
+                    )}
+                    {r.tableCount && (
+                      <p className="text-gray-400 text-xs inline-flex items-center gap-1.5">
+                        <FaTable className="w-3 h-3" /> {r.tableCount} tables
+                      </p>
+                    )}
                   </div>
                 </div>
                 <span className={`badge text-xs ${r.active ? 'badge-completed' : 'badge-cancelled'}`}>{r.active ? 'Active' : 'Inactive'}</span>
@@ -265,15 +302,23 @@ export default function RestaurantsPage() {
               </div>
 
               <div className="flex gap-3 text-xs text-gray-400 border-t border-gray-100 pt-2">
-                <span>👥 {r._count?.users} users</span>
-                <span>📋 {r._count?.orders} orders</span>
-                <span>🍽️ {r._count?.menuItems} items</span>
+                <span className="inline-flex items-center gap-1.5"><FaUsers className="w-3 h-3" /> {r._count?.users} users</span>
+                <span className="inline-flex items-center gap-1.5"><FaClipboardList className="w-3 h-3" /> {r._count?.orders} orders</span>
+                <span className="inline-flex items-center gap-1.5"><FaUtensils className="w-3 h-3" /> {r._count?.menuItems} items</span>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => navigate(`/super/restaurants/${r.id}`)} className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 py-2 rounded-lg transition-colors border border-gray-200">📊 Detail</button>
-                <button onClick={() => openEdit(r)} className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 py-2 rounded-lg transition-colors border border-gray-200">✏️ Edit</button>
-                <button onClick={() => handleToggleActive(r)} className={`flex-1 text-xs py-2 rounded-lg transition-colors border ${r.active ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200' : 'bg-green-50 hover:bg-green-100 text-green-700 border-green-200'}`}>{r.active ? '🔴' : '🟢'}</button>
-                <button onClick={() => handleDelete(r.id)} className="text-xs bg-red-50 hover:bg-red-100 text-red-500 border border-red-100 py-2 px-3 rounded-lg transition-colors">🗑</button>
+                <button onClick={() => navigate(`/super/restaurants/${r.id}`)} className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 py-2 rounded-lg transition-colors border border-gray-200 inline-flex items-center justify-center gap-1.5">
+                  <FaChartLine className="w-3 h-3" /> Detail
+                </button>
+                <button onClick={() => openEdit(r)} className="flex-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 py-2 rounded-lg transition-colors border border-gray-200 inline-flex items-center justify-center gap-1.5">
+                  <FaEdit className="w-3 h-3" /> Edit
+                </button>
+                <button onClick={() => handleToggleActive(r)} className={`flex-1 text-xs py-2 rounded-lg transition-colors border inline-flex items-center justify-center gap-1.5 ${r.active ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200' : 'bg-green-50 hover:bg-green-100 text-green-700 border-green-200'}`}>
+                  {r.active ? <FaTimesCircle className="w-3 h-3" /> : <FaCheckCircle className="w-3 h-3" />}
+                </button>
+                <button onClick={() => handleDelete(r.id)} className="text-xs bg-red-50 hover:bg-red-100 text-red-500 border border-red-100 py-2 px-3 rounded-lg transition-colors">
+                  <FaTrash className="w-3 h-3" />
+                </button>
               </div>
               <p className="text-gray-300 text-xs">ID: {r.id.slice(-8).toUpperCase()}</p>
             </div>
@@ -283,7 +328,10 @@ export default function RestaurantsPage() {
 
       {modal && (
         <Modal
-          title={modal === 'create' ? '🏢 New Restaurant' : `✏️ Edit ${modal.name}`}
+          title={modal === 'create'
+            ? (<><FaBuilding className="w-4 h-4 text-brand-600" /> New Restaurant</>)
+            : (<><FaEdit className="w-4 h-4 text-brand-600" /> Edit {modal.name}</>)
+          }
           form={form} setForm={setForm}
           onSave={handleSave} onClose={() => setModal(null)}
           saving={saving}

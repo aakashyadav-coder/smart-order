@@ -1,18 +1,18 @@
-/**
- * FeaturesPage — per-restaurant feature toggle management
+﻿/**
+ * FeaturesPage - per-restaurant feature toggle management
  * Theme: White/light (matches entire Super Admin dashboard)
  */
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
-import { FaCog, FaCheckCircle } from 'react-icons/fa'
+import { FaCog, FaCheckCircle, FaLock, FaMoneyBillWave, FaBell, FaMinus } from 'react-icons/fa'
 
 const FEATURES_META = [
   {
     key: 'otpEnabled',
     label: 'OTP Verification',
     description: 'Send a one-time password to customers via SMS when their order is accepted.',
-    icon: '🔐',
+    icon: FaLock,
     color: 'text-blue-600',
     bg: 'bg-blue-50',
     border: 'border-blue-100',
@@ -21,7 +21,7 @@ const FEATURES_META = [
     key: 'paymentsEnabled',
     label: 'Payment Integration',
     description: 'Enable eSewa / Khalti payment gateway at checkout for online transactions.',
-    icon: '💳',
+    icon: FaMoneyBillWave,
     color: 'text-green-600',
     bg: 'bg-green-50',
     border: 'border-green-100',
@@ -30,7 +30,7 @@ const FEATURES_META = [
     key: 'notificationsEnabled',
     label: 'Sound Notifications',
     description: 'Play audio alert in the kitchen dashboard whenever a new order arrives.',
-    icon: '🔔',
+    icon: FaBell,
     color: 'text-amber-600',
     bg: 'bg-amber-50',
     border: 'border-amber-100',
@@ -101,9 +101,14 @@ export default function FeaturesPage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900">Feature Toggles</h1>
-          <p className="text-gray-400 text-sm mt-1">Enable or disable platform features per restaurant</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm">
+            <FaCog className="w-4 h-4" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-extrabold text-gray-900">Feature Toggles</h1>
+            <p className="text-gray-400 text-sm mt-1">Enable or disable platform features per restaurant</p>
+          </div>
         </div>
         {features && (
           <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2.5 shadow-sm">
@@ -148,6 +153,7 @@ export default function FeaturesPage() {
           {FEATURES_META.map(f => {
             const isOn    = !!features[f.key]
             const isSaving = saving === f.key
+            const Icon = f.icon
             return (
               <div
                 key={f.key}
@@ -156,12 +162,12 @@ export default function FeaturesPage() {
                 }`}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${f.bg} flex-shrink-0`}>
-                    {f.icon}
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${f.bg} flex-shrink-0`}>
+                    <Icon className={`w-4 h-4 ${f.color}`} />
                   </div>
                   <div className="flex items-center gap-2">
                     {isSaving && (
-                      <span className="text-[10px] text-gray-400 font-medium animate-pulse">Saving…</span>
+                      <span className="text-[10px] text-gray-400 font-medium animate-pulse">Saving...</span>
                     )}
                     <Toggle checked={isOn} onChange={() => toggle(f.key)} disabled={!!saving} />
                   </div>
@@ -171,10 +177,11 @@ export default function FeaturesPage() {
                 </h3>
                 <p className="text-gray-400 text-xs mt-1 leading-relaxed">{f.description}</p>
                 <div className="mt-3">
-                  <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     isOn ? `${f.bg} ${f.color}` : 'bg-gray-100 text-gray-400'
                   }`}>
-                    {isOn ? '● Enabled' : '○ Disabled'}
+                    {isOn ? <FaCheckCircle className="w-3 h-3" /> : <FaMinus className="w-3 h-3" />}
+                    {isOn ? 'Enabled' : 'Disabled'}
                   </span>
                 </div>
               </div>

@@ -1,18 +1,30 @@
-/**
- * OnboardingPage — Restaurant onboarding pipeline view
- * Stages: NOT_STARTED 🔴 · PARTIAL 🟡 · LIVE 🟢
+﻿/**
+ * OnboardingPage - Restaurant onboarding pipeline view
+ * Stages: NOT_STARTED, PARTIAL, LIVE
  * With "Send Nudge" broadcast to restaurants by stage
  */
 import React, { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
-import { FaSyncAlt, FaBullhorn, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
+import {
+  FaSyncAlt,
+  FaBullhorn,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaChartLine,
+  FaUtensils,
+  FaUsers,
+  FaShoppingBag,
+  FaTable,
+  FaClock,
+  FaTimes,
+} from 'react-icons/fa'
 
 const STAGE_CONFIG = {
   NOT_STARTED: {
     label: 'Not Started',
-    emoji: '🔴',
+    icon: FaTimesCircle,
     color: 'bg-red-50 border-red-200 text-red-700',
     badgeBg: 'bg-red-100 text-red-700',
     dot: 'bg-red-500',
@@ -20,7 +32,7 @@ const STAGE_CONFIG = {
   },
   PARTIAL: {
     label: 'Partial',
-    emoji: '🟡',
+    icon: FaSyncAlt,
     color: 'bg-amber-50 border-amber-200 text-amber-700',
     badgeBg: 'bg-amber-100 text-amber-700',
     dot: 'bg-amber-400',
@@ -28,7 +40,7 @@ const STAGE_CONFIG = {
   },
   LIVE: {
     label: 'Fully Live',
-    emoji: '🟢',
+    icon: FaCheckCircle,
     color: 'bg-green-50 border-green-200 text-green-700',
     badgeBg: 'bg-green-100 text-green-700',
     dot: 'bg-green-500',
@@ -37,12 +49,17 @@ const STAGE_CONFIG = {
 }
 
 const CHECK_ICONS = {
-  menu: '🍽️', staff: '👥', orders: '📦', tables: '🪑', hours: '🕐',
+  menu: FaUtensils,
+  staff: FaUsers,
+  orders: FaShoppingBag,
+  tables: FaTable,
+  hours: FaClock,
 }
 
 function NudgeModal({ stage, onClose, onSend }) {
   const s = STAGE_CONFIG[stage] || {}
-  const [title, setTitle] = useState(`${s.emoji} Action Required — Complete Your Setup`)
+  const StageIcon = s.icon || FaBullhorn
+  const [title, setTitle] = useState(`Action Required - Complete Your Setup`)
   const [message, setMessage] = useState(
     stage === 'NOT_STARTED'
       ? 'Get started by adding your menu items and creating staff accounts on your restaurant dashboard.'
@@ -67,10 +84,13 @@ function NudgeModal({ stage, onClose, onSend }) {
             <FaBullhorn className="text-brand-600 w-4 h-4" />
             Nudge {s.label} Restaurants
           </h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100">✕</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100">
+            <FaTimes className="w-3.5 h-3.5" />
+          </button>
         </div>
         <div className="p-5 space-y-3">
-          <div className={`rounded-xl border px-3 py-2 text-xs font-medium ${s.color}`}>
+          <div className={`rounded-xl border px-3 py-2 text-xs font-medium flex items-center gap-2 ${s.color}`}>
+            <StageIcon className="w-3.5 h-3.5" />
             This will send an announcement to all <strong>{s.label}</strong> restaurants.
           </div>
           <div>
@@ -87,8 +107,9 @@ function NudgeModal({ stage, onClose, onSend }) {
         <div className="flex gap-2 px-5 pb-5">
           <button onClick={onClose} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
           <button onClick={handleSend} disabled={sending}
-            className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-sm transition-colors shadow-sm">
-            {sending ? 'Sending…' : `📤 Send to ${s.label}`}
+            className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-sm transition-colors shadow-sm inline-flex items-center justify-center gap-2">
+            <FaBullhorn className="w-3.5 h-3.5" />
+            {sending ? 'Sending...' : `Send to ${s.label}`}
           </button>
         </div>
       </div>
@@ -131,7 +152,7 @@ export default function OnboardingPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-gray-900">Onboarding Pipeline</h1>
-          <p className="text-gray-400 text-sm mt-1">{total} restaurant(s) · track setup progress</p>
+          <p className="text-gray-400 text-sm mt-1">{total} restaurant(s) - track setup progress</p>
         </div>
         <button onClick={fetchData}
           className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-2.5 rounded-xl text-sm shadow-sm transition-colors">
@@ -143,6 +164,7 @@ export default function OnboardingPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {(['NOT_STARTED', 'PARTIAL', 'LIVE']).map(stage => {
           const cfg = STAGE_CONFIG[stage]
+          const Icon = cfg.icon
           const count = summary[stage] || 0
           const isActive = stageFilter === stage
           return (
@@ -151,7 +173,9 @@ export default function OnboardingPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-3xl font-extrabold">{count}</p>
-                  <p className="text-sm font-bold mt-0.5">{cfg.emoji} {cfg.label}</p>
+                  <p className="text-sm font-bold mt-0.5 flex items-center gap-1.5">
+                    <Icon className="w-3.5 h-3.5" /> {cfg.label}
+                  </p>
                   <p className="text-xs mt-1 opacity-70">{cfg.desc}</p>
                 </div>
                 {count > 0 && stage !== 'LIVE' && (
@@ -176,16 +200,24 @@ export default function OnboardingPage() {
 
       {/* Filter pills */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
-        {['ALL', 'NOT_STARTED', 'PARTIAL', 'LIVE'].map(s => (
-          <button key={s} onClick={() => setStageFilter(s)}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
-              stageFilter === s
-                ? 'bg-gray-900 text-white border-gray-900'
-                : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700'
-            }`}>
-            {s === 'ALL' ? `All (${total})` : `${STAGE_CONFIG[s].emoji} ${STAGE_CONFIG[s].label} (${summary[s] || 0})`}
-          </button>
-        ))}
+        {['ALL', 'NOT_STARTED', 'PARTIAL', 'LIVE'].map(s => {
+          const cfg = s === 'ALL' ? null : STAGE_CONFIG[s]
+          const Icon = cfg?.icon
+          return (
+            <button key={s} onClick={() => setStageFilter(s)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                stageFilter === s
+                  ? 'bg-gray-900 text-white border-gray-900'
+                  : 'bg-white text-gray-500 border-gray-200 hover:text-gray-700'
+              }`}>
+              {s === 'ALL' ? `All (${total})` : (
+                <span className="inline-flex items-center gap-1.5">
+                  <Icon className="w-3 h-3" /> {cfg.label} ({summary[s] || 0})
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
       {/* Restaurant Pipeline Table */}
@@ -212,17 +244,19 @@ export default function OnboardingPage() {
             <tbody className="divide-y divide-gray-50">
               {filtered.map(r => {
                 const cfg = STAGE_CONFIG[r.stage]
+                const StageIcon = cfg.icon
                 return (
                   <tr key={r.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-4">
                       <p className="font-semibold text-gray-900">{r.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {r.active ? '🟢 Active' : '🔴 Inactive'} · ID: {r.id.slice(-6).toUpperCase()}
+                      <p className="text-xs text-gray-400 mt-0.5 inline-flex items-center gap-1.5">
+                        {r.active ? <FaCheckCircle className="w-3 h-3 text-green-500" /> : <FaTimesCircle className="w-3 h-3 text-red-500" />}
+                        {r.active ? 'Active' : 'Inactive'} - ID: {r.id.slice(-6).toUpperCase()}
                       </p>
                     </td>
                     <td className="px-4 py-4">
                       <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${cfg.badgeBg}`}>
-                        {cfg.emoji} {cfg.label}
+                        <StageIcon className="w-3 h-3" /> {cfg.label}
                       </span>
                     </td>
                     <td className="px-4 py-4 w-36">
@@ -238,28 +272,31 @@ export default function OnboardingPage() {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex gap-1.5 flex-wrap">
-                        {r.checks.map(c => (
-                          <span key={c.key} title={c.label}
-                            className={`text-xs px-1.5 py-0.5 rounded font-medium flex items-center gap-0.5 ${c.done ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
-                            {CHECK_ICONS[c.key]}
-                            {c.done
-                              ? <FaCheckCircle className="w-2.5 h-2.5" />
-                              : <FaTimesCircle className="w-2.5 h-2.5" />
-                            }
-                          </span>
-                        ))}
+                        {r.checks.map(c => {
+                          const CheckIcon = CHECK_ICONS[c.key]
+                          return (
+                            <span key={c.key} title={c.label}
+                              className={`text-xs px-1.5 py-0.5 rounded font-medium flex items-center gap-1 ${c.done ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                              <CheckIcon className="w-3 h-3" />
+                              {c.done
+                                ? <FaCheckCircle className="w-2.5 h-2.5" />
+                                : <FaTimesCircle className="w-2.5 h-2.5" />
+                              }
+                            </span>
+                          )
+                        })}
                       </div>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
                         <button onClick={() => navigate(`/super/restaurants/${r.id}`)}
-                          className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg border border-gray-200 transition-colors font-medium">
-                          📊 View
+                          className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg border border-gray-200 transition-colors font-medium inline-flex items-center gap-1.5">
+                          <FaChartLine className="w-3 h-3" /> View
                         </button>
                         {r.stage !== 'LIVE' && (
                           <button onClick={() => setNudgeStage(r.stage)}
-                            className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-600 px-3 py-1.5 rounded-lg border border-brand-200 transition-colors font-medium">
-                            📢 Nudge
+                            className="text-xs bg-brand-50 hover:bg-brand-100 text-brand-600 px-3 py-1.5 rounded-lg border border-brand-200 transition-colors font-medium inline-flex items-center gap-1.5">
+                            <FaBullhorn className="w-3 h-3" /> Nudge
                           </button>
                         )}
                       </div>
