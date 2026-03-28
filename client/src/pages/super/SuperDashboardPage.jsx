@@ -1,24 +1,38 @@
-/**
- * SuperDashboardPage — Platform overview with enhanced KPI cards
- * Theme: White cards, brand red accents, SVG charts
+﻿/**
+ * SuperDashboardPage - Platform overview with enhanced KPI cards
+ * Theme: Soft gradients, premium white cards, bold accents
  */
 import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
 import socket from '../../lib/socket'
 import {
-  FaBuilding, FaUsers, FaChartLine, FaShoppingBag,
-  FaMoneyBillWave, FaTicketAlt, FaExclamationTriangle,
-  FaArrowUp, FaArrowDown, FaMinus, FaCircle, FaFilePdf,
-  FaPlus, FaBullhorn, FaDownload, FaSyncAlt,
+  FaBuilding,
+  FaUsers,
+  FaChartLine,
+  FaShoppingBag,
+  FaMoneyBillWave,
+  FaTicketAlt,
+  FaExclamationTriangle,
+  FaArrowUp,
+  FaArrowDown,
+  FaMinus,
+  FaCircle,
+  FaFilePdf,
+  FaPlus,
+  FaBullhorn,
+  FaDownload,
+  FaSyncAlt,
+  FaRocket,
+  FaUserShield,
 } from 'react-icons/fa'
 import { ChartSkeleton } from '../../components/Skeleton'
 
-/* ─── Analytics chart helpers ──────────────────────────────────────────────── */
+/* ---------------- Analytics chart helpers ---------------- */
 const RANGE_OPTIONS = [
   { key: '24h', title: 'Last 24 Hours', subtitle: 'Hourly pulse for top 3 restaurants' },
-  { key: '30d', title: 'Last 30 Days',  subtitle: 'Daily trend for top performers' },
-  { key: '6m',  title: 'Last 6 Months', subtitle: 'Monthly growth overview' },
+  { key: '30d', title: 'Last 30 Days', subtitle: 'Daily trend for top performers' },
+  { key: '6m', title: 'Last 6 Months', subtitle: 'Monthly growth overview' },
 ]
 const CHART_COLORS = ['#ef4444', '#0ea5e9', '#22c55e']
 
@@ -141,7 +155,7 @@ function AnalyticsCard({ title, subtitle, data, metric, onMetricChange }) {
   )
 }
 
-/* ─── Delta badge ──────────────────────────────────────────────────────────── */
+/* ---------------- Delta badge ---------------- */
 function DeltaBadge({ delta }) {
   if (delta === null || delta === undefined) return null
   if (delta > 0) return (
@@ -161,13 +175,13 @@ function DeltaBadge({ delta }) {
   )
 }
 
-/* ─── Activity feed helpers ─────────────────────────────────────────────────── */
+/* ---------------- Activity feed helpers ---------------- */
 const FEED_MAX = 50
 const FEED_EVENT_TYPES = {
-  new_order:           { icon: '📦', label: 'New Order placed', color: 'bg-blue-50 text-blue-600' },
-  order_status_update: { icon: '🔄', label: 'Order updated',    color: 'bg-indigo-50 text-indigo-600' },
-  support_ticket_new:  { icon: '🎫', label: 'Support Ticket',   color: 'bg-red-50 text-red-600' },
-  user_last_login:     { icon: '👤', label: 'User logged in',   color: 'bg-green-50 text-green-600' },
+  new_order:           { icon: FaShoppingBag, label: 'New order placed', color: 'bg-blue-50 text-blue-600' },
+  order_status_update: { icon: FaSyncAlt,     label: 'Order updated',    color: 'bg-indigo-50 text-indigo-600' },
+  support_ticket_new:  { icon: FaTicketAlt,   label: 'Support ticket',   color: 'bg-rose-50 text-rose-600' },
+  user_last_login:     { icon: FaUsers,       label: 'User logged in',   color: 'bg-green-50 text-green-600' },
 }
 
 function relativeTime(ts) {
@@ -178,7 +192,7 @@ function relativeTime(ts) {
   return `${Math.floor(diff / 3600)}h ago`
 }
 
-/* ─── Main page ────────────────────────────────────────────────────────────── */
+/* ---------------- Main page ---------------- */
 export default function SuperDashboardPage() {
   const navigate = useNavigate()
   const [stats, setStats]                   = useState(null)
@@ -215,7 +229,7 @@ export default function SuperDashboardPage() {
     return () => { mounted = false }
   }, [])
 
-  // Live Activity Feed — socket subscriptions
+  // Live Activity Feed - socket subscriptions
   useEffect(() => {
     socket.emit('join_super_admin')
 
@@ -223,8 +237,8 @@ export default function SuperDashboardPage() {
       const cfg = FEED_EVENT_TYPES[type]
       if (!cfg) return
       let detail = ''
-      if (type === 'new_order') detail = `Order #${String(data.id || '').slice(-6).toUpperCase()} · Rs. ${(data.totalPrice || 0).toFixed(0)}`
-      else if (type === 'order_status_update') detail = `Order #${String(data.orderId || '').slice(-6).toUpperCase()} → ${data.status}`
+      if (type === 'new_order') detail = `Order #${String(data.id || '').slice(-6).toUpperCase()} - Rs. ${(data.totalPrice || 0).toFixed(0)}`
+      else if (type === 'order_status_update') detail = `Order #${String(data.orderId || '').slice(-6).toUpperCase()} -> ${data.status}`
       else if (type === 'support_ticket_new') detail = `"${data.title || 'New ticket'}"${data.restaurant?.name ? ` from ${data.restaurant.name}` : ''}`
       else if (type === 'user_last_login') detail = `${data.name || 'User'} (${data.role || ''})`
 
@@ -249,18 +263,18 @@ export default function SuperDashboardPage() {
     }
   }, [])
 
-  /* ── KPI card definitions ───────────────────────────────────────────────── */
+  /* ---------------- KPI card definitions ---------------- */
   const kpiCards = [
     {
       key: 'totalRestaurants', label: 'Total Restaurants', icon: FaBuilding,
       iconBg: 'bg-purple-50 text-purple-600',
-      value: stats?.totalRestaurants ?? '—',
+      value: stats?.totalRestaurants ?? '-',
       sub: `${stats?.activeRestaurants ?? 0} active`,
     },
     {
       key: 'totalUsers', label: 'Total Users', icon: FaUsers,
       iconBg: 'bg-blue-50 text-blue-600',
-      value: stats?.totalUsers ?? '—',
+      value: stats?.totalUsers ?? '-',
     },
     {
       key: 'totalRevenue', label: 'Total Revenue', icon: FaChartLine,
@@ -270,21 +284,21 @@ export default function SuperDashboardPage() {
     {
       key: 'todayOrders', label: "Today's Orders", icon: FaShoppingBag,
       iconBg: 'bg-amber-50 text-amber-600',
-      value: kpis?.todayOrders ?? '—',
+      value: kpis?.todayOrders ?? '-',
       sub: `vs ${kpis?.yesterdayOrders ?? 0} yesterday`,
       delta: kpis?.orderDelta,
     },
     {
       key: 'todayRevenue', label: "Today's Revenue", icon: FaMoneyBillWave,
       iconBg: 'bg-emerald-50 text-emerald-600',
-      value: kpis != null ? `Rs. ${(kpis.todayRevenue || 0).toLocaleString()}` : '—',
+      value: kpis != null ? `Rs. ${(kpis.todayRevenue || 0).toLocaleString()}` : '-',
       sub: `vs Rs. ${(kpis?.yesterdayRevenue || 0).toLocaleString()} yesterday`,
       delta: kpis?.revenueDelta,
     },
     {
       key: 'openTickets', label: 'Open Tickets', icon: FaTicketAlt,
       iconBg: 'bg-rose-50 text-rose-600',
-      value: kpis?.openTickets ?? '—',
+      value: kpis?.openTickets ?? '-',
       sub: 'support requests',
       clickTo: '/super/tickets',
       urgent: (kpis?.openTickets || 0) > 0,
@@ -292,20 +306,20 @@ export default function SuperDashboardPage() {
     {
       key: 'inactiveRestaurants', label: 'Inactive Restaurants', icon: FaExclamationTriangle,
       iconBg: 'bg-orange-50 text-orange-600',
-      value: kpis?.inactiveRestaurants ?? '—',
+      value: kpis?.inactiveRestaurants ?? '-',
       sub: 'need attention',
       clickTo: '/super/restaurants',
     },
   ]
 
-  /* ── PDF Report generator ──────────────────────────────────────────────────── */
+  /* ---------------- PDF Report generator ---------------- */
   const generatePDFReport = () => {
     const now = new Date()
     const month = now.toLocaleString('en-IN', { month: 'long', year: 'numeric' })
     const html = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Smart Order — Platform Report ${month}</title>
+  <title>Smart Order - Platform Report ${month}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111; padding: 40px; }
@@ -322,25 +336,25 @@ export default function SuperDashboardPage() {
   </style>
 </head>
 <body>
-  <h1>Smart Order — Platform Report</h1>
-  <p class="subtitle">Generated: ${now.toLocaleString('en-IN')} · Period: ${month}</p>
+  <h1>Smart Order - Platform Report</h1>
+  <p class="subtitle">Generated: ${now.toLocaleString('en-IN')} - Period: ${month}</p>
 
   <div class="section">
     <h2>Platform KPIs</h2>
     <div class="kpi-grid">
-      <div class="kpi"><div class="kpi-label">Total Restaurants</div><div class="kpi-value">${stats?.totalRestaurants ?? '—'}</div></div>
-      <div class="kpi"><div class="kpi-label">Active Restaurants</div><div class="kpi-value">${stats?.activeRestaurants ?? '—'}</div></div>
-      <div class="kpi"><div class="kpi-label">Total Users</div><div class="kpi-value">${stats?.totalUsers ?? '—'}</div></div>
+      <div class="kpi"><div class="kpi-label">Total Restaurants</div><div class="kpi-value">${stats?.totalRestaurants ?? '-'}</div></div>
+      <div class="kpi"><div class="kpi-label">Active Restaurants</div><div class="kpi-value">${stats?.activeRestaurants ?? '-'}</div></div>
+      <div class="kpi"><div class="kpi-label">Total Users</div><div class="kpi-value">${stats?.totalUsers ?? '-'}</div></div>
       <div class="kpi"><div class="kpi-label">Total Revenue</div><div class="kpi-value">Rs. ${(stats?.totalRevenue || 0).toLocaleString()}</div></div>
-      <div class="kpi"><div class="kpi-label">Today's Orders</div><div class="kpi-value">${kpis?.todayOrders ?? '—'}</div></div>
+      <div class="kpi"><div class="kpi-label">Today's Orders</div><div class="kpi-value">${kpis?.todayOrders ?? '-'}</div></div>
       <div class="kpi"><div class="kpi-label">Today's Revenue</div><div class="kpi-value">Rs. ${(kpis?.todayRevenue || 0).toLocaleString()}</div></div>
-      <div class="kpi"><div class="kpi-label">Open Tickets</div><div class="kpi-value">${kpis?.openTickets ?? '—'}</div></div>
-      <div class="kpi"><div class="kpi-label">Inactive Restaurants</div><div class="kpi-value">${kpis?.inactiveRestaurants ?? '—'}</div></div>
+      <div class="kpi"><div class="kpi-label">Open Tickets</div><div class="kpi-value">${kpis?.openTickets ?? '-'}</div></div>
+      <div class="kpi"><div class="kpi-label">Inactive Restaurants</div><div class="kpi-value">${kpis?.inactiveRestaurants ?? '-'}</div></div>
     </div>
   </div>
 
   <div class="footer">
-    Smart Order SaaS · Super Admin Platform Report · ${now.toISOString()} · Confidential
+    Smart Order SaaS - Super Admin Platform Report - ${now.toISOString()} - Confidential
   </div>
 </body>
 </html>`
@@ -354,11 +368,24 @@ export default function SuperDashboardPage() {
   }
 
   return (
-    <div>
+    <div className="relative">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute -top-20 -right-16 h-64 w-64 rounded-full bg-brand-100 blur-3xl opacity-60" />
+        <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-amber-100 blur-3xl opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-brand-50" />
+      </div>
+
       <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-gray-900">Platform Overview</h1>
-          <p className="text-gray-400 text-sm mt-1">Real-time stats across all restaurants</p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm">
+              <FaUserShield className="w-4 h-4" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-extrabold text-gray-900">Super Admin Dashboard</h1>
+              <p className="text-gray-500 text-sm mt-1">Real-time platform intelligence and system health</p>
+            </div>
+          </div>
         </div>
         {!loading && stats && (
           <button onClick={generatePDFReport}
@@ -385,7 +412,7 @@ export default function SuperDashboardPage() {
                   key={card.key}
                   onClick={isClickable ? () => navigate(card.clickTo) : undefined}
                   className={[
-                    'bg-white rounded-2xl border p-5 flex items-center gap-4 shadow-sm transition-all duration-200',
+                    'bg-white/95 rounded-2xl border p-5 flex items-center gap-4 shadow-sm transition-all duration-200',
                     card.urgent ? 'border-rose-200 ring-1 ring-rose-100' : 'border-gray-100',
                     isClickable ? 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer text-left w-full' : 'hover:shadow-md hover:-translate-y-0.5',
                   ].join(' ')}
@@ -406,7 +433,7 @@ export default function SuperDashboardPage() {
             })}
           </div>
 
-          {/* ── Quick Actions ─────────────────────────────────────────────── */}
+          {/* Quick Actions */}
           <div className="mb-7">
             <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Quick Actions</h2>
             <div className="flex flex-wrap gap-2">
@@ -461,14 +488,17 @@ export default function SuperDashboardPage() {
                 onClick={() => navigate('/super/onboarding')}
                 className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-amber-50 hover:border-amber-200 text-gray-700 hover:text-amber-700 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm"
               >
-                🚀 Onboarding Pipeline
+                <FaRocket className="w-3.5 h-3.5" /> Onboarding Pipeline
               </button>
 
               <button
                 onClick={() => navigate('/super/tickets')}
                 className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-rose-50 hover:border-rose-200 text-gray-700 hover:text-rose-700 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm"
               >
-                🎫 Support Tickets {kpis?.openTickets > 0 && <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full ml-0.5">{kpis.openTickets}</span>}
+                <FaTicketAlt className="w-3.5 h-3.5" /> Support Tickets
+                {kpis?.openTickets > 0 && (
+                  <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full ml-0.5">{kpis.openTickets}</span>
+                )}
               </button>
             </div>
           </div>
@@ -502,7 +532,7 @@ export default function SuperDashboardPage() {
             </div>
           )}
 
-          {/* ── Live Activity Feed ─────────────────────────────────────────── */}
+          {/* Live Activity Feed */}
           <div className="mt-8">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -523,24 +553,27 @@ export default function SuperDashboardPage() {
               {feed.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-300">
                   <FaCircle className="w-4 h-4 mb-3 animate-pulse text-green-300" />
-                  <p className="text-sm font-medium">Listening for platform events…</p>
+                  <p className="text-sm font-medium">Listening for platform events...</p>
                   <p className="text-xs mt-1">Orders, tickets, and logins will appear here in real time</p>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
-                  {feed.map(entry => (
-                    <div key={entry.id}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors animate-slide-up">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 ${entry.color}`}>
-                        {entry.icon}
+                  {feed.map(entry => {
+                    const Icon = entry.icon
+                    return (
+                      <div key={entry.id}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors animate-slide-up">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 ${entry.color}`}>
+                          <Icon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900">{entry.label}</p>
+                          <p className="text-xs text-gray-400 truncate">{entry.detail}</p>
+                        </div>
+                        <span className="text-xs text-gray-300 whitespace-nowrap flex-shrink-0">{relativeTime(entry.ts)}</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900">{entry.label}</p>
-                        <p className="text-xs text-gray-400 truncate">{entry.detail}</p>
-                      </div>
-                      <span className="text-xs text-gray-300 whitespace-nowrap flex-shrink-0">{relativeTime(entry.ts)}</span>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>

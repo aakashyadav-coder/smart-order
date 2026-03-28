@@ -1,11 +1,25 @@
-/**
- * UsersPage — CRUD + search + role filter + bulk + last login display
+﻿/**
+ * UsersPage - CRUD + search + role filter + bulk + last login display
  */
 import React, { useEffect, useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import socket from '../../lib/socket'
-import { FaSearch, FaFolder, FaFolderOpen, FaChevronDown, FaChevronRight } from 'react-icons/fa'
+import {
+  FaSearch,
+  FaFolder,
+  FaFolderOpen,
+  FaChevronDown,
+  FaChevronRight,
+  FaUsers,
+  FaUserPlus,
+  FaIdBadge,
+  FaTimes,
+  FaEdit,
+  FaTrash,
+  FaCheckCircle,
+  FaBan,
+} from 'react-icons/fa'
 
 const ROLES = ['OWNER', 'KITCHEN', 'ADMIN']
 const ROLE_COLORS = { SUPER_ADMIN: 'badge-cancelled', OWNER: 'badge-accepted', KITCHEN: 'badge-preparing', ADMIN: 'badge-pending' }
@@ -19,7 +33,7 @@ const buildForm = (u) => ({
 })
 
 function fmtDate(d) {
-  if (!d) return '—'
+  if (!d) return '-'
   return new Date(d).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })
 }
 
@@ -182,13 +196,27 @@ export default function UsersPage() {
       <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-md shadow-2xl">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl">
-            <h3 className="font-bold text-gray-900">{mode === 'create' ? '👤 New User' : `✏️ Edit ${user?.name || ''}`}</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-700 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100">✕</button>
+            <h3 className="font-bold text-gray-900 flex items-center gap-2">
+              {mode === 'create' ? (
+                <>
+                  <FaUserPlus className="text-brand-600 w-4 h-4" />
+                  New User
+                </>
+              ) : (
+                <>
+                  <FaEdit className="text-brand-600 w-4 h-4" />
+                  Edit {user?.name || ''}
+                </>
+              )}
+            </h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+              <FaTimes className="w-4 h-4" />
+            </button>
           </div>
           <div className="p-5 space-y-3">
             <InputField label="Full Name *" field="name" placeholder="John Doe" form={form} setForm={setForm} />
             <InputField label="Email *" field="email" type="email" placeholder="user@restaurant.com" form={form} setForm={setForm} />
-            <InputField label={mode === 'create' ? 'Password *' : 'New Password (leave blank to keep)'} field="password" type="password" placeholder="••••••••" form={form} setForm={setForm} />
+            <InputField label={mode === 'create' ? 'Password *' : 'New Password (leave blank to keep)'} field="password" type="password" placeholder="********" form={form} setForm={setForm} />
             <div>
               <label className="label text-gray-600 text-xs">Role *</label>
               <select className="input bg-white border-gray-200 text-gray-900 text-sm focus:ring-brand-500 focus:border-brand-500"
@@ -200,7 +228,7 @@ export default function UsersPage() {
               <label className="label text-gray-600 text-xs">Restaurant</label>
               <select className="input bg-white border-gray-200 text-gray-900 text-sm focus:ring-brand-500 focus:border-brand-500"
                 value={form.restaurantId} onChange={e => setForm(p => ({ ...p, restaurantId: e.target.value }))}>
-                <option value="">— No restaurant —</option>
+                <option value="">- No restaurant -</option>
                 {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
@@ -212,7 +240,7 @@ export default function UsersPage() {
           <div className="flex gap-2 px-5 pb-5">
             <button onClick={onClose} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
             <button onClick={() => onSave(form)} disabled={saving} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-sm transition-colors shadow-sm">
-              {saving ? 'Saving…' : 'Save User'}
+              {saving ? 'Saving...' : 'Save User'}
             </button>
           </div>
         </div>
@@ -221,36 +249,61 @@ export default function UsersPage() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900">Users</h1>
-          <p className="text-gray-400 text-sm mt-1">{filtered.length} of {users.length} user(s)</p>
+    <div className="relative">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute -top-20 -right-16 h-64 w-64 rounded-full bg-brand-100 blur-3xl opacity-60" />
+        <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-amber-100 blur-3xl opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-brand-50" />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm">
+              <FaUsers className="w-4 h-4" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-extrabold text-gray-900">Super Admin Users</h1>
+              <p className="text-gray-500 text-sm mt-1">{filtered.length} of {users.length} user(s)</p>
+            </div>
+          </div>
         </div>
-        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors shadow-sm">
-          + New User
+        <button onClick={openCreate} className="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors shadow-sm inline-flex items-center gap-2">
+          <FaUserPlus className="w-4 h-4" />
+          New User
         </button>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-5">
         <div className="relative flex-1 min-w-48">
-          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
-          <input type="text" placeholder="Search name or email…"
-            className="input bg-white border-gray-200 text-gray-900 text-sm pl-9"
+          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input type="text" placeholder="Search name or email..."
+            className="input bg-white border-gray-200 text-gray-900 text-sm pl-9 shadow-sm"
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <select className="input bg-white border-gray-200 text-gray-900 text-sm w-36"
-          value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
-          <option value="">All Roles</option>
-          {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-        </select>
+        <div className="relative w-44">
+          <FaIdBadge className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <select className="input bg-white border-gray-200 text-gray-900 text-sm w-full pl-9 shadow-sm"
+            value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
+            <option value="">All Roles</option>
+            {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
         {selected.size > 0 && (
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 font-medium">{selected.size} selected</span>
-            <button onClick={() => handleBulk(true)} className="text-xs bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg hover:bg-green-100">🟢 Activate</button>
-            <button onClick={() => handleBulk(false)} className="text-xs bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-lg hover:bg-red-100">🔴 Deactivate</button>
-            <button onClick={() => setSelected(new Set())} className="text-xs text-gray-400 hover:text-gray-600">✕</button>
+            <button onClick={() => handleBulk(true)} className="text-xs bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg hover:bg-green-100 inline-flex items-center gap-1.5">
+              <FaCheckCircle className="w-3 h-3" />
+              Activate
+            </button>
+            <button onClick={() => handleBulk(false)} className="text-xs bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded-lg hover:bg-red-100 inline-flex items-center gap-1.5">
+              <FaBan className="w-3 h-3" />
+              Deactivate
+            </button>
+            <button onClick={() => setSelected(new Set())} className="text-xs text-gray-400 hover:text-gray-600 w-7 h-7 rounded-md hover:bg-gray-100 inline-flex items-center justify-center">
+              <FaTimes className="w-3 h-3" />
+            </button>
           </div>
         )}
       </div>
@@ -271,11 +324,11 @@ export default function UsersPage() {
             }, {})
 
             return (
-              <div key={group.key} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+              <div key={group.key} className="bg-white/90 rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
                 <button
                   type="button"
                   onClick={() => toggleGroup(group.key)}
-                  className="w-full flex items-center justify-between px-5 py-4 bg-gray-50/70 border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between px-5 py-4 bg-gray-50/80 border-b border-gray-100 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {isOpen ? <FaFolderOpen className="text-brand-600 w-4 h-4" /> : <FaFolder className="text-gray-500 w-4 h-4" />}
@@ -322,16 +375,22 @@ export default function UsersPage() {
                               <p className="text-gray-400 text-xs">{u.email}</p>
                             </td>
                             <td className="px-4 py-3"><span className={`badge text-xs ${ROLE_COLORS[u.role] || 'badge-pending'}`}>{u.role}</span></td>
-                            <td className="px-4 py-3 text-gray-400 text-xs">{u.restaurant?.name || group.name || <span className="text-gray-300">-</span>}</td>
+                            <td className="px-4 py-3 text-gray-400 text-xs">{u.restaurant?.name || group.name || '-'}</td>
                             <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{fmtDate(u.lastLoginAt)}</td>
                             <td className="px-4 py-3">
                               <span className={`badge text-xs ${u.active ? 'badge-completed' : 'badge-cancelled'}`}>{u.active ? 'Active' : 'Inactive'}</span>
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
-                                <button onClick={() => openEdit(u)} className="text-xs text-gray-400 hover:text-gray-700 transition-colors">✏️</button>
-                                <button onClick={() => handleToggleActive(u)} className="text-xs text-gray-400 hover:text-amber-500 transition-colors">{u.active ? '🔴' : '🟢'}</button>
-                                <button onClick={() => handleDelete(u.id)} className="text-xs text-gray-400 hover:text-red-500 transition-colors">🗑</button>
+                                <button onClick={() => openEdit(u)} className="text-xs text-gray-400 hover:text-gray-700 transition-colors w-8 h-8 rounded-lg hover:bg-gray-100 inline-flex items-center justify-center">
+                                  <FaEdit className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleToggleActive(u)} className="text-xs text-gray-400 hover:text-amber-500 transition-colors w-8 h-8 rounded-lg hover:bg-amber-50 inline-flex items-center justify-center">
+                                  {u.active ? <FaBan className="w-4 h-4" /> : <FaCheckCircle className="w-4 h-4" />}
+                                </button>
+                                <button onClick={() => handleDelete(u.id)} className="text-xs text-gray-400 hover:text-red-500 transition-colors w-8 h-8 rounded-lg hover:bg-red-50 inline-flex items-center justify-center">
+                                  <FaTrash className="w-4 h-4" />
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -360,5 +419,3 @@ export default function UsersPage() {
     </div>
   )
 }
-
-
