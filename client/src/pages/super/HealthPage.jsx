@@ -24,7 +24,7 @@ function StatusDot({ ok }) {
 
 function MetricCard({ icon: Icon, label, value, sub, color = 'text-gray-900', iconBg = 'bg-blue-50 text-blue-600' }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4 shadow-sm">
+    <div className="super-card p-5 flex items-center gap-4 shadow-sm">
       <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
         <Icon className="w-5 h-5" />
       </div>
@@ -279,7 +279,7 @@ export default function HealthPage() {
 
       {/* Platform Counts */}
       {health?.counts && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-6">
+        <div className="super-card p-5 shadow-sm mb-6">
           <h2 className="text-base font-extrabold text-gray-900 mb-4">Platform Snapshot</h2>
           <div className="grid grid-cols-3 gap-4">
             {[
@@ -297,7 +297,7 @@ export default function HealthPage() {
       )}
 
       {/* Services Status */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+      <div className="super-card p-5 shadow-sm">
         <h2 className="text-base font-extrabold text-gray-900 mb-4">Services</h2>
         <div className="space-y-3">
           {[
@@ -322,3 +322,4 @@ export default function HealthPage() {
     </div>
   )
 }
+

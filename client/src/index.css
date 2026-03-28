@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -32,7 +32,7 @@
 }
 
 @layer components {
-  /* ── Buttons ─────────────────────────────────── */
+  /* â”€â”€ Buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2
            bg-gradient-to-r from-brand-600 to-brand-500
@@ -71,7 +71,7 @@
            focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2;
   }
 
-  /* ── Cards ───────────────────────────────────── */
+  /* â”€â”€ Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   .card {
     @apply bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden;
   }
@@ -80,7 +80,7 @@
     @apply card hover:shadow-md hover:-translate-y-0.5 transition-all duration-200;
   }
 
-  /* ── Form elements ───────────────────────────── */
+  /* â”€â”€ Form elements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   .input {
     @apply w-full px-4 py-3 rounded-xl border border-gray-200
            bg-white text-gray-900 placeholder-gray-400
@@ -108,19 +108,19 @@
     @apply block text-sm font-medium text-gray-300 mb-1.5;
   }
 
-  /* ── Icon box ────────────────────────────────── */
+  /* â”€â”€ Icon box â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   .icon-box {
     @apply w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0;
   }
 
-  /* ── Glass ───────────────────────────────────── */
+  /* â”€â”€ Glass â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   .glass {
     @apply backdrop-blur-xl bg-white/10 border border-white/10;
     background-color: rgba(255,255,255,0.06);
     border-color: rgba(255,255,255,0.1);
   }
 
-  /* ── Badge / Status pills ────────────────────── */
+  /* â”€â”€ Badge / Status pills â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   .badge-pending   { @apply bg-amber-100  text-amber-800  border-amber-200; }
   .badge-accepted  { @apply bg-blue-100   text-blue-800   border-blue-200; }
   .badge-preparing { @apply bg-purple-100 text-purple-800 border-purple-200; }
@@ -131,17 +131,17 @@
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border;
   }
 
-  /* ── Overlay / Modal backdrop ────────────────── */
+  /* â”€â”€ Overlay / Modal backdrop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   .overlay {
     @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-40 flex items-end sm:items-center justify-center p-4;
   }
 
-  /* ── Page container ──────────────────────────── */
+  /* â”€â”€ Page container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   .page-container {
     @apply max-w-4xl mx-auto px-4 py-6;
   }
 
-  /* ── Dashboard panel card ─────────────────────── */
+  /* â”€â”€ Dashboard panel card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   .dash-card {
     @apply bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden;
   }
@@ -150,7 +150,49 @@
     @apply px-5 py-4 border-b border-gray-100 bg-gray-50/80;
   }
 
-  /* ── Shimmer skeleton ────────────────────────── */
+  
+  /* --- Super Admin Theme --- */
+  .super-shell {
+    position: relative;
+    background:
+      radial-gradient(1200px 600px at 0% -10%, rgba(225,29,72,0.10), transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, rgba(14,165,233,0.08), transparent 55%),
+      radial-gradient(900px 450px at 80% 90%, rgba(245,158,11,0.08), transparent 55%),
+      linear-gradient(180deg, #f8fafc 0%, #ffffff 45%, #f8fafc 100%);
+  }
+
+  .super-bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(700px 350px at 10% 20%, rgba(225,29,72,0.08), transparent 60%),
+      radial-gradient(700px 350px at 90% 10%, rgba(14,165,233,0.06), transparent 60%);
+    opacity: 0.8;
+  }
+
+  .super-card {
+    @apply rounded-2xl border border-gray-100;
+    background: rgba(255,255,255,0.92);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    backdrop-filter: blur(6px);
+  }
+
+  .super-card-hover {
+    @apply super-card transition-all duration-200;
+  }
+  .super-card-hover:hover {
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.10);
+    transform: translateY(-2px);
+  }
+
+  .super-topbar {
+    background: rgba(255,255,255,0.75);
+    border-bottom: 1px solid rgba(226,232,240,0.9);
+    backdrop-filter: blur(12px);
+  }
+
+  /* â”€â”€ Shimmer skeleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   .shimmer {
     background: linear-gradient(
       90deg,
@@ -163,23 +205,23 @@
   }
 }
 
-/* ── Scrollbar ───────────────────────────────────── */
+/* â”€â”€ Scrollbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { @apply bg-gray-200 rounded-full; }
 ::-webkit-scrollbar-thumb:hover { @apply bg-gray-300; }
 
-/* ── Notification sound indicator pulse ──────────── */
+/* â”€â”€ Notification sound indicator pulse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .kitchen-pulse {
   animation: pulseDot 1.5s ease-in-out infinite;
 }
 
-/* ── Gradient text ───────────────────────────────── */
+/* â”€â”€ Gradient text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .gradient-text {
   @apply bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent;
 }
 
-/* ── Kitchen display theme ───────────────────────── */
+/* â”€â”€ Kitchen display theme â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .kitchen-bg {
   background:
     radial-gradient(1200px 600px at 10% -10%, rgba(225,29,72,0.18), transparent 60%),
@@ -293,16 +335,17 @@
   50%      { transform: translateY(-4px); }
 }
 
-/* ── Dark login bg mesh ──────────────────────────── */
+/* â”€â”€ Dark login bg mesh â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .login-bg {
   background: radial-gradient(ellipse at 20% 20%, rgba(225,29,72,0.18) 0%, transparent 60%),
               radial-gradient(ellipse at 80% 80%, rgba(190,18,60,0.12) 0%, transparent 60%),
               #0a0a0f;
 }
 
-/* ── Scrollbar none ──────────────────────────────── */
+/* â”€â”€ Scrollbar none â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .scrollbar-none {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 .scrollbar-none::-webkit-scrollbar { display: none; }
+

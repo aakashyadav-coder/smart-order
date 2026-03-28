@@ -108,7 +108,7 @@ export default function RestaurantDetailPage() {
             <StatCard label="Menu Items" value={r._count?.menuItems || 0} />
             <StatCard label="Staff Members" value={r._count?.users || 0} />
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+          <div className="super-card p-5 shadow-sm">
             <h3 className="font-bold text-gray-900 mb-3">Onboarding Checklist</h3>
             <div className="space-y-2">
               {[
@@ -132,7 +132,7 @@ export default function RestaurantDetailPage() {
 
       {/* Opening Hours */}
       {tab === 'hours' && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm max-w-md">
+        <div className="super-card p-5 shadow-sm max-w-md">
           <h3 className="font-bold text-gray-900 mb-4">Opening Hours</h3>
           {Object.keys(DAY_LABELS).length === 0 || !r.openingHours ? (
             <p className="text-gray-400 text-sm">No hours configured yet. Edit the restaurant to set hours.</p>
@@ -162,7 +162,7 @@ export default function RestaurantDetailPage() {
       {tab === 'tables' && (
         <div>
           {tableCount === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm">
+            <div className="super-card p-8 text-center shadow-sm">
               <FaQrcode className="w-10 h-10 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500 font-medium">No table count configured</p>
               <p className="text-gray-400 text-sm mt-1">Edit the restaurant to set number of tables</p>
@@ -172,7 +172,7 @@ export default function RestaurantDetailPage() {
               {tables.map(num => {
                 const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${window.location.origin}/menu/${r.id}?table=${num}`)}`
                 return (
-                  <div key={num} className="bg-white rounded-2xl border border-gray-100 p-3 flex flex-col items-center gap-2 shadow-sm hover:shadow-md transition-shadow">
+                  <div key={num} className="super-card p-3 flex flex-col items-center gap-2 shadow-sm hover:shadow-md transition-shadow">
                     <img src={qrUrl} alt={`Table ${num}`} className="w-24 h-24 rounded-lg" />
                     <span className="text-xs font-bold text-gray-700">Table {num}</span>
                     <button
@@ -191,7 +191,7 @@ export default function RestaurantDetailPage() {
 
       {/* Staff */}
       {tab === 'staff' && (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+        <div className="super-card overflow-hidden shadow-sm">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
@@ -219,3 +219,4 @@ export default function RestaurantDetailPage() {
     </div>
   )
 }
+

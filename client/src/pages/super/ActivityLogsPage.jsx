@@ -91,7 +91,7 @@ function PurgePanel({ restaurants, onPurged }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
+    <div className="super-card p-5 mb-6">
       <div className="flex items-center gap-2 mb-4">
         <FaTrash className="text-red-500 w-4 h-4" />
         <h2 className="text-base font-extrabold text-gray-900">Data Retention & Cleanup</h2>
@@ -226,7 +226,7 @@ export default function ActivityLogsPage() {
       {loading ? (
         <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+        <div className="super-card overflow-hidden shadow-sm">
           <div className="divide-y divide-gray-100">
             {logs.length === 0 ? (
               <div className="text-center py-12 text-gray-400">No activity found</div>
@@ -262,3 +262,4 @@ export default function ActivityLogsPage() {
     </div>
   )
 }
+

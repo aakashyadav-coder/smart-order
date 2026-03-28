@@ -31,7 +31,7 @@ function TicketModal({ ticket, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-lg shadow-2xl">
+      <div className="super-card w-full max-w-lg shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl">
           <h3 className="font-bold text-gray-900 flex items-center gap-2">
             <FaTicketAlt className="text-brand-600 w-4 h-4" /> Ticket - {ticket.subject}
@@ -165,14 +165,14 @@ export default function SupportTicketsPage() {
       {loading ? (
         <div className="flex justify-center py-10"><div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
       ) : tickets.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center shadow-sm">
+        <div className="super-card p-10 text-center shadow-sm">
           <FaInbox className="w-10 h-10 text-gray-200 mx-auto mb-3" />
           <p className="text-gray-400">No tickets found</p>
         </div>
       ) : (
         <div className="space-y-3">
           {tickets.map(t => (
-            <div key={t.id} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow">
+            <div key={t.id} className="super-card p-4 shadow-sm flex items-start gap-4 hover:shadow-md transition-shadow">
               <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
                 <FaInbox className="text-gray-500 w-4 h-4" />
               </div>
@@ -229,3 +229,4 @@ export default function SupportTicketsPage() {
     </div>
   )
 }
+

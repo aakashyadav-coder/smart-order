@@ -194,7 +194,7 @@ export default function UsersPage() {
 
     return (
       <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-md shadow-2xl">
+        <div className="super-card w-full max-w-md shadow-2xl">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl">
             <h3 className="font-bold text-gray-900 flex items-center gap-2">
               {mode === 'create' ? (
@@ -311,7 +311,7 @@ export default function UsersPage() {
       {loading ? (
         <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 py-16 text-center text-gray-400">No users found</div>
+        <div className="super-card py-16 text-center text-gray-400">No users found</div>
       ) : (
         <div className="space-y-3">
           {groups.map(group => {
@@ -419,3 +419,4 @@ export default function UsersPage() {
     </div>
   )
 }
+

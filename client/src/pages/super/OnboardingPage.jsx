@@ -78,7 +78,7 @@ function NudgeModal({ stage, onClose, onSend }) {
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-md shadow-2xl">
+      <div className="super-card w-full max-w-md shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl">
           <h3 className="font-bold text-gray-900 flex items-center gap-2">
             <FaBullhorn className="text-brand-600 w-4 h-4" />
@@ -224,15 +224,15 @@ export default function OnboardingPage() {
       {loading ? (
         <div className="space-y-3">
           {[1,2,3,4].map(i => (
-            <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 animate-pulse h-24" />
+            <div key={i} className="super-card p-5 animate-pulse h-24" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-gray-400">
+        <div className="super-card p-10 text-center text-gray-400">
           No restaurants in this stage.
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="super-card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -320,3 +320,4 @@ export default function OnboardingPage() {
     </div>
   )
 }
+

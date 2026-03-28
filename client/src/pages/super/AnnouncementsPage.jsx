@@ -63,7 +63,7 @@ export default function AnnouncementsPage() {
       </div>
 
       {/* Compose */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm mb-6">
+      <div className="super-card p-5 shadow-sm mb-6">
         <h2 className="text-sm font-extrabold text-gray-900 mb-4 flex items-center gap-2">
           <FaBullhorn className="text-brand-600 w-4 h-4" /> New Announcement
         </h2>
@@ -103,13 +103,13 @@ export default function AnnouncementsPage() {
       {loading ? (
         <div className="flex justify-center py-10"><div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" /></div>
       ) : announcements.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-400 shadow-sm">
+        <div className="super-card p-8 text-center text-gray-400 shadow-sm">
           No announcements sent yet
         </div>
       ) : (
         <div className="space-y-3">
           {announcements.map(a => (
-            <div key={a.id} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm flex items-start gap-4">
+            <div key={a.id} className="super-card p-4 shadow-sm flex items-start gap-4">
               <div className="w-9 h-9 bg-brand-50 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
                 <FaBullhorn className="text-brand-600 w-4 h-4" />
               </div>
@@ -138,3 +138,4 @@ export default function AnnouncementsPage() {
     </div>
   )
 }
+

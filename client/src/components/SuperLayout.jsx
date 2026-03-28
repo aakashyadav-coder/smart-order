@@ -1,6 +1,6 @@
-/**
- * SuperLayout — Dark sidebar + content area for Super Admin
- * Includes: NotificationCenter bell, ⌘K CommandPalette, Settings nav item
+﻿/**
+ * SuperLayout â€” Dark sidebar + content area for Super Admin
+ * Includes: NotificationCenter bell, Ctrl+K CommandPalette, Settings nav item
  */
 import React, { useEffect, useState, useCallback } from 'react'
 import { NavLink, useNavigate, Outlet } from 'react-router-dom'
@@ -43,7 +43,7 @@ export default function SuperLayout() {
     return () => socket.off('connect', onConnect)
   }, [])
 
-  // ⌘K / Ctrl+K global shortcut
+  // Ctrl+K global shortcut
   useEffect(() => {
     const handler = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -77,8 +77,8 @@ export default function SuperLayout() {
         <button onClick={() => setPaletteOpen(true)}
           className="w-full flex items-center gap-2 text-xs text-gray-500 hover:text-gray-300 bg-white/5 hover:bg-white/10 border border-white/8 rounded-lg px-3 py-2 transition-all">
           <FaSearch className="w-3 h-3" />
-          <span className="flex-1 text-left">Search…</span>
-          <span className="bg-white/10 text-gray-400 px-1.5 py-0.5 rounded text-[10px] font-mono">⌘K</span>
+          <span className="flex-1 text-left">Search...</span>
+          <span className="bg-white/10 text-gray-400 px-1.5 py-0.5 rounded text-[10px] font-mono">Ctrl+K</span>
         </button>
       </div>
 
@@ -141,19 +141,19 @@ export default function SuperLayout() {
       )}
 
       {/* Sidebar (desktop) */}
-      <aside className="hidden lg:flex w-56 flex-col bg-gray-950 border-r border-white/8 flex-shrink-0 shadow-xl">
+      <aside className="hidden lg:flex w-56 flex-col bg-gradient-to-b from-gray-950 via-slate-900 to-gray-950 border-r border-white/8 flex-shrink-0 shadow-xl">
         <SidebarContent />
       </aside>
 
       {/* Sidebar (mobile) */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-56 bg-gray-950 border-r border-white/8 flex flex-col transform transition-transform duration-300 ease-out lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-56 bg-gradient-to-b from-gray-950 via-slate-900 to-gray-950 border-r border-white/8 flex flex-col transform transition-transform duration-300 ease-out lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <SidebarContent />
       </aside>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 shadow-sm">
+        <header className="super-topbar px-4 py-3 flex items-center gap-3 shadow-sm">
           {/* Mobile hamburger */}
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
             <FaBars className="w-4 h-4 text-gray-600" />
@@ -167,11 +167,11 @@ export default function SuperLayout() {
             className="hidden lg:flex items-center gap-2 text-xs text-gray-400 hover:text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg px-3 py-2 transition-all"
           >
             <FaSearch className="w-3 h-3" />
-            <span>Search anything…</span>
-            <span className="bg-white border border-gray-200 text-gray-400 px-1.5 py-0.5 rounded text-[10px] font-mono ml-1">⌘K</span>
+            <span>Search anything...</span>
+            <span className="bg-white border border-gray-200 text-gray-400 px-1.5 py-0.5 rounded text-[10px] font-mono ml-1">Ctrl+K</span>
           </button>
 
-          {/* Right side — notification + settings */}
+          {/* Right side â€” notification + settings */}
           <div className="ml-auto flex items-center gap-2">
             <NotificationCenter />
             <button onClick={() => navigate('/super/settings')}
@@ -183,8 +183,11 @@ export default function SuperLayout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto super-shell p-6 relative">
+          <div className="super-bg" />
+          <div className="relative z-10">
+            <Outlet />
+          </div>
         </main>
       </div>
 
@@ -193,3 +196,4 @@ export default function SuperLayout() {
     </div>
   )
 }
+

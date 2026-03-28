@@ -82,7 +82,7 @@ function KpiStrip({ platform }) {
   return (
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
       {kpis.map(k => (
-        <div key={k.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div key={k.label} className="super-card p-5">
           <p className="text-xs text-gray-400 font-medium">{k.label}</p>
           <div className="flex items-center gap-2 mt-0.5">
             <p className={`text-xl font-extrabold leading-tight ${k.color}`}>{k.value}</p>
@@ -409,7 +409,7 @@ export default function RevenuePage() {
           {/* KPI skeleton */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             {[1,2,3,4].map(i => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 animate-pulse">
+              <div key={i} className="super-card p-5 animate-pulse">
                 <div className="h-3 bg-gray-100 rounded-full w-1/2 mb-3" />
                 <div className="h-6 bg-gray-100 rounded-full w-3/4 mb-2" />
                 <div className="h-2.5 bg-gray-100 rounded-full w-2/3" />
@@ -417,12 +417,12 @@ export default function RevenuePage() {
             ))}
           </div>
           {/* Chart skeleton */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 animate-pulse h-64" />
+          <div className="super-card p-5 animate-pulse h-64" />
           {/* Table skeleton */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 animate-pulse h-48" />
+          <div className="super-card p-5 animate-pulse h-48" />
         </div>
       ) : error ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center shadow-sm">
+        <div className="super-card p-10 text-center shadow-sm">
           <p className="text-gray-400">Unable to load revenue data. Please try again.</p>
           <button onClick={fetchData} className="mt-4 text-brand-600 font-semibold text-sm hover:underline">Retry</button>
         </div>
@@ -432,7 +432,7 @@ export default function RevenuePage() {
           <KpiStrip platform={data?.platform} />
 
           {/* Revenue Bar Chart */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+          <div className="super-card p-5 mb-5">
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2">
@@ -450,7 +450,7 @@ export default function RevenuePage() {
           </div>
 
           {/* Leaderboard */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mb-5 overflow-hidden">
+          <div className="super-card mb-5 overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-100">
               <FaTrophy className="text-amber-500 w-4 h-4" />
               <h2 className="text-base font-extrabold text-gray-900">Restaurant Leaderboard</h2>
@@ -460,7 +460,7 @@ export default function RevenuePage() {
           </div>
 
           {/* Peak Hours Heatmap */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="super-card p-5">
             <div className="flex items-center gap-2 mb-5">
               <FaFire className="text-orange-500 w-4 h-4" />
               <div>
@@ -475,3 +475,4 @@ export default function RevenuePage() {
     </div>
   )
 }
+

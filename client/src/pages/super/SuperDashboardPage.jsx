@@ -549,7 +549,7 @@ export default function SuperDashboardPage() {
                 </button>
               )}
             </div>
-            <div ref={feedRef} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div ref={feedRef} className="super-card overflow-hidden">
               {feed.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-300">
                   <FaCircle className="w-4 h-4 mb-3 animate-pulse text-green-300" />
@@ -583,3 +583,4 @@ export default function SuperDashboardPage() {
     </div>
   )
 }
+

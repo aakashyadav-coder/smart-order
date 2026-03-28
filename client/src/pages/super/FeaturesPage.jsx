@@ -121,7 +121,7 @@ export default function FeaturesPage() {
       </div>
 
       {/* Restaurant selector */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+      <div className="super-card p-5 mb-5">
         <label className="block text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
           Select Restaurant
         </label>
@@ -145,7 +145,7 @@ export default function FeaturesPage() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {FEATURES_META.map(f => (
-            <div key={f.key} className="bg-white rounded-2xl border border-gray-100 p-5 animate-pulse h-36" />
+            <div key={f.key} className="super-card p-5 animate-pulse h-36" />
           ))}
         </div>
       ) : features ? (
@@ -157,7 +157,7 @@ export default function FeaturesPage() {
             return (
               <div
                 key={f.key}
-                className={`bg-white rounded-2xl border shadow-sm p-5 transition-all ${
+                className={`super-card p-5 transition-all ${
                   isOn ? `${f.border} ring-1 ring-inset ring-${f.border.split('-')[1]}-100` : 'border-gray-100'
                 }`}
               >
@@ -189,7 +189,7 @@ export default function FeaturesPage() {
           })}
         </div>
       ) : !loading && restaurants.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center text-gray-400">
+        <div className="super-card p-10 text-center text-gray-400">
           <FaCog className="w-8 h-8 mx-auto mb-3 text-gray-200" />
           <p className="font-medium">No restaurants found</p>
           <p className="text-xs mt-1">Create a restaurant first to manage its features</p>
@@ -198,3 +198,4 @@ export default function FeaturesPage() {
     </div>
   )
 }
+

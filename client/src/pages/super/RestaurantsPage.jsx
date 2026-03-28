@@ -62,7 +62,7 @@ function OnboardingBadge({ r }) {
 
 const Modal = ({ title, form, setForm, onSave, onClose, saving }) => (
   <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-    <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div className="super-card w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl sticky top-0">
         <h3 className="font-bold text-gray-900 flex items-center gap-2">{title}</h3>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-700 w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100">
@@ -258,7 +258,7 @@ export default function RestaurantsPage() {
           {filtered.map(r => (
             <div
               key={r.id}
-              className={`bg-white rounded-2xl border shadow-sm transition-all ${selected.has(r.id) ? 'border-brand-400 ring-2 ring-brand-200' : r.active ? 'border-gray-200' : 'border-red-200'} p-5 flex flex-col gap-2`}
+              className={`super-card transition-all ${selected.has(r.id) ? 'border-brand-400 ring-2 ring-brand-200' : r.active ? 'border-gray-200' : 'border-red-200'} p-5 flex flex-col gap-2`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-2">
@@ -340,3 +340,4 @@ export default function RestaurantsPage() {
     </div>
   )
 }
+

@@ -17,7 +17,7 @@ import {
 
 function Section({ icon: Icon, title, children }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+    <div className="super-card p-5 mb-5">
       <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2 mb-5 pb-4 border-b border-gray-100">
         <Icon className="text-brand-600 w-4 h-4" /> {title}
       </h2>
@@ -192,3 +192,4 @@ export default function SettingsPage() {
     </div>
   )
 }
+

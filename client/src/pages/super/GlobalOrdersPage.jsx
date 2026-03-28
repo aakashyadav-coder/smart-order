@@ -117,7 +117,7 @@ export default function GlobalOrdersPage() {
           <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+        <div className="super-card overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -217,3 +217,4 @@ export default function GlobalOrdersPage() {
     </div>
   )
 }
+
