@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SuperLayout â€” Dark sidebar + content area for Super Admin
  * Includes: NotificationCenter bell, Ctrl+K CommandPalette, Settings nav item
  */
@@ -183,7 +183,7 @@ export default function SuperLayout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto super-shell p-6 relative">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden super-shell p-6 relative">
           <div className="super-bg" />
           <div className="relative z-10">
             <Outlet />
