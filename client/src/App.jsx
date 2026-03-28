@@ -33,6 +33,7 @@ import HealthPage            from './pages/super/HealthPage'
 import AnnouncementsPage     from './pages/super/AnnouncementsPage'
 import SupportTicketsPage    from './pages/super/SupportTicketsPage'
 import RevenuePage           from './pages/super/RevenuePage'
+import OnboardingPage        from './pages/super/OnboardingPage'
 
 // Route guards & layouts
 import ProtectedRoute  from './components/ProtectedRoute'
@@ -76,6 +77,7 @@ export default function App() {
         <Route path="announcements"        element={<AnnouncementsPage />} />
         <Route path="tickets"              element={<SupportTicketsPage />} />
         <Route path="revenue"              element={<RevenuePage />} />
+        <Route path="onboarding"           element={<OnboardingPage />} />
       </Route>
 
       {/* ── 404 ──────────────────────────────────────────────── */}

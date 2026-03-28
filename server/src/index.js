@@ -75,6 +75,8 @@ if (process.env.NODE_ENV === "development") {
   });
 }
 
+const { getMaintenancePublic } = require("./controllers/superAdminController");
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/menu", menuRoutes);
@@ -83,6 +85,9 @@ app.use("/api/otp", otpRoutes);
 app.use("/api/super", superAdminRoutes);
 app.use("/api/features", featuresRoutes);
 app.use("/api/restaurant", restaurantRoutes);
+
+// Public maintenance status (no auth — customer pages poll this)
+app.get("/api/maintenance", getMaintenancePublic);
 
 // Health check
 app.get("/health", (_req, res) => {

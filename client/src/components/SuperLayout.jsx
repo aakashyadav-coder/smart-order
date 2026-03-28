@@ -8,12 +8,13 @@ import socket from '../lib/socket'
 import {
   FaThLarge, FaBuilding, FaUsers, FaClipboardList,
   FaCog, FaHeartbeat, FaSignOutAlt, FaShieldAlt, FaBars,
-  FaBullhorn, FaInbox, FaChartBar,
+  FaBullhorn, FaInbox, FaChartBar, FaRocket,
 } from 'react-icons/fa'
 
 const NAV_ITEMS = [
   { to: '/super',              label: 'Dashboard',    icon: FaThLarge,      end: true },
   { to: '/super/revenue',      label: 'Revenue BI',   icon: FaChartBar },
+  { to: '/super/onboarding',   label: 'Onboarding',   icon: FaRocket },
   { to: '/super/restaurants',  label: 'Restaurants',  icon: FaBuilding },
   { to: '/super/users',        label: 'Users',        icon: FaUsers },
   { to: '/super/orders',       label: 'All Orders',   icon: FaClipboardList },

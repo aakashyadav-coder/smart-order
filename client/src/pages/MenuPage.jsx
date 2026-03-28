@@ -12,7 +12,7 @@ import CartDrawer from '../components/CartDrawer'
 import CheckoutModal from '../components/CheckoutModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorState from '../components/ErrorState'
-import { FaShoppingCart, FaMapMarkerAlt, FaUtensils } from 'react-icons/fa'
+import { FaShoppingCart, FaMapMarkerAlt, FaUtensils, FaTools } from 'react-icons/fa'
 
 const CATEGORY_ICONS = {
   'Drinks':      '🥤',
@@ -33,8 +33,34 @@ export default function MenuPage() {
   const [error, setError]                 = useState(null)
   const [cartOpen, setCartOpen]           = useState(false)
   const [checkoutOpen, setCheckoutOpen]   = useState(false)
+  const [maintenance, setMaintenance]     = useState(null)
+  const [countdown, setCountdown]         = useState(null)
 
   const { totalItems, totalPrice } = useCart()
+
+  // ── Maintenance Mode ────────────────────────────────────────────────────────
+  useEffect(() => {
+    api.get('/maintenance').then(r => setMaintenance(r.data)).catch(() => {})
+    const onMaint = d => setMaintenance(d)
+    socket.on('maintenance_update', onMaint)
+    return () => socket.off('maintenance_update', onMaint)
+  }, [])
+
+  // Countdown timer for scheduled downtime
+  useEffect(() => {
+    if (!maintenance?.scheduledAt || maintenance?.active) { setCountdown(null); return }
+    const tick = () => {
+      const diff = new Date(maintenance.scheduledAt).getTime() - Date.now()
+      if (diff <= 0) { setCountdown(null); return }
+      const h = Math.floor(diff / 3600000)
+      const m = Math.floor((diff % 3600000) / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      setCountdown(`${h > 0 ? `${h}h ` : ''}${m}m ${s}s`)
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [maintenance?.scheduledAt, maintenance?.active])
 
   useEffect(() => {
     const init = async () => {
@@ -70,6 +96,34 @@ export default function MenuPage() {
     socket.on('restaurant_updated', onUpdate)
     return () => socket.off('restaurant_updated', onUpdate)
   }, [])
+
+  // ── Maintenance overlay ─────────────────────────────────────────────────────
+  if (maintenance?.active) return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-brand-950 to-gray-900 flex items-center justify-center p-6 text-white text-center">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-brand-800/15 rounded-full blur-2xl" />
+      </div>
+      <div className="relative z-10 max-w-md">
+        <div className="w-20 h-20 bg-white/10 backdrop-blur rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-white/20">
+          <FaTools className="w-9 h-9 text-white animate-pulse" />
+        </div>
+        <h1 className="text-3xl font-black tracking-tight mb-3">Down for Maintenance</h1>
+        <p className="text-gray-300 text-lg leading-relaxed">
+          {maintenance.message || "We'll be back soon! Scheduled maintenance in progress."}
+        </p>
+        {countdown && (
+          <div className="mt-6 inline-flex items-center gap-3 bg-white/10 backdrop-blur border border-white/15 rounded-2xl px-6 py-4">
+            <div className="text-center">
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-widest mb-1">Scheduled in</p>
+              <p className="text-2xl font-black font-mono">{countdown}</p>
+            </div>
+          </div>
+        )}
+        <p className="mt-8 text-gray-500 text-sm">Please try again in a few minutes.</p>
+      </div>
+    </div>
+  )
 
   if (loading) return <LoadingSpinner />
   if (error)   return <ErrorState message={error} />

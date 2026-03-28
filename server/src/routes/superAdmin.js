@@ -9,6 +9,9 @@ const {
   getHealth,
   getAnnouncements, createAnnouncement, deleteAnnouncement,
   getTickets, updateTicket, deleteTicket,
+  getMaintenanceStatus, setMaintenanceMode,
+  getOnboardingPipeline, nudgeRestaurants,
+  purgeLogs, purgeOrders,
 } = require("../controllers/superAdminController");
 const { authenticate, requireSuperAdmin } = require("../middleware/auth");
 
@@ -25,6 +28,18 @@ router.get("/revenue-bi", getRevenueBI);
 
 // System Health
 router.get("/health", getHealth);
+
+// Maintenance Mode
+router.get("/maintenance", getMaintenanceStatus);
+router.post("/maintenance", setMaintenanceMode);
+
+// Onboarding Pipeline
+router.get("/onboarding", getOnboardingPipeline);
+router.post("/onboarding/nudge", nudgeRestaurants);
+
+// Data Retention / Cleanup
+router.delete("/logs/purge", purgeLogs);
+router.delete("/orders/purge", purgeOrders);
 
 // Restaurants
 router.get("/restaurants", getRestaurants);

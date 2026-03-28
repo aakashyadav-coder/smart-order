@@ -2,13 +2,14 @@
  * SuperDashboardPage — Platform overview with enhanced KPI cards
  * Theme: White cards, brand red accents, SVG charts
  */
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
+import socket from '../../lib/socket'
 import {
   FaBuilding, FaUsers, FaChartLine, FaShoppingBag,
   FaMoneyBillWave, FaTicketAlt, FaExclamationTriangle,
-  FaArrowUp, FaArrowDown, FaMinus,
+  FaArrowUp, FaArrowDown, FaMinus, FaCircle,
 } from 'react-icons/fa'
 import { ChartSkeleton } from '../../components/Skeleton'
 
@@ -159,6 +160,23 @@ function DeltaBadge({ delta }) {
   )
 }
 
+/* ─── Activity feed helpers ─────────────────────────────────────────────────── */
+const FEED_MAX = 50
+const FEED_EVENT_TYPES = {
+  new_order:           { icon: '📦', label: 'New Order placed', color: 'bg-blue-50 text-blue-600' },
+  order_status_update: { icon: '🔄', label: 'Order updated',    color: 'bg-indigo-50 text-indigo-600' },
+  support_ticket_new:  { icon: '🎫', label: 'Support Ticket',   color: 'bg-red-50 text-red-600' },
+  user_last_login:     { icon: '👤', label: 'User logged in',   color: 'bg-green-50 text-green-600' },
+}
+
+function relativeTime(ts) {
+  const diff = Math.floor((Date.now() - ts) / 1000)
+  if (diff < 5)  return 'just now'
+  if (diff < 60) return `${diff}s ago`
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+  return `${Math.floor(diff / 3600)}h ago`
+}
+
 /* ─── Main page ────────────────────────────────────────────────────────────── */
 export default function SuperDashboardPage() {
   const navigate = useNavigate()
@@ -169,6 +187,9 @@ export default function SuperDashboardPage() {
   const [analyticsLoading, setAnalyticsLoading] = useState(true)
   const [analyticsError, setAnalyticsError] = useState(false)
   const [metricByRange, setMetricByRange]   = useState({ '24h': 'revenue', '30d': 'revenue', '6m': 'revenue' })
+  const [feed, setFeed]                     = useState([])
+  const [, setTick]                         = useState(0) // force re-render for relative timestamps
+  const feedRef = useRef(null)
 
   useEffect(() => {
     Promise.all([api.get('/super/stats'), api.get('/super/dashboard-kpis')])
@@ -191,6 +212,40 @@ export default function SuperDashboardPage() {
       .catch(() => { if (mounted) setAnalyticsError(true) })
       .finally(() => { if (mounted) setAnalyticsLoading(false) })
     return () => { mounted = false }
+  }, [])
+
+  // Live Activity Feed — socket subscriptions
+  useEffect(() => {
+    socket.emit('join_super_admin')
+
+    const addEntry = (type, data) => {
+      const cfg = FEED_EVENT_TYPES[type]
+      if (!cfg) return
+      let detail = ''
+      if (type === 'new_order') detail = `Order #${String(data.id || '').slice(-6).toUpperCase()} · Rs. ${(data.totalPrice || 0).toFixed(0)}`
+      else if (type === 'order_status_update') detail = `Order #${String(data.orderId || '').slice(-6).toUpperCase()} → ${data.status}`
+      else if (type === 'support_ticket_new') detail = `"${data.title || 'New ticket'}"${data.restaurant?.name ? ` from ${data.restaurant.name}` : ''}`
+      else if (type === 'user_last_login') detail = `${data.name || 'User'} (${data.role || ''})`
+
+      const entry = { id: `${type}-${Date.now()}-${Math.random()}`, type, ...cfg, detail, ts: Date.now() }
+      setFeed(prev => [entry, ...prev].slice(0, FEED_MAX))
+    }
+
+    const handlers = {
+      new_order:           d => addEntry('new_order', d),
+      order_status_update: d => addEntry('order_status_update', d),
+      support_ticket_new:  d => addEntry('support_ticket_new', d),
+      user_last_login:     d => addEntry('user_last_login', d),
+    }
+    Object.entries(handlers).forEach(([ev, h]) => socket.on(ev, h))
+
+    // Refresh relative timestamps every 30s
+    const ticker = setInterval(() => setTick(t => t + 1), 30000)
+
+    return () => {
+      Object.entries(handlers).forEach(([ev, h]) => socket.off(ev, h))
+      clearInterval(ticker)
+    }
   }, [])
 
   /* ── KPI card definitions ───────────────────────────────────────────────── */
@@ -315,6 +370,50 @@ export default function SuperDashboardPage() {
               ))}
             </div>
           )}
+
+          {/* ── Live Activity Feed ─────────────────────────────────────────── */}
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-extrabold text-gray-900 flex items-center gap-2">
+                  <FaCircle className="w-2.5 h-2.5 text-green-500 animate-pulse" />
+                  Live Activity Feed
+                </h2>
+                <p className="text-xs text-gray-400 mt-1">Real-time platform events via WebSocket</p>
+              </div>
+              {feed.length > 0 && (
+                <button onClick={() => setFeed([])}
+                  className="text-xs text-gray-400 hover:text-gray-600 transition-colors font-medium px-3 py-1.5 border border-gray-200 rounded-lg bg-white hover:bg-gray-50">
+                  Clear
+                </button>
+              )}
+            </div>
+            <div ref={feedRef} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              {feed.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-300">
+                  <FaCircle className="w-4 h-4 mb-3 animate-pulse text-green-300" />
+                  <p className="text-sm font-medium">Listening for platform events…</p>
+                  <p className="text-xs mt-1">Orders, tickets, and logins will appear here in real time</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-50 max-h-96 overflow-y-auto">
+                  {feed.map(entry => (
+                    <div key={entry.id}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors animate-slide-up">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 ${entry.color}`}>
+                        {entry.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900">{entry.label}</p>
+                        <p className="text-xs text-gray-400 truncate">{entry.detail}</p>
+                      </div>
+                      <span className="text-xs text-gray-300 whitespace-nowrap flex-shrink-0">{relativeTime(entry.ts)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </>
       )}
     </div>

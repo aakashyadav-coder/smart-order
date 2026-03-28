@@ -7,6 +7,14 @@ const bcrypt = require("bcryptjs");
 const { logActivity } = require("../services/activityLogService");
 const { emitRestaurantUpdate, emitAnnouncement } = require("../socket");
 
+// ── In-memory Maintenance Mode state ─────────────────────────────────────────
+// (Resets on server restart — intentional for simple SaaS use)
+let maintenanceState = {
+  active: false,
+  message: "We'll be back soon! Scheduled maintenance in progress.",
+  scheduledAt: null, // ISO string — future time for countdown
+};
+
 const prisma = new PrismaClient();
 
 const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -735,6 +743,175 @@ const getRevenueBI = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+
+// ── Maintenance Mode ───────────────────────────────────────────────────────────
+const getMaintenanceStatus = (req, res) => {
+  res.json(maintenanceState);
+};
+
+const setMaintenanceMode = (req, res, next) => {
+  try {
+    const { active, message, scheduledAt } = req.body;
+    if (typeof active === 'boolean') maintenanceState.active = active;
+    if (message !== undefined) maintenanceState.message = message;
+    // scheduledAt: ISO string or null
+    maintenanceState.scheduledAt = scheduledAt || null;
+
+    // Broadcast to all connected clients (customer menu pages listen for this)
+    const io = req.app.get('io');
+    if (io) io.emit('maintenance_update', maintenanceState);
+
+    res.json(maintenanceState);
+  } catch (err) { next(err); }
+};
+
+// Public endpoint (no auth) for customer pages to check maintenance status
+const getMaintenancePublic = (req, res) => {
+  res.json(maintenanceState);
+};
+
+// ── Onboarding Pipeline ────────────────────────────────────────────────────────
+const getOnboardingPipeline = async (req, res, next) => {
+  try {
+    const restaurants = await prisma.restaurant.findMany({
+      include: {
+        _count: { select: { users: true, orders: true, menuItems: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const pipeline = restaurants.map(r => {
+      const hasMenu   = (r._count.menuItems || 0) > 0;
+      const hasStaff  = (r._count.users    || 0) > 0;
+      const hasOrders = (r._count.orders   || 0) > 0;
+      const hasTables = !!r.tableCount;
+      const hasHours  = !!r.openingHours;
+
+      let stage;
+      if (!hasMenu && !hasStaff) stage = 'NOT_STARTED';       // 🔴
+      else if (!hasMenu || !hasStaff || !hasOrders) stage = 'PARTIAL'; // 🟡
+      else stage = 'LIVE';                                              // 🟢
+
+      const checks = [
+        { key: 'menu',   label: 'Menu items',     done: hasMenu },
+        { key: 'staff',  label: 'Staff accounts',  done: hasStaff },
+        { key: 'orders', label: 'First order',     done: hasOrders },
+        { key: 'tables', label: 'Table count set', done: hasTables },
+        { key: 'hours',  label: 'Opening hours',   done: hasHours },
+      ];
+      const completedCount = checks.filter(c => c.done).length;
+      const pct = Math.round((completedCount / checks.length) * 100);
+
+      return {
+        id: r.id,
+        name: r.name,
+        active: r.active,
+        stage,
+        pct,
+        checks,
+        counts: r._count,
+        createdAt: r.createdAt,
+      };
+    });
+
+    const summary = {
+      NOT_STARTED: pipeline.filter(r => r.stage === 'NOT_STARTED').length,
+      PARTIAL:     pipeline.filter(r => r.stage === 'PARTIAL').length,
+      LIVE:        pipeline.filter(r => r.stage === 'LIVE').length,
+    };
+
+    res.json({ pipeline, summary });
+  } catch (err) { next(err); }
+};
+
+// Bulk nudge — send announcement to restaurants in specified stage
+const nudgeRestaurants = async (req, res, next) => {
+  try {
+    const { stage, title, message } = req.body;
+    if (!stage || !title || !message) return res.status(400).json({ message: 'stage, title, message required' });
+
+    // Re-fetch pipeline to get restaurant IDs
+    const restaurants = await prisma.restaurant.findMany({
+      include: { _count: { select: { users: true, orders: true, menuItems: true } } },
+    });
+
+    const targets = restaurants.filter(r => {
+      const hasMenu   = r._count.menuItems > 0;
+      const hasStaff  = r._count.users > 0;
+      const hasOrders = r._count.orders > 0;
+      let s;
+      if (!hasMenu && !hasStaff) s = 'NOT_STARTED';
+      else if (!hasMenu || !hasStaff || !hasOrders) s = 'PARTIAL';
+      else s = 'LIVE';
+      return s === stage;
+    });
+
+    if (targets.length === 0) return res.json({ sent: 0 });
+
+    const io = req.app.get('io');
+    let sent = 0;
+    for (const r of targets) {
+      const ann = await prisma.announcement.create({
+        data: { title, message, restaurantId: r.id },
+        include: { restaurant: { select: { id: true, name: true } } },
+      });
+      if (io) io.to(`owner_${r.id}`).emit('announcement', ann);
+      sent++;
+    }
+    await logActivity({ userId: req.user.id, action: 'ANNOUNCEMENT_CREATED', entity: 'Announcement', metadata: { stage, sent } });
+    res.json({ sent });
+  } catch (err) { next(err); }
+};
+
+// ── Data Retention / Log Purge ─────────────────────────────────────────────────
+const purgeLogs = async (req, res, next) => {
+  try {
+    const days = parseInt(req.body.days || req.query.days || 90);
+    if (isNaN(days) || days < 1) return res.status(400).json({ message: 'days must be a positive integer' });
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+
+    const result = await prisma.activityLog.deleteMany({
+      where: { createdAt: { lt: cutoff } },
+    });
+
+    await logActivity({
+      userId: req.user.id,
+      action: 'LOGS_PURGED',
+      entity: 'ActivityLog',
+      metadata: { days, deleted: result.count, cutoff: cutoff.toISOString() },
+    });
+
+    res.json({ deleted: result.count, cutoff: cutoff.toISOString(), days });
+  } catch (err) { next(err); }
+};
+
+const purgeOrders = async (req, res, next) => {
+  try {
+    const { restaurantId, days } = req.body;
+    const d = parseInt(days || 180);
+    if (!restaurantId) return res.status(400).json({ message: 'restaurantId required' });
+    if (isNaN(d) || d < 1) return res.status(400).json({ message: 'days must be a positive integer' });
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - d);
+
+    const result = await prisma.order.deleteMany({
+      where: { restaurantId, createdAt: { lt: cutoff }, status: { in: ['PAID', 'CANCELLED', 'SERVED'] } },
+    });
+
+    await logActivity({
+      userId: req.user.id,
+      action: 'ORDERS_PURGED',
+      entity: 'Order',
+      metadata: { restaurantId, days: d, deleted: result.count },
+    });
+
+    res.json({ deleted: result.count, cutoff: cutoff.toISOString(), days: d });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getStats, getAnalytics,
   getDashboardKPIs, getRevenueBI,
@@ -745,4 +922,7 @@ module.exports = {
   getHealth,
   getAnnouncements, createAnnouncement, deleteAnnouncement,
   getTickets, updateTicket, deleteTicket,
+  getMaintenanceStatus, setMaintenanceMode, getMaintenancePublic,
+  getOnboardingPipeline, nudgeRestaurants,
+  purgeLogs, purgeOrders,
 };
