@@ -10,6 +10,7 @@ import {
   FaBuilding, FaUsers, FaChartLine, FaShoppingBag,
   FaMoneyBillWave, FaTicketAlt, FaExclamationTriangle,
   FaArrowUp, FaArrowDown, FaMinus, FaCircle, FaFilePdf,
+  FaPlus, FaBullhorn, FaDownload, FaSyncAlt,
 } from 'react-icons/fa'
 import { ChartSkeleton } from '../../components/Skeleton'
 
@@ -403,6 +404,73 @@ export default function SuperDashboardPage() {
                 </Tag>
               )
             })}
+          </div>
+
+          {/* ── Quick Actions ─────────────────────────────────────────────── */}
+          <div className="mb-7">
+            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Quick Actions</h2>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('/super/restaurants', { state: { openCreate: true } })}
+                className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm hover:shadow-md"
+              >
+                <FaPlus className="w-3 h-3" /> New Restaurant
+              </button>
+
+              <button
+                onClick={() => navigate('/super/announcements')}
+                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-purple-50 hover:border-purple-200 text-gray-700 hover:text-purple-700 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm"
+              >
+                <FaBullhorn className="w-3.5 h-3.5" /> Send Announcement
+              </button>
+
+              <button
+                onClick={() => {
+                  if (!stats) return
+                  const headers = ['Metric', 'Value']
+                  const rows = [
+                    ['Total Restaurants', stats.totalRestaurants],
+                    ['Active Restaurants', stats.activeRestaurants],
+                    ['Total Users', stats.totalUsers],
+                    ['Total Orders', stats.totalOrders],
+                    ['Total Revenue (Rs.)', stats.totalRevenue],
+                    ["Today's Orders", kpis?.todayOrders ?? 0],
+                    ["Today's Revenue (Rs.)", kpis?.todayRevenue ?? 0],
+                    ['Open Tickets', kpis?.openTickets ?? 0],
+                    ['Inactive Restaurants', kpis?.inactiveRestaurants ?? 0],
+                  ]
+                  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+                  const blob = new Blob([csv], { type: 'text/csv' })
+                  const url  = URL.createObjectURL(blob)
+                  const a    = document.createElement('a'); a.href = url; a.download = `platform_stats_${Date.now()}.csv`; a.click()
+                  URL.revokeObjectURL(url)
+                }}
+                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-green-50 hover:border-green-200 text-gray-700 hover:text-green-700 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm"
+              >
+                <FaDownload className="w-3.5 h-3.5" /> Export Stats CSV
+              </button>
+
+              <button
+                onClick={() => navigate('/super/health')}
+                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-blue-50 hover:border-blue-200 text-gray-700 hover:text-blue-700 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm"
+              >
+                <FaSyncAlt className="w-3.5 h-3.5" /> System Health
+              </button>
+
+              <button
+                onClick={() => navigate('/super/onboarding')}
+                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-amber-50 hover:border-amber-200 text-gray-700 hover:text-amber-700 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm"
+              >
+                🚀 Onboarding Pipeline
+              </button>
+
+              <button
+                onClick={() => navigate('/super/tickets')}
+                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-rose-50 hover:border-rose-200 text-gray-700 hover:text-rose-700 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-sm"
+              >
+                🎫 Support Tickets {kpis?.openTickets > 0 && <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full ml-0.5">{kpis.openTickets}</span>}
+              </button>
+            </div>
           </div>
 
           {/* Analytics */}

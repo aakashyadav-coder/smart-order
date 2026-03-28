@@ -185,18 +185,38 @@ const getRestaurants = async (req, res, next) => {
   try {
     const { search } = req.query;
     const where = search
-      ? { name: { contains: search, mode: "insensitive" } }
+      ? { name: { contains: search, mode: 'insensitive' } }
       : {};
 
-    const restaurants = await prisma.restaurant.findMany({
-      where,
-      include: {
-        _count: { select: { users: true, orders: true, menuItems: true } },
-        features: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-    res.json(restaurants);
+    const [restaurants, revenueRows] = await Promise.all([
+      prisma.restaurant.findMany({
+        where,
+        include: {
+          _count: { select: { users: true, orders: true, menuItems: true } },
+          features: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      // Aggregate paid revenue per restaurant
+      prisma.order.groupBy({
+        by: ['restaurantId'],
+        where: { status: { in: ['PAID', 'SERVED'] } },
+        _sum: { totalPrice: true },
+      }),
+    ]);
+
+    // Build a quick lookup map
+    const revenueMap = {};
+    for (const row of revenueRows) {
+      revenueMap[row.restaurantId] = row._sum.totalPrice || 0;
+    }
+
+    const result = restaurants.map(r => ({
+      ...r,
+      totalRevenue: revenueMap[r.id] || 0,
+    }));
+
+    res.json(result);
   } catch (err) { next(err); }
 };
 
@@ -388,32 +408,47 @@ const bulkUpdateUsers = async (req, res, next) => {
 // ── Global Orders ─────────────────────────────────────────────────────────────
 const getAllOrders = async (req, res, next) => {
   try {
-    const { restaurantId, status, limit = 100, search, dateFrom, dateTo } = req.query;
+    const { restaurantId, status, search, dateFrom, dateTo } = req.query;
+    const page  = Math.max(1, parseInt(req.query.page  || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '50')));
+    const skip  = (page - 1) * limit;
+
     const where = {};
     if (restaurantId) where.restaurantId = restaurantId;
     if (status) where.status = status.toUpperCase();
     if (dateFrom || dateTo) {
       where.createdAt = {};
       if (dateFrom) where.createdAt.gte = new Date(dateFrom);
-      if (dateTo) where.createdAt.lte = new Date(dateTo + "T23:59:59Z");
+      if (dateTo)   where.createdAt.lte = new Date(dateTo + 'T23:59:59Z');
     }
     if (search) {
       where.OR = [
-        { customerName: { contains: search, mode: "insensitive" } },
+        { customerName: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search } },
       ];
     }
 
-    const orders = await prisma.order.findMany({
-      where,
-      include: {
-        items: { include: { menuItem: { select: { name: true } } } },
-        restaurant: { select: { name: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: parseInt(limit),
+    const [total, orders] = await Promise.all([
+      prisma.order.count({ where }),
+      prisma.order.findMany({
+        where,
+        include: {
+          items: { include: { menuItem: { select: { name: true } } } },
+          restaurant: { select: { name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    res.json({
+      data: orders,
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
     });
-    res.json(orders);
   } catch (err) { next(err); }
 };
 

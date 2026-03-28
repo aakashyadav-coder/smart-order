@@ -5,7 +5,7 @@ import React, { useEffect, useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
-import { FaSearch, FaBuilding, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
+import { FaSearch, FaBuilding, FaCheckCircle, FaTimesCircle, FaMoneyBillWave } from 'react-icons/fa'
 
 const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
 const DAY_LABELS = { mon:'Mon', tue:'Tue', wed:'Wed', thu:'Thu', fri:'Fri', sat:'Sat', sun:'Sun' }
@@ -250,6 +250,19 @@ export default function RestaurantsPage() {
               </div>
 
               <OnboardingBadge r={r} />
+
+              {/* Revenue Badge */}
+              <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold ${
+                r.totalRevenue > 0
+                  ? 'bg-green-50 border-green-100 text-green-700'
+                  : 'bg-gray-50 border-gray-100 text-gray-400'
+              }`}>
+                <FaMoneyBillWave className={`w-3 h-3 flex-shrink-0 ${r.totalRevenue > 0 ? 'text-green-500' : 'text-gray-300'}`} />
+                {r.totalRevenue > 0
+                  ? <>Total Revenue: <strong className="ml-0.5">Rs. {Number(r.totalRevenue).toLocaleString()}</strong></>
+                  : 'No revenue yet'
+                }
+              </div>
 
               <div className="flex gap-3 text-xs text-gray-400 border-t border-gray-100 pt-2">
                 <span>👥 {r._count?.users} users</span>
