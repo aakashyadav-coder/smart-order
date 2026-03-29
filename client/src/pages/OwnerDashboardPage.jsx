@@ -455,7 +455,7 @@ export default function OwnerDashboardPage() {
                   )}
                 </button>
 
-                {announcementsPanelOpen && (
+                {announcementsOpen && (
                   <div className="absolute right-0 mt-3 w-96 max-w-[90vw] bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden z-30">
                     <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
                       <div>
