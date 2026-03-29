@@ -10,8 +10,14 @@ const api = axios.create({
 })
 
 // Inject JWT token on every request
+// Uses the same URL-based key selection as AuthContext so the right
+// JWT is always sent: SA token on /super/* tabs, user token everywhere else.
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('smart_order_token')
+  const isSuperPortal = window.location.pathname.startsWith('/super')
+  const token = isSuperPortal
+    ? localStorage.getItem('smart_order_sa_token')
+    : localStorage.getItem('smart_order_token')
+
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
