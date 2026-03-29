@@ -1,13 +1,13 @@
 /**
- * KitchenLoginPage â€” Premium dark login for kitchen staff
- * Theme: Deep dark with animated red mesh background
+ * KitchenLoginPage — Light illustration login for kitchen staff
  */
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
-import { FaConciergeBell, FaEye, FaEyeSlash } from 'react-icons/fa'
+import LoginIllustration from '../components/LoginIllustration'
+import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa'
 
 export default function KitchenLoginPage() {
   const navigate = useNavigate()
@@ -40,120 +40,95 @@ export default function KitchenLoginPage() {
   }
 
   return (
-    <div className="login-bg min-h-screen flex items-center justify-center p-4">
-      {/* Decorative blur blobs */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-brand-800/15 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative w-full max-w-sm">
-        {/* Logo mark */}
-        <div className="text-center mb-8">
-          <div className="relative inline-flex">
-            <div className="w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-700 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-brand-600/40 animate-float">
-              <FaConciergeBell className="w-10 h-10 text-white" />
-            </div>
-            {/* Glow ring */}
-            <div className="absolute inset-0 w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-700 rounded-3xl mx-auto mb-4 blur-xl opacity-40" />
-          </div>
-          <h1 className="text-2xl font-black text-white tracking-tight mt-4">Code Yatra</h1>
-          <p className="text-gray-400 text-sm mt-1.5 font-medium">Kitchen Dashboard</p>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-4xl bg-white rounded-3xl shadow-xl overflow-hidden grid md:grid-cols-2">
+        <div className="hidden md:flex items-center justify-center bg-gray-50 p-10">
+          <LoginIllustration subtitle="Kitchen Portal" />
         </div>
 
-        {/* Card */}
-        <div className="rounded-3xl p-7 border border-white/10 shadow-2xl" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)' }}>
-          {/* Portal badge */}
-          <div className="flex items-center justify-center mb-6">
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-brand-600/20 border border-brand-500/30 text-brand-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-pulse" />
-              Kitchen Staff Portal
-            </span>
+        <div className="p-8 sm:p-12">
+          <div className="md:hidden mb-6">
+            <p className="text-sm font-semibold text-gray-900">Code Yatra</p>
+            <p className="text-xs text-gray-400 mt-1">Kitchen Portal</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-red-950/60 border border-red-700/60 text-red-300 text-sm px-4 py-3 rounded-xl animate-fade-in flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
-                {error}
-              </div>
-            )}
+          <div className="mb-8">
+            <p className="text-xs uppercase tracking-widest text-gray-400">Kitchen Portal</p>
+            <h1 className="text-3xl font-semibold text-gray-900 mt-2">Sign in</h1>
+          </div>
 
+          {error && (
+            <div className="mb-5 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="label-dark">Email address</label>
-              <input
-                type="email"
-                autoComplete="email"
-                placeholder="Email address"
-                required
-                className="input-dark w-full"
-                value={form.email}
-                onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-              />
+              <label className="block text-sm text-gray-500 mb-1">Email</label>
+              <div className="relative">
+                <FaUser className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="Email address"
+                  required
+                  className="w-full border-b border-gray-300 focus:border-blue-500 outline-none pl-7 py-2 text-gray-900 placeholder:text-gray-300"
+                  value={form.email}
+                  onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                />
+              </div>
             </div>
 
             <div>
-              <label className="label-dark">Password</label>
+              <label className="block text-sm text-gray-500 mb-1">Password</label>
               <div className="relative">
+                <FaLock className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type={showPw ? 'text' : 'password'}
                   autoComplete="current-password"
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                  placeholder="••••••••"
                   required
-                  className="input-dark w-full pr-11"
+                  className="w-full border-b border-gray-300 focus:border-blue-500 outline-none pl-7 pr-10 py-2 text-gray-900 placeholder:text-gray-300"
                   value={form.password}
                   onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors p-1"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
                 >
                   {showPw ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            {/* Remember Me (Fix R5) */}
-            <label className="flex items-center gap-2.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={e => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded accent-brand-500"
-              />
-              <span className="text-gray-400 text-sm">Remember me for 30 days</span>
-            </label>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <label className="flex items-center gap-2 text-sm text-gray-500">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                />
+                Remember me
+              </label>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full py-3.5 mt-2 text-base rounded-xl"
-            >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Signing inâ€¦
-                </span>
-              ) : (
-                <>
-                  <FaConciergeBell className="w-4 h-4" />
-                  Login to Kitchen Dashboard
-                </>
-              )}
-            </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md w-full sm:w-40 transition-colors disabled:opacity-60"
+              >
+                {loading ? 'Signing in…' : 'Log in'}
+              </button>
+            </div>
           </form>
 
-          <p className="text-gray-600 text-xs text-center mt-5">
-            Use your assigned kitchen account credentials.
-          </p>
-        </div>
-
-        {/* Portal links */}
-        <div className="text-center mt-6 flex items-center justify-center gap-4">
-          <a href="/owner/login" className="text-xs text-gray-600 hover:text-gray-400 transition-colors">Owner portal â†’</a>
-          <span className="text-gray-800">Â·</span>
-          <a href="/super/login" className="text-xs text-gray-600 hover:text-gray-400 transition-colors">Developer portal â†’</a>
+          <div className="mt-8 text-xs text-gray-400 flex items-center gap-3">
+            <a href="/owner/login" className="hover:text-gray-600">Owner portal</a>
+            <span>•</span>
+            <a href="/super/login" className="hover:text-gray-600">Super admin portal</a>
+          </div>
         </div>
       </div>
     </div>

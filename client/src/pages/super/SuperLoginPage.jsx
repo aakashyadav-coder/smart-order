@@ -1,5 +1,5 @@
 /**
- * SuperLoginPage - Premium dark login for Super Admin
+ * SuperLoginPage � Light illustration login for Super Admin
  * Step 1: email + password
  * Step 2: 6-digit TOTP code (shown only when totpEnabled=true on the account)
  */
@@ -8,31 +8,31 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
-import { FaShieldAlt, FaEye, FaEyeSlash, FaArrowLeft, FaLock } from 'react-icons/fa'
+import LoginIllustration from '../../components/LoginIllustration'
+import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa'
 
 export default function SuperLoginPage() {
   const navigate = useNavigate()
   const { login, isAuthenticated, user } = useAuth()
 
-  // ── Step 1: credentials ────────────────────────────────────────────────────
-  const [form,       setForm]       = useState({ email: '', password: '' })
+  // Step 1: credentials
+  const [form, setForm] = useState({ email: '', password: '' })
   const [rememberMe, setRememberMe] = useState(false)
-  const [showPw,     setShowPw]     = useState(false)
+  const [showPw, setShowPw] = useState(false)
 
-  // ── Step 2: TOTP challenge ─────────────────────────────────────────────────
-  const [step,         setStep]         = useState(1)        // 1 | 2
+  // Step 2: TOTP challenge
+  const [step, setStep] = useState(1) // 1 | 2
   const [preAuthToken, setPreAuthToken] = useState('')
-  const [digits,       setDigits]       = useState(Array(6).fill(''))
+  const [digits, setDigits] = useState(Array(6).fill(''))
   const digitRefs = useRef([])
 
   const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'SUPER_ADMIN') navigate('/super', { replace: true })
   }, [isAuthenticated, user, navigate])
 
-  // ── Step 1 submit ──────────────────────────────────────────────────────────
   const handleCredentials = async (e) => {
     e.preventDefault()
     setError('')
@@ -41,7 +41,6 @@ export default function SuperLoginPage() {
       const res = await api.post('/auth/login', { ...form, rememberMe })
 
       if (res.data.requireTotp) {
-        // Server needs 2FA — move to step 2
         setPreAuthToken(res.data.preAuthToken)
         setStep(2)
         setTimeout(() => digitRefs.current[0]?.focus(), 80)
@@ -62,9 +61,7 @@ export default function SuperLoginPage() {
     }
   }
 
-  // ── Step 2: digit input helpers ────────────────────────────────────────────
   const handleDigitChange = (idx, val) => {
-    // Allow paste of full 6-digit code into any box
     if (val.length === 6 && /^\d{6}$/.test(val)) {
       const arr = val.split('')
       setDigits(arr)
@@ -84,7 +81,6 @@ export default function SuperLoginPage() {
     }
   }
 
-  // ── Step 2 submit ──────────────────────────────────────────────────────────
   const handleTotpSubmit = async (e) => {
     e.preventDefault()
     const code = digits.join('')
@@ -109,135 +105,104 @@ export default function SuperLoginPage() {
     }
   }
 
-  // ── Shared card wrapper ────────────────────────────────────────────────────
   return (
-    <div className="login-bg min-h-screen flex items-center justify-center p-4">
-      {/* Decorative blur blobs */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-96 h-96 bg-purple-700/15 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-brand-900/20 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative w-full max-w-sm">
-        {/* Logo mark */}
-        <div className="text-center mb-8">
-          <div className="relative inline-flex">
-            <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-brand-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-2xl shadow-purple-600/40 animate-float">
-              {step === 2
-                ? <FaLock className="w-9 h-9 text-white" />
-                : <FaShieldAlt className="w-10 h-10 text-white" />}
-            </div>
-            <div className="absolute inset-0 w-20 h-20 bg-gradient-to-br from-purple-600 to-brand-600 rounded-3xl mx-auto mb-4 blur-xl opacity-30" />
-          </div>
-          <h1 className="text-2xl font-black text-white tracking-tight mt-4">Code Yatra</h1>
-          <p className="text-gray-400 text-sm mt-1.5 font-medium">
-            {step === 2 ? 'Two-Factor Authentication' : 'Developer Portal'}
-          </p>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-4xl bg-white rounded-3xl shadow-xl overflow-hidden grid md:grid-cols-2">
+        <div className="hidden md:flex items-center justify-center bg-gray-50 p-10">
+          <LoginIllustration subtitle={step === 2 ? 'Two-Factor Verification' : 'Super Admin Portal'} />
         </div>
 
-        {/* Card */}
-        <div className="rounded-3xl p-7 border border-white/10 shadow-2xl" style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)' }}>
-
-          {/* Portal badge */}
-          <div className="flex items-center justify-center mb-6">
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-purple-600/20 border border-purple-500/30 text-purple-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-              {step === 2 ? 'Verification Required' : 'Super Admin Access'}
-            </span>
+        <div className="p-8 sm:p-12">
+          <div className="md:hidden mb-6">
+            <p className="text-sm font-semibold text-gray-900">Code Yatra</p>
+            <p className="text-xs text-gray-400 mt-1">Super Admin Portal</p>
           </div>
 
-          {/* ── Step 1: Credentials ── */}
-          {step === 1 && (
-            <form onSubmit={handleCredentials} className="space-y-4">
-              {error && (
-                <div className="bg-red-950/60 border border-red-700/60 text-red-300 text-sm px-4 py-3 rounded-xl animate-fade-in flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
-                  {error}
-                </div>
-              )}
+          <div className="mb-8">
+            <p className="text-xs uppercase tracking-widest text-gray-400">
+              {step === 2 ? 'Verification' : 'Super Admin Portal'}
+            </p>
+            <h1 className="text-3xl font-semibold text-gray-900 mt-2">
+              {step === 2 ? 'Enter code' : 'Sign in'}
+            </h1>
+          </div>
 
+          {error && (
+            <div className="mb-5 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          {step === 1 && (
+            <form onSubmit={handleCredentials} className="space-y-6">
               <div>
-                <label className="label-dark">Email address</label>
-                <input
-                  type="email"
-                  required
-                  autoComplete="email"
-                  placeholder="Email address"
-                  className="input-dark w-full"
-                  value={form.email}
-                  onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                />
+                <label className="block text-sm text-gray-500 mb-1">Email</label>
+                <div className="relative">
+                  <FaUser className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="Email address"
+                    className="w-full border-b border-gray-300 focus:border-blue-500 outline-none pl-7 py-2 text-gray-900 placeholder:text-gray-300"
+                    value={form.email}
+                    onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="label-dark">Password</label>
+                <label className="block text-sm text-gray-500 mb-1">Password</label>
                 <div className="relative">
+                  <FaLock className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type={showPw ? 'text' : 'password'}
                     required
                     autoComplete="current-password"
-                    placeholder="********"
-                    className="input-dark w-full pr-11"
+                    placeholder="��������"
+                    className="w-full border-b border-gray-300 focus:border-blue-500 outline-none pl-7 pr-10 py-2 text-gray-900 placeholder:text-gray-300"
                     value={form.password}
                     onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPw(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors p-1"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
                   >
                     {showPw ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={e => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded accent-purple-500"
-                />
-                <span className="text-gray-400 text-sm">Remember me for 30 days</span>
-              </label>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <label className="flex items-center gap-2 text-sm text-gray-500">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={e => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                  />
+                  Remember me
+                </label>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 mt-2 text-base rounded-xl font-semibold text-white transition-all duration-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{ background: 'linear-gradient(135deg, #9333ea, #e11d48)' }}
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Authenticating...
-                  </span>
-                ) : (
-                  <>
-                    <FaShieldAlt className="w-4 h-4" />
-                    Access Developer Portal
-                  </>
-                )}
-              </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md w-full sm:w-40 transition-colors disabled:opacity-60"
+                >
+                  {loading ? 'Authenticating�' : 'Log in'}
+                </button>
+              </div>
             </form>
           )}
 
-          {/* ── Step 2: TOTP Challenge ── */}
           {step === 2 && (
-            <form onSubmit={handleTotpSubmit} className="space-y-5">
-              <p className="text-gray-400 text-sm text-center leading-relaxed">
-                Enter the 6-digit code from your authenticator app to complete sign-in.
+            <form onSubmit={handleTotpSubmit} className="space-y-6">
+              <p className="text-sm text-gray-500">
+                Enter the 6-digit code from your authenticator app.
               </p>
 
-              {error && (
-                <div className="bg-red-950/60 border border-red-700/60 text-red-300 text-sm px-4 py-3 rounded-xl animate-fade-in flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
-                  {error}
-                </div>
-              )}
-
-              {/* Six individual digit boxes */}
-              <div className="flex gap-2 justify-center">
+              <div className="flex gap-3">
                 {digits.map((d, i) => (
                   <input
                     key={i}
@@ -248,56 +213,38 @@ export default function SuperLoginPage() {
                     value={d}
                     onChange={e => handleDigitChange(i, e.target.value)}
                     onKeyDown={e => handleDigitKeyDown(i, e)}
-                    className="w-11 h-13 text-center text-xl font-bold rounded-xl border border-white/15 bg-white/5 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/30 outline-none transition-all"
-                    style={{ height: '3.25rem' }}
+                    className="w-10 h-12 text-center text-lg border-b border-gray-300 focus:border-blue-500 outline-none"
                   />
                 ))}
               </div>
 
-              <button
-                type="submit"
-                disabled={loading || digits.join('').length !== 6}
-                className="w-full py-3.5 text-base rounded-xl font-semibold text-white transition-all duration-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{ background: 'linear-gradient(135deg, #9333ea, #e11d48)' }}
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Verifying...
-                  </span>
-                ) : (
-                  <>
-                    <FaLock className="w-4 h-4" />
-                    Verify &amp; Sign In
-                  </>
-                )}
-              </button>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <button
+                  type="button"
+                  onClick={() => { setStep(1); setDigits(Array(6).fill('')); setError('') }}
+                  className="text-sm text-gray-400 hover:text-gray-600"
+                >
+                  Back to login
+                </button>
 
-              <button
-                type="button"
-                onClick={() => { setStep(1); setDigits(Array(6).fill('')); setError('') }}
-                className="w-full text-sm text-gray-500 hover:text-gray-300 transition-colors flex items-center justify-center gap-1.5 pt-1"
-              >
-                <FaArrowLeft className="w-3 h-3" /> Back to login
-              </button>
+                <button
+                  type="submit"
+                  disabled={loading || digits.join('').length !== 6}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md w-full sm:w-40 transition-colors disabled:opacity-60"
+                >
+                  {loading ? 'Verifying�' : 'Verify'}
+                </button>
+              </div>
             </form>
           )}
 
-          <p className="text-gray-600 text-xs text-center mt-5">
-            Use your assigned super admin credentials.
-          </p>
+          {step === 1 && (
+            <div className="mt-8 text-xs text-gray-400">
+              <a href="/kitchen/login" className="hover:text-gray-600">Kitchen staff login</a>
+            </div>
+          )}
         </div>
-
-        {/* Portal links */}
-        {step === 1 && (
-          <div className="text-center mt-6">
-            <a href="/kitchen/login" className="text-xs text-gray-600 hover:text-gray-400 transition-colors inline-flex items-center gap-1.5">
-              <FaArrowLeft className="w-3 h-3" /> Kitchen staff login
-            </a>
-          </div>
-        )}
       </div>
     </div>
   )
 }
-
