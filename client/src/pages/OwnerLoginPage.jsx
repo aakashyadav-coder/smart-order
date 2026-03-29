@@ -134,8 +134,7 @@ export default function OwnerLoginPage() {
       </div>
 
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center">
-        <p className="text-sm font-semibold text-gray-900">Code Yatra</p>
-        <p className="text-xs text-gray-400 mt-1">Owner Portal</p>
+        <p className="text-sm font-semibold text-gray-900">2026 CodeYatra PVT.LTD. All Rights Reserved</p>
       </div>
     </div>
   )
