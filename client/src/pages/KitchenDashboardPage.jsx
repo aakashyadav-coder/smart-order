@@ -182,17 +182,23 @@ function OrderCard({ order, col, isNew, isBusy, onAccept, onPrepare, onServe, on
         {isServed ? (
           null
         ) : (
-          <div className={`flex items-center gap-1.5 text-sm font-mono font-bold flex-shrink-0 mt-1 ${timerCls}`}>
+          <div className="flex flex-col items-end flex-shrink-0 mt-1 gap-1.5">
+            <div className={`flex items-center gap-1.5 text-sm font-mono font-bold ${timerCls}`}>
+              {isCritical && (
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
+              )}
+              <FaClock className="w-3.5 h-3.5 opacity-60 kitchen-icon" />
+              {label}
+            </div>
             {showUrgentPopup && (
-              <span className="bg-red-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-lg shadow-red-500/30 border border-red-300/40 urgent-pop">
+              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shadow-sm ${
+                urgentLabel === 'URGENT' 
+                  ? 'bg-red-600 text-white border-red-300/40 shadow-red-500/30 animate-pulse' 
+                  : 'bg-blue-500 text-white border-blue-300/40 shadow-blue-500/30'
+              }`}>
                 {urgentLabel}
               </span>
             )}
-            {isCritical && (
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block mr-0.5" />
-            )}
-            <FaClock className="w-3.5 h-3.5 opacity-60 kitchen-icon" />
-            {label}
           </div>
         )}
       </div>
