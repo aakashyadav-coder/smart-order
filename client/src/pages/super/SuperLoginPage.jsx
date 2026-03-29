@@ -1,5 +1,5 @@
 /**
- * SuperLoginPage — Light illustration login for Super Admin
+ * SuperLoginPage - Light image login for Super Admin
  * Step 1: email + password
  * Step 2: 6-digit TOTP code (shown only when totpEnabled=true on the account)
  */
@@ -8,19 +8,16 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
-import LoginIllustration from '../../components/LoginIllustration'
 import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa'
 
 export default function SuperLoginPage() {
   const navigate = useNavigate()
   const { login, isAuthenticated, user } = useAuth()
 
-  // Step 1: credentials
   const [form, setForm] = useState({ email: '', password: '' })
   const [rememberMe, setRememberMe] = useState(false)
   const [showPw, setShowPw] = useState(false)
 
-  // Step 2: TOTP challenge
   const [step, setStep] = useState(1) // 1 | 2
   const [preAuthToken, setPreAuthToken] = useState('')
   const [digits, setDigits] = useState(Array(6).fill(''))
@@ -106,23 +103,19 @@ export default function SuperLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6 relative">
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-xl overflow-hidden grid md:grid-cols-2">
         <div className="hidden md:flex items-center justify-center bg-gray-50 p-10">
-          <LoginIllustration subtitle={step === 2 ? 'Two-Factor Verification' : 'Super Admin Portal'} />
+          <img
+            src="/images/superlogin.png"
+            alt="Super admin login illustration"
+            className="w-full max-w-sm h-auto object-contain"
+          />
         </div>
 
         <div className="p-8 sm:p-12">
-          <div className="md:hidden mb-6">
-            <p className="text-sm font-semibold text-gray-900">Code Yatra</p>
-            <p className="text-xs text-gray-400 mt-1">Super Admin Portal</p>
-          </div>
-
           <div className="mb-8">
-            <p className="text-xs uppercase tracking-widest text-gray-400">
-              {step === 2 ? 'Verification' : 'Super Admin Portal'}
-            </p>
-            <h1 className="text-3xl font-semibold text-gray-900 mt-2">
+            <h1 className="text-3xl font-semibold text-gray-900">
               {step === 2 ? 'Enter code' : 'Sign in'}
             </h1>
           </div>
@@ -159,7 +152,7 @@ export default function SuperLoginPage() {
                     type={showPw ? 'text' : 'password'}
                     required
                     autoComplete="current-password"
-                    placeholder="••••••••"
+                    placeholder="********"
                     className="w-full border-b border-gray-300 focus:border-blue-500 outline-none pl-7 pr-10 py-2 text-gray-900 placeholder:text-gray-300"
                     value={form.password}
                     onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
@@ -190,7 +183,7 @@ export default function SuperLoginPage() {
                   disabled={loading}
                   className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md w-full sm:w-40 transition-colors disabled:opacity-60"
                 >
-                  {loading ? 'Authenticating…' : 'Log in'}
+                  {loading ? 'Authenticating...' : 'Log in'}
                 </button>
               </div>
             </form>
@@ -232,7 +225,7 @@ export default function SuperLoginPage() {
                   disabled={loading || digits.join('').length !== 6}
                   className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md w-full sm:w-40 transition-colors disabled:opacity-60"
                 >
-                  {loading ? 'Verifying…' : 'Verify'}
+                  {loading ? 'Verifying...' : 'Verify'}
                 </button>
               </div>
             </form>
@@ -244,6 +237,11 @@ export default function SuperLoginPage() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center">
+        <p className="text-sm font-semibold text-gray-900">Code Yatra</p>
+        <p className="text-xs text-gray-400 mt-1">Super Admin Portal</p>
       </div>
     </div>
   )

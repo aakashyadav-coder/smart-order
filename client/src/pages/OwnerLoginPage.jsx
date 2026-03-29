@@ -1,12 +1,11 @@
 /**
- * OwnerLoginPage � Light illustration login for restaurant owners
+ * OwnerLoginPage - Light image login for restaurant owners
  */
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
-import LoginIllustration from '../components/LoginIllustration'
 import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa'
 
 export default function OwnerLoginPage() {
@@ -46,21 +45,19 @@ export default function OwnerLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6 relative">
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-xl overflow-hidden grid md:grid-cols-2">
         <div className="hidden md:flex items-center justify-center bg-gray-50 p-10">
-          <LoginIllustration subtitle="Owner Portal" />
+          <img
+            src="/images/ownerlogin.png"
+            alt="Owner login illustration"
+            className="w-full max-w-sm h-auto object-contain"
+          />
         </div>
 
         <div className="p-8 sm:p-12">
-          <div className="md:hidden mb-6">
-            <p className="text-sm font-semibold text-gray-900">Code Yatra</p>
-            <p className="text-xs text-gray-400 mt-1">Owner Portal</p>
-          </div>
-
           <div className="mb-8">
-            <p className="text-xs uppercase tracking-widest text-gray-400">Owner Portal</p>
-            <h1 className="text-3xl font-semibold text-gray-900 mt-2">Sign in</h1>
+            <h1 className="text-3xl font-semibold text-gray-900">Sign in</h1>
           </div>
 
           {error && (
@@ -94,7 +91,7 @@ export default function OwnerLoginPage() {
                   type={showPw ? 'text' : 'password'}
                   required
                   autoComplete="current-password"
-                  placeholder="��������"
+                  placeholder="********"
                   className="w-full border-b border-gray-300 focus:border-blue-500 outline-none pl-7 pr-10 py-2 text-gray-900 placeholder:text-gray-300"
                   value={form.password}
                   onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
@@ -125,7 +122,7 @@ export default function OwnerLoginPage() {
                 disabled={loading}
                 className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md w-full sm:w-40 transition-colors disabled:opacity-60"
               >
-                {loading ? 'Signing in�' : 'Log in'}
+                {loading ? 'Signing in...' : 'Log in'}
               </button>
             </div>
           </form>
@@ -134,6 +131,11 @@ export default function OwnerLoginPage() {
             <a href="/kitchen/login" className="hover:text-gray-600">Kitchen staff</a>
           </div>
         </div>
+      </div>
+
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center">
+        <p className="text-sm font-semibold text-gray-900">Code Yatra</p>
+        <p className="text-xs text-gray-400 mt-1">Owner Portal</p>
       </div>
     </div>
   )
