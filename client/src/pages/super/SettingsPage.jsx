@@ -191,7 +191,7 @@ export default function SettingsPage() {
             <input type="email" className="input bg-white border-gray-200 text-gray-900"
               value={emailForm.newEmail}
               onChange={e => setEmailForm(p => ({ ...p, newEmail: e.target.value }))}
-              placeholder="new@email.com" />
+              placeholder="New email address" />
           </Field>
           <Field label="Current Password (to confirm)">
             <input type="password" className="input bg-white border-gray-200 text-gray-900"

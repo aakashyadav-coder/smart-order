@@ -90,7 +90,7 @@ export default function OwnerLoginPage() {
                 type="email"
                 required
                 autoComplete="email"
-                placeholder="owner@restaurant.com"
+                placeholder="Email address"
                 className="input-dark w-full"
                 value={form.email}
                 onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
@@ -151,7 +151,7 @@ export default function OwnerLoginPage() {
           </form>
 
           <p className="text-gray-600 text-xs text-center mt-5">
-            owner@restaurant.com · owner123
+            Use your assigned owner account credentials.
           </p>
         </div>
 

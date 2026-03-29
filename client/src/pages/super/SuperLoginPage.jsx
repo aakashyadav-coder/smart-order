@@ -162,7 +162,7 @@ export default function SuperLoginPage() {
                   type="email"
                   required
                   autoComplete="email"
-                  placeholder="superadmin@smartorder.dev"
+                  placeholder="Email address"
                   className="input-dark w-full"
                   value={form.email}
                   onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
@@ -284,7 +284,7 @@ export default function SuperLoginPage() {
           )}
 
           <p className="text-gray-600 text-xs text-center mt-5">
-            superadmin@smartorder.dev · super123
+            Use your assigned super admin credentials.
           </p>
         </div>
 

@@ -84,7 +84,7 @@ export default function KitchenLoginPage() {
               <input
                 type="email"
                 autoComplete="email"
-                placeholder="admin@restaurant.com"
+                placeholder="Email address"
                 required
                 className="input-dark w-full"
                 value={form.email}
@@ -145,7 +145,7 @@ export default function KitchenLoginPage() {
           </form>
 
           <p className="text-gray-600 text-xs text-center mt-5">
-            admin@restaurant.com · admin123
+            Use your assigned kitchen account credentials.
           </p>
         </div>
 

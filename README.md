@@ -74,8 +74,26 @@ npm install
 # Push schema to PostgreSQL
 npx prisma db push
 
-# Seed with sample data + admin user
+# Seed base data (restaurant, menu, features)
 node prisma/seed.js
+```
+
+### 4a. Create a Super Admin user (recommended)
+
+Run the helper script with CLI arguments:
+
+```bash
+cd server
+node createSuperAdmin.js --email "YOUR_EMAIL" --password "YOUR_STRONG_PASSWORD" --name "YOUR_NAME"
+```
+
+Or use environment variables (PowerShell):
+
+```powershell
+$env:SUPER_ADMIN_EMAIL="YOUR_EMAIL"
+$env:SUPER_ADMIN_PASSWORD="YOUR_STRONG_PASSWORD"
+$env:SUPER_ADMIN_NAME="YOUR_NAME"
+node createSuperAdmin.js
 ```
 
 ### 5. Install client dependencies
@@ -115,15 +133,6 @@ npm run dev
 | `http://localhost:5173/kitchen/login` | Kitchen staff login |
 | `http://localhost:5173/kitchen` | Kitchen dashboard (after login) |
 | `http://localhost:5173/admin/qr` | QR code generator |
-
----
-
-## Default Login Credentials
-
-| Role | Email | Password |
-|---|---|---|
-| Admin | `admin@restaurant.com` | `admin123` |
-| Kitchen | `kitchen@restaurant.com` | `kitchen123` |
 
 ---
 
@@ -182,3 +191,25 @@ npm run dev
 | `TWILIO_ACCOUNT_SID` | No | Twilio Account SID |
 | `TWILIO_AUTH_TOKEN` | No | Twilio Auth Token |
 | `TWILIO_PHONE_NUMBER` | No | Twilio sender phone number |
+
+### Optional Seed Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `SEED_SUPER_EMAIL` | No | Email for creating a SUPER_ADMIN during `prisma/seed.js` |
+| `SEED_SUPER_PASSWORD` | No | Password for the SUPER_ADMIN seed user |
+| `SEED_SUPER_NAME` | No | Name for the SUPER_ADMIN seed user |
+| `SEED_OWNER_EMAIL` | No | Email for creating an OWNER during `prisma/seed.js` |
+| `SEED_OWNER_PASSWORD` | No | Password for the OWNER seed user |
+| `SEED_OWNER_NAME` | No | Name for the OWNER seed user |
+| `SEED_KITCHEN_EMAIL` | No | Email for creating a KITCHEN user during `prisma/seed.js` |
+| `SEED_KITCHEN_PASSWORD` | No | Password for the KITCHEN seed user |
+| `SEED_KITCHEN_NAME` | No | Name for the KITCHEN seed user |
+
+### Super Admin Helper Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `SUPER_ADMIN_EMAIL` | No | Email used by `createSuperAdmin.js` when `--email` is not provided |
+| `SUPER_ADMIN_PASSWORD` | No | Password used by `createSuperAdmin.js` when `--password` is not provided |
+| `SUPER_ADMIN_NAME` | No | Name used by `createSuperAdmin.js` when `--name` is not provided |

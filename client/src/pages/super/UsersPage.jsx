@@ -215,7 +215,7 @@ export default function UsersPage() {
           </div>
           <div className="p-5 space-y-3">
             <InputField label="Full Name *" field="name" placeholder="John Doe" form={form} setForm={setForm} />
-            <InputField label="Email *" field="email" type="email" placeholder="user@restaurant.com" form={form} setForm={setForm} />
+            <InputField label="Email *" field="email" type="email" placeholder="Email address" form={form} setForm={setForm} />
             <InputField label={mode === 'create' ? 'Password *' : 'New Password (leave blank to keep)'} field="password" type="password" placeholder="********" form={form} setForm={setForm} />
             <div>
               <label className="label text-gray-600 text-xs">Role *</label>

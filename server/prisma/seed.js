@@ -1,18 +1,36 @@
 /**
  * Seed script — Smart Order (Multi-tenant)
  * Creates:
- *  - 1 super admin  (superadmin@smartorder.dev / super123)
  *  - 1 default restaurant "The Grand Kitchen"
- *  - 1 owner        (admin@restaurant.com / admin123)
- *  - 1 kitchen user (kitchen@restaurant.com / kitchen123)
  *  - 12 menu items linked to the default restaurant
  *  - Feature toggles for the restaurant
+ *
+ * Optional users (only created if env vars are provided):
+ *  - SUPER_ADMIN via SEED_SUPER_EMAIL + SEED_SUPER_PASSWORD
+ *  - OWNER via SEED_OWNER_EMAIL + SEED_OWNER_PASSWORD
+ *  - KITCHEN via SEED_KITCHEN_EMAIL + SEED_KITCHEN_PASSWORD
  */
 
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
+require("dotenv").config();
 
 const prisma = new PrismaClient();
+
+function readEnv(key) {
+  const value = process.env[key];
+  return value && value.trim() ? value.trim() : null;
+}
+
+function requireEmailPassword(label, emailKey, passwordKey) {
+  const email = readEnv(emailKey);
+  const password = readEnv(passwordKey);
+  if ((email && !password) || (!email && password)) {
+    throw new Error(`${label}: set both ${emailKey} and ${passwordKey} to create this user.`);
+  }
+  if (!email) return null;
+  return { email, password };
+}
 
 const menuItems = [
   // Drinks
@@ -47,16 +65,23 @@ async function main() {
   await prisma.restaurant.deleteMany();
 
   // ── Super Admin (platform-level, no restaurant) ────────────────────────────
-  const superHash = await bcrypt.hash("super123", 10);
-  const superAdmin = await prisma.user.create({
-    data: {
-      name: "Super Admin",
-      email: "superadmin@smartorder.dev",
-      passwordHash: superHash,
-      role: "SUPER_ADMIN",
-    },
-  });
-  console.log("✅ Super Admin:", superAdmin.email);
+  const superInput = requireEmailPassword("SUPER_ADMIN", "SEED_SUPER_EMAIL", "SEED_SUPER_PASSWORD");
+  const superName = readEnv("SEED_SUPER_NAME") || "Super Admin";
+  let superAdmin = null;
+  if (superInput) {
+    const superHash = await bcrypt.hash(superInput.password, 10);
+    superAdmin = await prisma.user.create({
+      data: {
+        name: superName,
+        email: superInput.email,
+        passwordHash: superHash,
+        role: "SUPER_ADMIN",
+      },
+    });
+    console.log("✅ Super Admin created");
+  } else {
+    console.log("ℹ️  Skipping Super Admin (set SEED_SUPER_EMAIL and SEED_SUPER_PASSWORD to create).");
+  }
 
   // ── Default Restaurant ─────────────────────────────────────────────────────
   const restaurant = await prisma.restaurant.create({
@@ -80,30 +105,42 @@ async function main() {
   console.log("✅ Feature toggles created");
 
   // ── Owner ──────────────────────────────────────────────────────────────────
-  const ownerHash = await bcrypt.hash("owner123", 10);
-  await prisma.user.create({
-    data: {
-      name: "Restaurant Owner",
-      email: "owner@restaurant.com",
-      passwordHash: ownerHash,
-      role: "OWNER",
-      restaurantId: restaurant.id,
-    },
-  });
-  console.log("✅ Owner: owner@restaurant.com");
+  const ownerInput = requireEmailPassword("OWNER", "SEED_OWNER_EMAIL", "SEED_OWNER_PASSWORD");
+  const ownerName = readEnv("SEED_OWNER_NAME") || "Restaurant Owner";
+  if (ownerInput) {
+    const ownerHash = await bcrypt.hash(ownerInput.password, 10);
+    await prisma.user.create({
+      data: {
+        name: ownerName,
+        email: ownerInput.email,
+        passwordHash: ownerHash,
+        role: "OWNER",
+        restaurantId: restaurant.id,
+      },
+    });
+    console.log("✅ Owner created");
+  } else {
+    console.log("ℹ️  Skipping Owner (set SEED_OWNER_EMAIL and SEED_OWNER_PASSWORD to create).");
+  }
 
   // ── Kitchen Staff ──────────────────────────────────────────────────────────
-  const kitchenHash = await bcrypt.hash("kitchen123", 10);
-  await prisma.user.create({
-    data: {
-      name: "Kitchen Staff",
-      email: "kitchen@restaurant.com",
-      passwordHash: kitchenHash,
-      role: "KITCHEN",
-      restaurantId: restaurant.id,
-    },
-  });
-  console.log("✅ Kitchen: kitchen@restaurant.com");
+  const kitchenInput = requireEmailPassword("KITCHEN", "SEED_KITCHEN_EMAIL", "SEED_KITCHEN_PASSWORD");
+  const kitchenName = readEnv("SEED_KITCHEN_NAME") || "Kitchen Staff";
+  if (kitchenInput) {
+    const kitchenHash = await bcrypt.hash(kitchenInput.password, 10);
+    await prisma.user.create({
+      data: {
+        name: kitchenName,
+        email: kitchenInput.email,
+        passwordHash: kitchenHash,
+        role: "KITCHEN",
+        restaurantId: restaurant.id,
+      },
+    });
+    console.log("✅ Kitchen user created");
+  } else {
+    console.log("ℹ️  Skipping Kitchen user (set SEED_KITCHEN_EMAIL and SEED_KITCHEN_PASSWORD to create).");
+  }
 
   // ── Menu Items ─────────────────────────────────────────────────────────────
   for (const item of menuItems) {
@@ -112,20 +149,20 @@ async function main() {
   console.log(`✅ ${menuItems.length} menu items created`);
 
   // ── Activity Log entry ─────────────────────────────────────────────────────
-  await prisma.activityLog.create({
-    data: {
-      userId: superAdmin.id,
-      action: "SYSTEM_SEEDED",
-      entity: "System",
-      metadata: { note: "Initial database seed" },
-    },
-  });
+  if (superAdmin) {
+    await prisma.activityLog.create({
+      data: {
+        userId: superAdmin.id,
+        action: "SYSTEM_SEEDED",
+        entity: "System",
+        metadata: { note: "Initial database seed" },
+      },
+    });
+  }
 
   console.log("\n🎉 Seed complete!");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("Super Admin: superadmin@smartorder.dev  /  super123");
-  console.log("Owner:       owner@restaurant.com       /  owner123");
-  console.log("Kitchen:     kitchen@restaurant.com     /  kitchen123");
+  console.log("Users are only created when SEED_* env vars are provided.");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 }
 
