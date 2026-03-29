@@ -2,7 +2,7 @@
  * SuperLayout â€” Dark sidebar + content area for Super Admin
  * Includes: NotificationCenter bell, Ctrl+K CommandPalette, Settings nav item
  */
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState } from 'react'
 import { NavLink, useNavigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import socket from '../lib/socket'
@@ -12,6 +12,7 @@ import {
   FaBullhorn, FaInbox, FaChartBar, FaRocket, FaSearch, FaUserCog, FaHistory,
 } from 'react-icons/fa'
 import NotificationCenter from './NotificationCenter'
+import ConfirmModal from './ConfirmModal'
 import CommandPalette from './CommandPalette'
 
 const NAV_ITEMS = [
@@ -32,8 +33,9 @@ const NAV_ITEMS = [
 export default function SuperLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen]   = useState(false)
+  const [paletteOpen, setPaletteOpen]   = useState(false)
+  const [confirmOpen, setConfirmOpen]   = useState(false)
 
   useEffect(() => {
     socket.connect()
@@ -55,7 +57,8 @@ export default function SuperLayout() {
     return () => document.removeEventListener('keydown', handler)
   }, [])
 
-  const handleLogout = () => { logout(); navigate('/super/login') }
+  const handleLogout = () => setConfirmOpen(true)
+  const doLogout     = () => { logout(); navigate('/super/login') }
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -200,6 +203,17 @@ export default function SuperLayout() {
 
       {/* Global Command Palette */}
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+
+      {/* Sign-out confirmation */}
+      <ConfirmModal
+        open={confirmOpen}
+        title="Sign Out?"
+        message="Sign out of the Super Admin portal?"
+        confirmLabel="Sign Out"
+        type="danger"
+        onConfirm={doLogout}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 /**
- * SettingsPage - Super Admin profile, password change, 2FA status
+ * SettingsPage - Super Admin profile, password change + full 2FA TOTP setup
+ * Fix #23: Full TOTP flow — QR code → verify → enable/disable with password gate
  */
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -8,6 +9,7 @@ import { useAuth } from '../../context/AuthContext'
 import {
   FaUser, FaLock, FaShieldAlt, FaSave,
   FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaEnvelope,
+  FaQrcode, FaMobileAlt, FaUnlock,
 } from 'react-icons/fa'
 
 function Section({ icon: Icon, title, children }) {
@@ -89,6 +91,59 @@ export default function SettingsPage() {
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed to change password')
     } finally { setChangingPw(false) }
+  }
+
+  // ── 2FA TOTP state ──────────────────────────────────────────────────────────
+  const [totpStep, setTotpStep]       = useState('idle') // 'idle' | 'setup' | 'enabled'
+  const [totpSecret, setTotpSecret]   = useState('')
+  const [totpQR, setTotpQR]           = useState('')
+  const [totpCode, setTotpCode]       = useState('')
+  const [totpBusy, setTotpBusy]       = useState(false)
+  const [disablePw, setDisablePw]     = useState('')
+  const [showDisable, setShowDisable] = useState(false)
+
+  // Sync totpStep with loaded profile
+  useEffect(() => { setTotpStep(twoFA ? 'enabled' : 'idle') }, [twoFA])
+
+  const handleInitTotp = async () => {
+    setTotpBusy(true)
+    try {
+      const res = await api.get('/super/settings/totp/init')
+      setTotpSecret(res.data.secret)
+      setTotpQR(res.data.qrDataUrl)
+      setTotpCode('')
+      setTotpStep('setup')
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to generate QR code')
+    } finally { setTotpBusy(false) }
+  }
+
+  const handleVerifyTotp = async () => {
+    if (!/^\d{6}$/.test(totpCode)) return toast.error('Enter a 6-digit code')
+    setTotpBusy(true)
+    try {
+      await api.post('/super/settings/totp/verify', { code: totpCode, secret: totpSecret })
+      toast.success('2FA enabled successfully!')
+      setTwoFA(true)
+      setTotpStep('enabled')
+      setTotpSecret(''); setTotpQR(''); setTotpCode('')
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Invalid code — try again')
+    } finally { setTotpBusy(false) }
+  }
+
+  const handleDisableTotp = async () => {
+    if (!disablePw) return toast.error('Enter your current password to continue')
+    setTotpBusy(true)
+    try {
+      await api.delete('/super/settings/totp/disable', { data: { currentPassword: disablePw } })
+      toast.success('2FA disabled.')
+      setTwoFA(false)
+      setTotpStep('idle')
+      setShowDisable(false); setDisablePw('')
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to disable 2FA')
+    } finally { setTotpBusy(false) }
   }
 
   if (loading) return (
@@ -190,29 +245,170 @@ export default function SettingsPage() {
         </div>
       </Section>
 
-      {/* 2FA Status */}
+      {/* ── Two-Factor Authentication (TOTP) ── */}
       <Section icon={FaShieldAlt} title="Two-Factor Authentication (2FA)">
-        <div className={`rounded-xl border p-4 flex items-start gap-3 ${twoFA ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${twoFA ? 'bg-green-100' : 'bg-amber-100'}`}>
-            <FaShieldAlt className={`w-4 h-4 ${twoFA ? 'text-green-600' : 'text-amber-600'}`} />
-          </div>
-          <div>
-            <p className={`font-bold text-sm ${twoFA ? 'text-green-800' : 'text-amber-800'} flex items-center gap-2`}>
-              {twoFA ? <><FaCheckCircle className="w-3.5 h-3.5" /> 2FA is Enabled</> : <><FaExclamationTriangle className="w-3.5 h-3.5" /> 2FA is Not Enabled</>}
-            </p>
-            <p className={`text-xs mt-1 ${twoFA ? 'text-green-700' : 'text-amber-700'}`}>
-              {twoFA
-                ? 'Your account is protected with TOTP two-factor authentication via your authenticator app.'
-                : 'Your account does not have 2FA enabled. Contact your system administrator to set up TOTP for added security.'}
-            </p>
-            {!twoFA && (
-              <p className="text-xs text-amber-600 mt-2 font-medium flex items-center gap-1.5">
-                <FaExclamationTriangle className="w-3 h-3" />
-                TOTP secret setup is managed server-side via the <code className="bg-amber-100 px-1 rounded">totpSecret</code> field on your user record.
+
+        {/* ── IDLE: not enabled, show enable CTA ── */}
+        {totpStep === 'idle' && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <FaShieldAlt className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-sm text-amber-800 flex items-center gap-2">
+                <FaExclamationTriangle className="w-3.5 h-3.5" /> 2FA is Not Enabled
               </p>
+              <p className="text-xs text-amber-700 mt-1">
+                Protect your super admin account with a time-based one-time password (TOTP) from your authenticator app.
+              </p>
+              <button
+                onClick={handleInitTotp}
+                disabled={totpBusy}
+                className="mt-3 inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors disabled:opacity-50"
+              >
+                {totpBusy
+                  ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  : <FaQrcode className="w-3.5 h-3.5" />
+                }
+                Set Up 2FA
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── SETUP: show QR + verify step ── */}
+        {totpStep === 'setup' && (
+          <div className="space-y-5">
+            {/* Step indicator */}
+            <div className="flex items-center gap-3 text-xs font-semibold text-gray-500">
+              <span className="flex items-center gap-1.5 text-brand-600">
+                <span className="w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center text-[10px] font-black">1</span>
+                Scan QR
+              </span>
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-[10px] font-black">2</span>
+                Verify Code
+              </span>
+            </div>
+
+            {/* Instructions */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700 flex items-start gap-2">
+              <FaMobileAlt className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+              <span>Open <strong>Google Authenticator</strong>, <strong>Authy</strong>, or any TOTP app, tap <em>Add account</em>, then scan the QR code below.</span>
+            </div>
+
+            {/* QR code */}
+            <div className="flex flex-col sm:flex-row items-center gap-5">
+              <div className="border-2 border-gray-200 rounded-2xl p-3 bg-white flex-shrink-0">
+                {totpQR && <img src={totpQR} alt="TOTP QR Code" className="w-40 h-40" />}
+              </div>
+              <div className="flex-1 space-y-3">
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 mb-1">Or enter this key manually:</p>
+                  <code className="block bg-gray-900 text-green-400 font-mono text-xs px-3 py-2 rounded-xl break-all select-all">
+                    {totpSecret}
+                  </code>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                    Enter 6-digit code from your app
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="000000"
+                    value={totpCode}
+                    onChange={e => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="input bg-white border-gray-200 text-gray-900 font-mono text-lg tracking-[0.3em] text-center w-40"
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleVerifyTotp}
+                    disabled={totpBusy || totpCode.length !== 6}
+                    className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors disabled:opacity-50"
+                  >
+                    {totpBusy
+                      ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      : <FaCheckCircle className="w-3.5 h-3.5" />
+                    }
+                    Verify & Enable
+                  </button>
+                  <button
+                    onClick={() => { setTotpStep('idle'); setTotpQR(''); setTotpSecret(''); setTotpCode('') }}
+                    className="text-sm text-gray-500 hover:text-gray-700 font-medium px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── ENABLED: show active badge + disable option ── */}
+        {totpStep === 'enabled' && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-green-200 bg-green-50 p-4 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+                <FaShieldAlt className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="font-bold text-sm text-green-800 flex items-center gap-2">
+                  <FaCheckCircle className="w-3.5 h-3.5" /> 2FA is Active
+                </p>
+                <p className="text-xs text-green-700 mt-1">
+                  Your account is protected with TOTP authentication. You'll need your authenticator app on every login.
+                </p>
+              </div>
+            </div>
+
+            {/* Disable panel */}
+            {!showDisable ? (
+              <button
+                onClick={() => setShowDisable(true)}
+                className="inline-flex items-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 font-semibold px-4 py-2 rounded-xl text-sm transition-colors"
+              >
+                <FaUnlock className="w-3.5 h-3.5" /> Disable 2FA
+              </button>
+            ) : (
+              <div className="border border-red-200 bg-red-50 rounded-xl p-4 space-y-3">
+                <p className="text-sm font-bold text-red-800">Confirm Disable 2FA</p>
+                <p className="text-xs text-red-600">Enter your current password to disable two-factor authentication.</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="password"
+                    placeholder="Current password"
+                    value={disablePw}
+                    onChange={e => setDisablePw(e.target.value)}
+                    className="input bg-white border-red-200 text-gray-900 flex-1"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDisableTotp}
+                      disabled={totpBusy || !disablePw}
+                      className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-xl text-sm transition-colors disabled:opacity-50"
+                    >
+                      {totpBusy
+                        ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        : <FaUnlock className="w-3.5 h-3.5" />
+                      }
+                      Confirm
+                    </button>
+                    <button
+                      onClick={() => { setShowDisable(false); setDisablePw('') }}
+                      className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
-        </div>
+        )}
       </Section>
 
       {/* Platform Info */}
@@ -233,4 +429,3 @@ export default function SettingsPage() {
     </div>
   )
 }
-

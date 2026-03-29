@@ -3,33 +3,86 @@
  * Manages kitchen room, owner room, customer order rooms
  */
 
-const initSocket = (io) => {
-  io.on("connection", (socket) => {
-    console.log(`[Socket] Client connected: ${socket.id}`);
+const jwt = require("jsonwebtoken");
 
-    // Super admin dashboard room
+/**
+ * Socket.io JWT middleware — runs before every connection.
+ * Clients must pass { auth: { token: "<JWT>" } } when calling io().
+ * Customer order-tracking rooms are exempted (token optional).
+ */
+const socketAuth = (socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) {
+    // Allow connection without a token — but socket.user will be null.
+    // Privileged room joins below will reject unauthenticated sockets.
+    socket.user = null;
+    return next();
+  }
+  try {
+    socket.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch {
+    next(new Error("Socket auth failed: invalid or expired token."));
+  }
+};
+
+const PRIVILEGED_ROOMS = ["kitchen", "super_admin", "owners"];
+
+const initSocket = (io) => {
+  // Apply JWT auth middleware to every socket connection
+  io.use(socketAuth);
+
+  io.on("connection", (socket) => {
+    console.log(`[Socket] Client connected: ${socket.id} (user: ${socket.user?.email ?? "guest"})`);
+
+    // Super admin dashboard room — requires SUPER_ADMIN role
     socket.on("join_super_admin", () => {
+      if (socket.user?.role !== "SUPER_ADMIN") {
+        return socket.emit("error", { message: "Unauthorized: SUPER_ADMIN role required." });
+      }
       socket.join("super_admin");
       console.log(`[Socket] ${socket.id} joined super_admin room`);
     });
 
-    // Owner room (for announcements + owner-specific notifications)
-    socket.on("join_owner", ({ restaurantId }) => {
+    // Owner room — requires OWNER, ADMIN, or SUPER_ADMIN role
+    socket.on("join_owner", ({ restaurantId } = {}) => {
+      const allowed = ["SUPER_ADMIN", "OWNER", "ADMIN"];
+      if (!socket.user || !allowed.includes(socket.user.role)) {
+        return socket.emit("error", { message: "Unauthorized: Owner role required." });
+      }
       socket.join("owners");
-      if (restaurantId) {
-        socket.join(`owner_${restaurantId}`);
-        console.log(`[Socket] ${socket.id} joined owner_${restaurantId}`);
+      // Prefer JWT restaurantId (authoritative) over client-supplied value
+      const rid = socket.user.restaurantId || restaurantId;
+      if (rid) {
+        socket.join(`owner_${rid}`);
+        socket.join(`restaurant_${rid}`);
+        console.log(`[Socket] ${socket.id} joined owner_${rid} + restaurant_${rid}`);
       }
     });
 
-    // Kitchen staff join the kitchen room
+    // Kitchen staff join the kitchen room — requires KITCHEN or above
     socket.on("join_kitchen", () => {
+      const allowed = ["SUPER_ADMIN", "OWNER", "ADMIN", "KITCHEN"];
+      if (!socket.user || !allowed.includes(socket.user.role)) {
+        return socket.emit("error", { message: "Unauthorized: Kitchen role required." });
+      }
       socket.join("kitchen");
+      // Auto-join the restaurant room from the verified JWT — avoids a separate
+      // client-side join_restaurant call and prevents joining the wrong restaurant.
+      if (socket.user.restaurantId) {
+        socket.join(`restaurant_${socket.user.restaurantId}`);
+        console.log(`[Socket] ${socket.id} auto-joined restaurant_${socket.user.restaurantId} via join_kitchen`);
+      } else {
+        console.warn(`[Socket] ${socket.id} kitchen user has no restaurantId — order events will not be received`);
+      }
       console.log(`[Socket] ${socket.id} joined kitchen room`);
     });
 
-    // Owner joins their restaurant room (for restaurant branding updates)
+    // Owner joins their restaurant room — requires authenticated user
     socket.on("join_restaurant", ({ restaurantId }) => {
+      if (!socket.user) {
+        return socket.emit("error", { message: "Unauthorized: authentication required." });
+      }
       if (restaurantId) {
         socket.join(`restaurant_${restaurantId}`);
         console.log(`[Socket] ${socket.id} joined restaurant_${restaurantId}`);
@@ -37,6 +90,7 @@ const initSocket = (io) => {
     });
 
     // Customer joins a specific order room to track their order status
+    // Public — no auth required (customers have no accounts)
     socket.on("join_order_room", ({ orderId }) => {
       if (orderId) {
         socket.join(`order_${orderId}`);
@@ -50,39 +104,42 @@ const initSocket = (io) => {
   });
 };
 
-/** Emit new order to the kitchen room */
+
+/** Emit new order — sent to restaurant_{id} room only.
+ * Kitchen staff join this room via join_restaurant, so they receive it once.
+ * Owners who called join_owner also receive it via the same room.
+ * Emitting to both 'kitchen' AND restaurant_{id} would cause double delivery.
+ */
 const emitNewOrder = (io, order) => {
-  io.to("kitchen").emit("new_order", order);
-  // Broadcast to restaurant-specific room (owner who joined via join_restaurant)
   if (order?.restaurantId) {
     io.to(`restaurant_${order.restaurantId}`).emit("new_order", order);
   }
-  console.log(`[Socket] new_order → kitchen (Order #${order.id})`);
+  console.log(`[Socket] new_order → restaurant_${order?.restaurantId} (Order #${order?.id})`);
 };
 
-/** Emit order status update to kitchen room + specific order room */
+/** Emit order status update.
+ * restaurant_{id} → kitchen staff + owner (authenticated, both are in this room)
+ * order_{id}      → customer tracking page (public, unauthenticated)
+ * NOT emitted to 'kitchen' room separately — kitchen staff are already in restaurant_{id}.
+ */
 const emitOrderStatusUpdate = (io, orderId, status, restaurantId) => {
   const payload = { orderId, status };
-  // Broadcast to kitchen dashboard (kitchen staff + owner)
-  io.to("kitchen").emit("order_status_update", payload);
-  // Broadcast to restaurant-specific room (owner who joined via join_restaurant)
   if (restaurantId) {
     io.to(`restaurant_${restaurantId}`).emit("order_status_update", payload);
   }
-  // Broadcast to customer's order tracking room
+  // Always notify the customer's order tracking page
   io.to(`order_${orderId}`).emit("order_status_update", payload);
-  console.log(`[Socket] order_status_update → kitchen + order_${orderId}: ${status}`);
+  console.log(`[Socket] order_status_update → restaurant_${restaurantId} + order_${orderId}: ${status}`);
 };
 
-/**
- * Emit restaurant branding update to kitchen + all restaurant members
- * Called when super admin changes restaurant name or logo
+/** Emit restaurant branding update.
+ * restaurant_{id} covers both kitchen staff and the owner — no need to also
+ * emit to 'kitchen' room separately.
  */
 const emitRestaurantUpdate = (io, restaurant) => {
   const payload = { id: restaurant.id, name: restaurant.name, logoUrl: restaurant.logoUrl };
-  io.to("kitchen").emit("restaurant_updated", payload);
   io.to(`restaurant_${restaurant.id}`).emit("restaurant_updated", payload);
-  console.log(`[Socket] restaurant_updated → kitchen + restaurant_${restaurant.id}: "${restaurant.name}"`);
+  console.log(`[Socket] restaurant_updated → restaurant_${restaurant.id}: "${restaurant.name}"`);
 };
 
 /** Emit announcement to owners */

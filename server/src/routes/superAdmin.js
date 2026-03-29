@@ -13,6 +13,7 @@ const {
   getOnboardingPipeline, nudgeRestaurants,
   purgeLogs, purgeOrders,
   getSuperProfile, updateSuperProfile, changePassword,
+  initTotp, verifyTotp, disableTotp,
   globalSearch,
 } = require("../controllers/superAdminController");
 const { authenticate, requireSuperAdmin } = require("../middleware/auth");
@@ -35,6 +36,11 @@ router.get("/search", globalSearch);
 router.get("/settings/profile", getSuperProfile);
 router.put("/settings/profile", updateSuperProfile);
 router.post("/settings/password", changePassword);
+
+// Settings — TOTP 2FA
+router.get("/settings/totp/init", initTotp);       // generate QR + temp secret
+router.post("/settings/totp/verify", verifyTotp);  // verify code + persist secret
+router.delete("/settings/totp/disable", disableTotp); // disable 2FA (password-gated)
 
 // System Health
 router.get("/health", getHealth);

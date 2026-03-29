@@ -6,6 +6,8 @@ const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 const { logActivity } = require("../services/activityLogService");
 const { emitRestaurantUpdate, emitAnnouncement } = require("../socket");
+const OTPAuth = require("otpauth");
+const QRCode = require("qrcode");
 
 // ── In-memory Maintenance Mode state ─────────────────────────────────────────
 // (Resets on server restart — intentional for simple SaaS use)
@@ -979,13 +981,95 @@ const changePassword = async (req, res, next) => {
     if (newPassword.length < 8) return res.status(400).json({ message: 'New password must be at least 8 characters' });
 
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-    const valid = await bcrypt.compare(currentPassword, user.password);
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!valid) return res.status(401).json({ message: 'Current password is incorrect' });
 
     const hashed = await bcrypt.hash(newPassword, 12);
-    await prisma.user.update({ where: { id: req.user.id }, data: { password: hashed } });
+    await prisma.user.update({ where: { id: req.user.id }, data: { passwordHash: hashed } });
     await logActivity({ userId: req.user.id, action: 'USER_UPDATED', entity: 'User', entityId: req.user.id, metadata: { action: 'password_change' } });
     res.json({ message: 'Password changed successfully' });
+  } catch (err) { next(err); }
+};
+
+// ── TOTP 2FA Setup ─────────────────────────────────────────────────────────────
+// Step 1 — Generate a temp secret + QR code, NOT saved to DB yet
+const initTotp = async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { email: true, totpEnabled: true },
+    });
+    if (!user) return res.status(404).json({ message: "User not found." });
+    if (user.totpEnabled) return res.status(400).json({ message: "2FA is already enabled." });
+
+    // Random 160-bit base32 secret
+    const secret = new OTPAuth.Secret({ size: 20 });
+    const totp = new OTPAuth.TOTP({
+      issuer: "SmartOrder",
+      label: user.email,
+      algorithm: "SHA1",
+      digits: 6,
+      period: 30,
+      secret,
+    });
+
+    const otpAuthUrl = totp.toString();
+    const qrDataUrl = await QRCode.toDataURL(otpAuthUrl, { width: 200, margin: 1 });
+
+    // Return temp secret (base32) + QR for UI; secret is NOT stored yet
+    res.json({ secret: secret.base32, qrDataUrl, otpAuthUrl });
+  } catch (err) { next(err); }
+};
+
+// Step 2 — Verify 6-digit TOTP code, then save secret to DB
+const verifyTotp = async (req, res, next) => {
+  try {
+    const { code, secret } = req.body;
+    if (!code || !secret) return res.status(400).json({ message: "code and secret are required." });
+    if (!/^\d{6}$/.test(code)) return res.status(400).json({ message: "Code must be exactly 6 digits." });
+
+    const totp = new OTPAuth.TOTP({
+      issuer: "SmartOrder",
+      algorithm: "SHA1",
+      digits: 6,
+      period: 30,
+      secret: OTPAuth.Secret.fromBase32(secret),
+    });
+
+    // validate with ±1 window (30s either side)
+    const delta = totp.validate({ token: code, window: 1 });
+    if (delta === null) return res.status(400).json({ message: "Invalid or expired code. Please try again." });
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { totpSecret: secret, totpEnabled: true },
+    });
+
+    await logActivity({ userId: req.user.id, action: "TOTP_ENABLED", entity: "User", entityId: req.user.id });
+    res.json({ message: "2FA enabled successfully." });
+  } catch (err) { next(err); }
+};
+
+// Step 3 — Disable 2FA (requires current password for safety)
+const disableTotp = async (req, res, next) => {
+  try {
+    const { currentPassword } = req.body;
+    if (!currentPassword) return res.status(400).json({ message: "currentPassword is required to disable 2FA." });
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) return res.status(404).json({ message: "User not found." });
+    if (!user.totpEnabled) return res.status(400).json({ message: "2FA is not currently enabled." });
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) return res.status(401).json({ message: "Current password is incorrect." });
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { totpSecret: null, totpEnabled: false },
+    });
+
+    await logActivity({ userId: req.user.id, action: "TOTP_DISABLED", entity: "User", entityId: req.user.id });
+    res.json({ message: "2FA disabled successfully." });
   } catch (err) { next(err); }
 };
 
@@ -1037,5 +1121,6 @@ module.exports = {
   getOnboardingPipeline, nudgeRestaurants,
   purgeLogs, purgeOrders,
   getSuperProfile, updateSuperProfile, changePassword,
+  initTotp, verifyTotp, disableTotp,
   globalSearch,
 };

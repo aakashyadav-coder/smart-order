@@ -1,31 +1,59 @@
 /**
  * Auth Context — manages JWT session for kitchen/owner/super admin
- * Fix R4: Silently refreshes access token using stored refresh token
- * Fix R5: Persists refresh token in localStorage when rememberMe=true
- * Fix R2: Logs out on 401 (expired) AND 403 (deactivated account)
+ * Each role-group uses SEPARATE localStorage keys so that logging out
+ * of Kitchen or Owner never affects an open Super Admin session and vice versa.
+ *
+ *   SUPER_ADMIN  →  smart_order_sa_token  / smart_order_sa_refresh
+ *   OWNER/ADMIN/KITCHEN → smart_order_token / smart_order_refresh
  */
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import api from '../lib/api'
 
 const AuthContext = createContext(null)
 
-const ACCESS_KEY  = 'smart_order_token'
-const REFRESH_KEY = 'smart_order_refresh'
+// ── Role-namespaced key helpers ────────────────────────────────────────────────
+const SA_KEYS   = { access: 'smart_order_sa_token',  refresh: 'smart_order_sa_refresh' }
+const USER_KEYS = { access: 'smart_order_token',     refresh: 'smart_order_refresh' }
+
+/** Decode a JWT payload without verifying signature */
+const decodePayload = (token) => {
+  try   { return JSON.parse(atob(token.split('.')[1])) }
+  catch { return null }
+}
+
+/** Return the correct key pair for a given role string */
+const keysFor = (role) => (role === 'SUPER_ADMIN' ? SA_KEYS : USER_KEYS)
+
+/**
+ * Determine which key pair to use based on the current URL.
+ * /super/* tabs always use SA_KEYS. All other portals use USER_KEYS.
+ * This prevents a kitchen tab from accidentally loading the super admin session.
+ */
+const getStoredToken = () => {
+  const keys = window.location.pathname.startsWith('/super') ? SA_KEYS : USER_KEYS
+  const t    = localStorage.getItem(keys.access)
+  if (!t) return { token: null, keys }
+  const p = decodePayload(t)
+  return (p && p.exp * 1000 > Date.now()) ? { token: t, keys } : { token: null, keys }
+}
 
 export const AuthProvider = ({ children }) => {
+  const init = getStoredToken()
   const [user,    setUser]    = useState(null)
-  const [token,   setToken]   = useState(() => localStorage.getItem(ACCESS_KEY))
+  const [token,   setToken]   = useState(init.token)
   const [loading, setLoading] = useState(true)
-  const refreshTimer = useRef(null)
+  const keysRef        = useRef(init.keys)   // always points to the active key pair
+  const refreshTimer   = useRef(null)
 
-  // ── Silent token refresh ──────────────────────────────────────────────────
+  // ── Silent token refresh ────────────────────────────────────────────────────
   const tryRefresh = async () => {
-    const rt = localStorage.getItem(REFRESH_KEY)
+    const keys = keysRef.current
+    const rt = localStorage.getItem(keys.refresh)
     if (!rt) return false
     try {
       const res = await api.post('/auth/refresh', { refreshToken: rt })
       const { token: newToken, user: freshUser } = res.data
-      localStorage.setItem(ACCESS_KEY, newToken)
+      localStorage.setItem(keys.access, newToken)
       setToken(newToken)
       setUser(freshUser)
       scheduleRefresh(newToken)
@@ -40,56 +68,52 @@ export const AuthProvider = ({ children }) => {
   const scheduleRefresh = (t) => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current)
     try {
-      const { exp } = JSON.parse(atob(t.split('.')[1]))
-      const msUntilExpiry = exp * 1000 - Date.now()
+      const { exp } = decodePayload(t)
+      const msUntilExpiry  = exp * 1000 - Date.now()
       const msUntilRefresh = Math.max(msUntilExpiry - 2 * 60 * 1000, 0)
       refreshTimer.current = setTimeout(tryRefresh, msUntilRefresh)
     } catch { /* malformed token — skip */ }
   }
 
+  // Only clears THIS user's keys — other portal sessions are unaffected
   const clearAuth = () => {
-    localStorage.removeItem(ACCESS_KEY)
-    localStorage.removeItem(REFRESH_KEY)
+    const keys = keysRef.current
+    localStorage.removeItem(keys.access)
+    localStorage.removeItem(keys.refresh)
     setToken(null)
     setUser(null)
     setLoading(false)
     if (refreshTimer.current) clearTimeout(refreshTimer.current)
   }
 
-  // ── On mount: verify token server-side ────────────────────────────────────
+  // ── On mount: verify token server-side ──────────────────────────────────────
   useEffect(() => {
     const verify = async () => {
       if (!token) { setLoading(false); return }
 
       // Quick local expiry check
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]))
-        if (payload.exp * 1000 < Date.now()) {
-          // Expired — try silent refresh before logging out
-          const refreshed = await tryRefresh()
-          if (!refreshed) { setLoading(false); return }
-          setLoading(false)
-          return
-        }
-      } catch { clearAuth(); setLoading(false); return }
+      const payload = decodePayload(token)
+      if (!payload) { clearAuth(); setLoading(false); return }
+
+      if (payload.exp * 1000 < Date.now()) {
+        const refreshed = await tryRefresh()
+        if (!refreshed) { setLoading(false); return }
+        setLoading(false)
+        return
+      }
 
       // Server-side verification — gets fresh role/restaurantId from DB
       try {
         const res = await api.get('/auth/me')
-        const payload = JSON.parse(atob(token.split('.')[1]))
         setUser({ ...payload, ...res.data })
         scheduleRefresh(token)
       } catch (err) {
         const status = err.response?.status
         if (status === 401 || status === 403) {
-          // 401 = expired/invalid, 403 = deactivated → force logout
           clearAuth()
         } else {
           // Network error — use token payload as fallback (don't logout on flaky network)
-          try {
-            const payload = JSON.parse(atob(token.split('.')[1]))
-            setUser(payload)
-          } catch { clearAuth() }
+          setUser(payload)
         }
       } finally {
         setLoading(false)
@@ -99,13 +123,17 @@ export const AuthProvider = ({ children }) => {
     return () => { if (refreshTimer.current) clearTimeout(refreshTimer.current) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Login ─────────────────────────────────────────────────────────────────
+  // ── Login ───────────────────────────────────────────────────────────────────
   const login = (accessToken, refreshToken, rememberMe = false) => {
-    localStorage.setItem(ACCESS_KEY, accessToken)
-    if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken)
+    const payload = decodePayload(accessToken)
+    const keys    = keysFor(payload?.role)
+    keysRef.current = keys                      // switch active key pair
+
+    localStorage.setItem(keys.access, accessToken)
+    if (refreshToken) localStorage.setItem(keys.refresh, refreshToken)
     if (!rememberMe)  sessionStorage.setItem('no_remember', '1')
+
     setToken(accessToken)
-    const payload = JSON.parse(atob(accessToken.split('.')[1]))
     setUser(payload)
     scheduleRefresh(accessToken)
   }

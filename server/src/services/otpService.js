@@ -2,9 +2,10 @@
  * OTP Service — generates and sends OTP via Twilio
  * Falls back to console mock if Twilio credentials are not configured
  */
+const { randomInt } = require("crypto");
 
 const generateOTPCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+  return String(randomInt(100000, 1000000)); // 6-digit cryptographically secure OTP
 };
 
 /**

@@ -400,7 +400,9 @@ export default function KitchenDashboardPage() {
     }).catch(() => { })
     socket.connect()
     socket.emit('join_kitchen')
+    // join_restaurant is REQUIRED — order events now go to restaurant_{id} only
     if (user?.restaurantId) socket.emit('join_restaurant', { restaurantId: user.restaurantId })
+    else console.warn('[Kitchen] restaurantId missing — order events will not be received')
   }, [authLoading, fetchOrders, user?.restaurantId])
 
   // Unlock audio after refresh (browsers require a user gesture)
