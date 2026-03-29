@@ -194,7 +194,7 @@ export default function MenuPage() {
                   <div className="w-7 h-7 bg-gradient-to-br from-brand-500 to-brand-700 rounded-lg flex items-center justify-center">
                     <FaUtensils className="w-4 h-4 text-white" />
                   </div>
-                  <h1 className="text-base font-black text-gray-900">Smart Order</h1>
+                  <h1 className="text-base font-black text-gray-900">Code Yatra</h1>
                 </div>
               )}
               {restaurant && (

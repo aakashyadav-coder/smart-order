@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AnnouncementsPage - super admin broadcasts to restaurant owners
  */
 import React, { useEffect, useState } from 'react'

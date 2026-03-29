@@ -1,4 +1,4 @@
-﻿/**
+/**
  * FeaturesPage - per-restaurant feature toggle management
  * Theme: White/light (matches entire Super Admin dashboard)
  */

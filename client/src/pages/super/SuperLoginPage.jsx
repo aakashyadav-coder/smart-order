@@ -129,7 +129,7 @@ export default function SuperLoginPage() {
             </div>
             <div className="absolute inset-0 w-20 h-20 bg-gradient-to-br from-purple-600 to-brand-600 rounded-3xl mx-auto mb-4 blur-xl opacity-30" />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight mt-4">Smart Order</h1>
+          <h1 className="text-2xl font-black text-white tracking-tight mt-4">Code Yatra</h1>
           <p className="text-gray-400 text-sm mt-1.5 font-medium">
             {step === 2 ? 'Two-Factor Authentication' : 'Developer Portal'}
           </p>

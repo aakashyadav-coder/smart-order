@@ -16,7 +16,7 @@ export default function LoadingSpinner() {
           <div className="absolute -inset-2 border-2 border-brand-400/30 rounded-3xl animate-ping-slow" />
         </div>
         <div className="text-center">
-          <p className="text-gray-800 font-bold text-sm">Smart Order</p>
+          <p className="text-gray-800 font-bold text-sm">Code Yatra</p>
           <p className="text-gray-400 text-xs mt-1">Loading…</p>
         </div>
       </div>

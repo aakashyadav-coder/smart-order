@@ -1,4 +1,4 @@
-﻿/**
+/**
  * RestaurantDetailPage - deep profile: hours, tables, staff, revenue, QR codes
  */
 import React, { useEffect, useState } from 'react'

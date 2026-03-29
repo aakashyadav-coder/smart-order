@@ -190,7 +190,7 @@ export default function CommandPalette({ open, onClose }) {
         <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50 flex items-center gap-4 text-[10px] text-gray-400 font-medium">
           <span><kbd className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-mono text-[10px]">↵</kbd> Select</span>
           <span><kbd className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded font-mono text-[10px]">Esc</kbd> Close</span>
-          <span className="ml-auto">Smart Order Global Search</span>
+          <span className="ml-auto">Code Yatra Global Search</span>
         </div>
       </div>
     </div>

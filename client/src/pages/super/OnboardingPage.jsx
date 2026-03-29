@@ -1,4 +1,4 @@
-﻿/**
+/**
  * OnboardingPage - Restaurant onboarding pipeline view
  * Stages: NOT_STARTED, PARTIAL, LIVE
  * With "Send Nudge" broadcast to restaurants by stage

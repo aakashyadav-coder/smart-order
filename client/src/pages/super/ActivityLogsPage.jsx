@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ActivityLogsPage - audit trail + data retention / cleanup tools
  */
 import React, { useEffect, useState } from 'react'

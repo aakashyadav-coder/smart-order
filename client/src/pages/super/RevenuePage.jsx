@@ -1,4 +1,4 @@
-﻿/**
+/**
  * RevenuePage - Business Intelligence for Super Admin
  * Sections: Platform KPI Strip, Revenue Bar Chart, Leaderboard, Peak Hours Heatmap
  * Pure SVG/CSS - no external chart libraries

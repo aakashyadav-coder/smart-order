@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SupportTicketsPage - view and manage support tickets from restaurant owners
  */
 import React, { useEffect, useState } from 'react'

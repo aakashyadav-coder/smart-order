@@ -1,4 +1,4 @@
-﻿/**
+/**
  * GlobalOrdersPage - all orders, paginated, with filters + CSV export
  * Server-side pagination: page / limit / total from backend
  */

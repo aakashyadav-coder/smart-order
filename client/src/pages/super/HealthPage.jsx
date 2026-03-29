@@ -1,4 +1,4 @@
-﻿/**
+/**
  * HealthPage - System health monitor + Maintenance Mode controls
  */
 import React, { useEffect, useState, useCallback } from 'react'

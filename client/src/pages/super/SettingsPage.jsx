@@ -415,7 +415,7 @@ export default function SettingsPage() {
       <Section icon={FaShieldAlt} title="Platform">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-            { label: 'Platform', value: 'Smart Order SaaS' },
+            { label: 'Platform', value: 'Code Yatra SaaS' },
             { label: 'Version', value: `v${import.meta.env.VITE_APP_VERSION ?? '—'}` },
             { label: 'Region', value: 'Local / Custom' },
           ].map(i => (

@@ -69,7 +69,7 @@ export default function SuperLayout() {
             <FaShieldAlt className="w-5 h-5 text-white" />
           </div>
           <div>
-            <p className="font-extrabold text-white text-sm leading-none">Smart Order</p>
+            <p className="font-extrabold text-white text-sm leading-none">Code Yatra</p>
             <p className="text-brand-400 text-xs font-semibold mt-0.5">Super Admin</p>
           </div>
         </div>
@@ -152,7 +152,7 @@ export default function SuperLayout() {
       <aside className={`fixed inset-y-0 left-0 z-50 w-56 bg-gradient-to-b from-gray-950 via-slate-900 to-gray-950 border-r border-white/8 flex flex-col transform transition-transform duration-300 ease-out lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Mobile close button */}
         <div className="flex items-center justify-between p-4 border-b border-white/8 lg:hidden">
-          <span className="font-bold text-white text-sm">Smart Order</span>
+          <span className="font-bold text-white text-sm">Code Yatra</span>
           <button onClick={() => setSidebarOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
             <FaTimes className="w-3.5 h-3.5 text-gray-300" />
           </button>

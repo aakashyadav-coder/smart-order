@@ -531,14 +531,14 @@ export default function SuperDashboardPage() {
   const generatePDFReport = () => {
     const now = new Date()
     const month = now.toLocaleString('en-IN', { month: 'long', year: 'numeric' })
-    const html = `<!DOCTYPE html><html><head><title>Smart Order – Platform Report ${month}</title>
+    const html = `<!DOCTYPE html><html><head><title>Code Yatra – Platform Report ${month}</title>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111;padding:40px}
 h1{font-size:24px;font-weight:900;color:#dc2626;margin-bottom:4px}.subtitle{color:#6b7280;font-size:13px;margin-bottom:32px}
 .section{margin-bottom:28px}.section h2{font-size:14px;font-weight:700;color:#374151;border-bottom:2px solid #f3f4f6;padding-bottom:6px;margin-bottom:14px;text-transform:uppercase;letter-spacing:.05em}
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.kpi{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:14px}
 .kpi-label{font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:4px}.kpi-value{font-size:20px;font-weight:900;color:#111}
 .footer{margin-top:40px;font-size:11px;color:#9ca3af;border-top:1px solid #f3f4f6;padding-top:12px}@media print{body{padding:28px}}</style></head>
-<body><h1>Smart Order – Platform Report</h1><p class="subtitle">Generated: ${now.toLocaleString('en-IN')} · Period: ${month}</p>
+<body><h1>Code Yatra – Platform Report</h1><p class="subtitle">Generated: ${now.toLocaleString('en-IN')} · Period: ${month}</p>
 <div class="section"><h2>Platform KPIs</h2><div class="kpi-grid">
 <div class="kpi"><div class="kpi-label">Total Restaurants</div><div class="kpi-value">${stats?.totalRestaurants ?? '-'}</div></div>
 <div class="kpi"><div class="kpi-label">Active Restaurants</div><div class="kpi-value">${stats?.activeRestaurants ?? '-'}</div></div>
@@ -548,7 +548,7 @@ h1{font-size:24px;font-weight:900;color:#dc2626;margin-bottom:4px}.subtitle{colo
 <div class="kpi"><div class="kpi-label">Today's Revenue</div><div class="kpi-value">Rs. ${(kpis?.todayRevenue || 0).toLocaleString()}</div></div>
 <div class="kpi"><div class="kpi-label">Open Tickets</div><div class="kpi-value">${kpis?.openTickets ?? '-'}</div></div>
 <div class="kpi"><div class="kpi-label">Inactive Restaurants</div><div class="kpi-value">${kpis?.inactiveRestaurants ?? '-'}</div></div>
-</div></div><div class="footer">Smart Order SaaS – Super Admin Platform Report – ${now.toISOString()} – Confidential</div></body></html>`
+</div></div><div class="footer">Code Yatra SaaS – Super Admin Platform Report – ${now.toISOString()} – Confidential</div></body></html>`
     // Use Blob URL instead of deprecated document.write()
     const blob = new Blob([html], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
