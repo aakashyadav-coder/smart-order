@@ -1,5 +1,5 @@
 /**
- * KitchenLoginPage — Light illustration login for kitchen staff
+ * KitchenLoginPage ï¿½ Light illustration login for kitchen staff
  */
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -87,7 +87,7 @@ export default function KitchenLoginPage() {
                 <input
                   type={showPw ? 'text' : 'password'}
                   autoComplete="current-password"
-                  placeholder="••••••••"
+                  placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
                   required
                   className="w-full border-b border-gray-300 focus:border-blue-500 outline-none pl-7 pr-10 py-2 text-gray-900 placeholder:text-gray-300"
                   value={form.password}
@@ -119,15 +119,14 @@ export default function KitchenLoginPage() {
                 disabled={loading}
                 className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md w-full sm:w-40 transition-colors disabled:opacity-60"
               >
-                {loading ? 'Signing in…' : 'Log in'}
+                {loading ? 'Signing inï¿½' : 'Log in'}
               </button>
             </div>
           </form>
 
           <div className="mt-8 text-xs text-gray-400 flex items-center gap-3">
             <a href="/owner/login" className="hover:text-gray-600">Owner portal</a>
-            <span>•</span>
-            <a href="/super/login" className="hover:text-gray-600">Super admin portal</a>
+        
           </div>
         </div>
       </div>

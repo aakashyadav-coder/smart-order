@@ -1,5 +1,5 @@
 /**
- * OwnerLoginPage — Light illustration login for restaurant owners
+ * OwnerLoginPage ï¿½ Light illustration login for restaurant owners
  */
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -94,7 +94,7 @@ export default function OwnerLoginPage() {
                   type={showPw ? 'text' : 'password'}
                   required
                   autoComplete="current-password"
-                  placeholder="••••••••"
+                  placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
                   className="w-full border-b border-gray-300 focus:border-blue-500 outline-none pl-7 pr-10 py-2 text-gray-900 placeholder:text-gray-300"
                   value={form.password}
                   onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
@@ -125,15 +125,13 @@ export default function OwnerLoginPage() {
                 disabled={loading}
                 className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md w-full sm:w-40 transition-colors disabled:opacity-60"
               >
-                {loading ? 'Signing in…' : 'Log in'}
+                {loading ? 'Signing inï¿½' : 'Log in'}
               </button>
             </div>
           </form>
 
           <div className="mt-8 text-xs text-gray-400 flex items-center gap-3">
             <a href="/kitchen/login" className="hover:text-gray-600">Kitchen staff</a>
-            <span>•</span>
-            <a href="/super/login" className="hover:text-gray-600">Super admin portal</a>
           </div>
         </div>
       </div>
