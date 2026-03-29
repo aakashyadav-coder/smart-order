@@ -160,7 +160,7 @@ export default function SuperLayout() {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="super-topbar px-4 py-3 flex items-center gap-3 shadow-sm">
+        <header className="super-topbar px-4 py-3 flex items-center gap-3 shadow-sm relative z-40">
           {/* Mobile hamburger */}
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
             <FaBars className="w-4 h-4 text-gray-600" />

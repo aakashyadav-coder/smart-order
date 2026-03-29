@@ -353,6 +353,7 @@ export default function KitchenDashboardPage() {
   const [audioUnlocked, setAudioUnlocked] = useState(false)
   const [busyOrderIds, setBusyOrderIds] = useState(new Set()) // orders with in-flight API calls
   const newIds = useRef(new Set())
+  const notifiedOrderIds = useRef(new Set())
   const ordersRef = useRef([])
   const overdueNotified = useRef(new Set())
 
@@ -455,6 +456,8 @@ export default function KitchenDashboardPage() {
   useEffect(() => {
     const onNew = order => {
       setOrders(p => p.find(o => o.id === order.id) ? p : [order, ...p])
+      if (notifiedOrderIds.current.has(order.id)) return
+      notifiedOrderIds.current.add(order.id)
       newIds.current.add(order.id)
       setTimeout(() => newIds.current.delete(order.id), 1500)
       ding()
