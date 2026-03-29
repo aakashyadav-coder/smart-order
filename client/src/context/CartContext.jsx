@@ -1,10 +1,23 @@
 /**
  * Cart Context — manages cart state across the app
+ * Cart is persisted to localStorage so a page refresh doesn't wipe items.
  */
-import React, { createContext, useContext, useReducer } from 'react'
+import React, { createContext, useContext, useReducer, useEffect } from 'react'
 import toast from 'react-hot-toast'
 
 const CartContext = createContext(null)
+
+const STORAGE_KEY = 'smart_order_cart'
+
+function loadCart() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return { items: [] }
+    return JSON.parse(raw)
+  } catch {
+    return { items: [] }
+  }
+}
 
 const cartReducer = (state, action) => {
   switch (action.type) {
@@ -43,7 +56,14 @@ const cartReducer = (state, action) => {
 }
 
 export const CartProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(cartReducer, { items: [] })
+  const [state, dispatch] = useReducer(cartReducer, undefined, loadCart)
+
+  // Persist every change to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    } catch { /* ignore quota errors */ }
+  }, [state])
 
   const addItem = (item) => {
     dispatch({ type: 'ADD_ITEM', item })

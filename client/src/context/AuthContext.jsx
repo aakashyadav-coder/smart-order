@@ -1,67 +1,116 @@
 /**
  * Auth Context — manages JWT session for kitchen/owner/super admin
- * On refresh: verifies token server-side to get fresh user data (incl. restaurantId)
+ * Fix R4: Silently refreshes access token using stored refresh token
+ * Fix R5: Persists refresh token in localStorage when rememberMe=true
+ * Fix R2: Logs out on 401 (expired) AND 403 (deactivated account)
  */
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import api from '../lib/api'
 
 const AuthContext = createContext(null)
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser]       = useState(null)
-  const [token, setToken]     = useState(() => localStorage.getItem('smart_order_token'))
-  const [loading, setLoading] = useState(true)
+const ACCESS_KEY  = 'smart_order_token'
+const REFRESH_KEY = 'smart_order_refresh'
 
-  // On mount / token change: verify token server-side to get fresh user data
+export const AuthProvider = ({ children }) => {
+  const [user,    setUser]    = useState(null)
+  const [token,   setToken]   = useState(() => localStorage.getItem(ACCESS_KEY))
+  const [loading, setLoading] = useState(true)
+  const refreshTimer = useRef(null)
+
+  // ── Silent token refresh ──────────────────────────────────────────────────
+  const tryRefresh = async () => {
+    const rt = localStorage.getItem(REFRESH_KEY)
+    if (!rt) return false
+    try {
+      const res = await api.post('/auth/refresh', { refreshToken: rt })
+      const { token: newToken, user: freshUser } = res.data
+      localStorage.setItem(ACCESS_KEY, newToken)
+      setToken(newToken)
+      setUser(freshUser)
+      scheduleRefresh(newToken)
+      return true
+    } catch {
+      clearAuth()
+      return false
+    }
+  }
+
+  // Schedule a refresh 2 minutes before expiry
+  const scheduleRefresh = (t) => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current)
+    try {
+      const { exp } = JSON.parse(atob(t.split('.')[1]))
+      const msUntilExpiry = exp * 1000 - Date.now()
+      const msUntilRefresh = Math.max(msUntilExpiry - 2 * 60 * 1000, 0)
+      refreshTimer.current = setTimeout(tryRefresh, msUntilRefresh)
+    } catch { /* malformed token — skip */ }
+  }
+
+  const clearAuth = () => {
+    localStorage.removeItem(ACCESS_KEY)
+    localStorage.removeItem(REFRESH_KEY)
+    setToken(null)
+    setUser(null)
+    setLoading(false)
+    if (refreshTimer.current) clearTimeout(refreshTimer.current)
+  }
+
+  // ── On mount: verify token server-side ────────────────────────────────────
   useEffect(() => {
     const verify = async () => {
       if (!token) { setLoading(false); return }
 
-      // Quick local expiry check first
+      // Quick local expiry check
       try {
         const payload = JSON.parse(atob(token.split('.')[1]))
         if (payload.exp * 1000 < Date.now()) {
-          logout(); return
+          // Expired — try silent refresh before logging out
+          const refreshed = await tryRefresh()
+          if (!refreshed) { setLoading(false); return }
+          setLoading(false)
+          return
         }
-      } catch { logout(); return }
+      } catch { clearAuth(); setLoading(false); return }
 
-      // Server-side verification — ensures restaurantId and role are fresh from DB
+      // Server-side verification — gets fresh role/restaurantId from DB
       try {
         const res = await api.get('/auth/me')
-        // Merge server data with token payload (server is source of truth for role/restaurantId)
         const payload = JSON.parse(atob(token.split('.')[1]))
         setUser({ ...payload, ...res.data })
+        scheduleRefresh(token)
       } catch (err) {
-        // 401 = token invalid/expired → force logout
-        if (err.message?.includes('401') || err.response?.status === 401) {
-          logout()
+        const status = err.response?.status
+        if (status === 401 || status === 403) {
+          // 401 = expired/invalid, 403 = deactivated → force logout
+          clearAuth()
         } else {
-          // Network error — use token payload as fallback (don't logout)
+          // Network error — use token payload as fallback (don't logout on flaky network)
           try {
             const payload = JSON.parse(atob(token.split('.')[1]))
             setUser(payload)
-          } catch { logout() }
+          } catch { clearAuth() }
         }
       } finally {
         setLoading(false)
       }
     }
     verify()
-  }, [token])
+    return () => { if (refreshTimer.current) clearTimeout(refreshTimer.current) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const login = (newToken) => {
-    localStorage.setItem('smart_order_token', newToken)
-    setToken(newToken)
-    const payload = JSON.parse(atob(newToken.split('.')[1]))
+  // ── Login ─────────────────────────────────────────────────────────────────
+  const login = (accessToken, refreshToken, rememberMe = false) => {
+    localStorage.setItem(ACCESS_KEY, accessToken)
+    if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken)
+    if (!rememberMe)  sessionStorage.setItem('no_remember', '1')
+    setToken(accessToken)
+    const payload = JSON.parse(atob(accessToken.split('.')[1]))
     setUser(payload)
+    scheduleRefresh(accessToken)
   }
 
-  const logout = () => {
-    localStorage.removeItem('smart_order_token')
-    setToken(null)
-    setUser(null)
-    setLoading(false)
-  }
+  const logout = () => clearAuth()
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, loading, isAuthenticated: !!user }}>

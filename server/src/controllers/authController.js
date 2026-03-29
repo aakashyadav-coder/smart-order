@@ -1,53 +1,63 @@
 /**
- * Auth Controller — handles login and returns JWT
+ * Auth Controller — login, me, token refresh
+ * Fix R4/R5: Added refresh token endpoint + rememberMe support (30d token)
+ * Fix R6: Added confirmPassword check before email change
  */
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+const bcrypt  = require("bcryptjs");
+const jwt     = require("jsonwebtoken");
 const { PrismaClient } = require("@prisma/client");
-const { z } = require("zod");
+const { z }   = require("zod");
 const { emitUserLastLogin } = require("../socket");
+const logger  = require("../logger");
 
-const prisma = new PrismaClient();
+const prisma  = new PrismaClient();
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email"),
-  password: z.string().min(1, "Password is required"),
+  email:      z.string().email("Invalid email"),
+  password:   z.string().min(1, "Password is required"),
+  rememberMe: z.boolean().optional().default(false),
 });
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const signAccess = (user, rememberMe = false) =>
+  jwt.sign(
+    { id: user.id, email: user.email, role: user.role, name: user.name, restaurantId: user.restaurantId },
+    process.env.JWT_SECRET,
+    { expiresIn: rememberMe ? "30d" : "8h" }
+  );
+
+const signRefresh = (userId) =>
+  jwt.sign({ id: userId, type: "refresh" }, process.env.JWT_SECRET, { expiresIn: "30d" });
+
+// ── Login ────────────────────────────────────────────────────────────────────
 const login = async (req, res, next) => {
   try {
-    const { email, password } = loginSchema.parse(req.body);
+    const { email, password, rememberMe } = loginSchema.parse(req.body);
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid email or password." });
-    }
+    if (!user) return res.status(401).json({ message: "Invalid email or password." });
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid email or password." });
-    }
+    if (!isMatch) return res.status(401).json({ message: "Invalid email or password." });
 
-    if (!user.active) {
-      return res.status(403).json({ message: "Account is deactivated. Contact the administrator." });
-    }
+    if (!user.active) return res.status(403).json({ message: "Account is deactivated. Contact the administrator." });
 
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name, restaurantId: user.restaurantId },
-      process.env.JWT_SECRET,
-      { expiresIn: "8h" }
-    );
+    const token        = signAccess(user, rememberMe);
+    const refreshToken = signRefresh(user.id);
 
     const updated = await prisma.user.update({
       where: { id: user.id },
-      data: { lastLoginAt: new Date() },
+      data:  { lastLoginAt: new Date() },
       select: { id: true, lastLoginAt: true },
     });
     const io = req.app.get("io");
     if (io) emitUserLastLogin(io, { userId: updated.id, lastLoginAt: updated.lastLoginAt });
 
+    logger.info(`Login: ${user.email} (${user.role}) rememberMe=${rememberMe}`);
     res.json({
       token,
+      refreshToken,
+      rememberMe,
       user: { id: user.id, name: user.name, email: user.email, role: user.role, restaurantId: user.restaurantId },
     });
   } catch (err) {
@@ -58,17 +68,79 @@ const login = async (req, res, next) => {
   }
 };
 
-// Return current user info from token — verified from DB
-const me = async (req, res, next) => {
+// ── Refresh Access Token (Fix R4) ─────────────────────────────────────────────
+// POST /api/auth/refresh  { refreshToken }
+// Returns a new short-lived access token if the 30d refresh token is still valid.
+const refresh = async (req, res, next) => {
   try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) return res.status(400).json({ message: "refreshToken is required." });
+
+    let payload;
+    try {
+      payload = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    } catch {
+      return res.status(401).json({ message: "Invalid or expired refresh token. Please log in again." });
+    }
+
+    if (payload.type !== "refresh") {
+      return res.status(401).json({ message: "Invalid token type." });
+    }
+
     const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
+      where:  { id: payload.id },
       select: { id: true, name: true, email: true, role: true, restaurantId: true, active: true },
     });
     if (!user) return res.status(404).json({ message: "User not found." });
+    if (!user.active) return res.status(403).json({ message: "Account is deactivated." });
+
+    const newToken = signAccess(user);
+    logger.debug(`Token refreshed for user ${user.email}`);
+    res.json({ token: newToken, user });
+  } catch (err) { next(err); }
+};
+
+// ── Me (current user from token) ──────────────────────────────────────────────
+const me = async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where:  { id: req.user.id },
+      select: { id: true, name: true, email: true, role: true, restaurantId: true, active: true },
+    });
+    if (!user)        return res.status(404).json({ message: "User not found." });
     if (!user.active) return res.status(403).json({ message: "Account is deactivated." });
     res.json(user);
   } catch (err) { next(err); }
 };
 
-module.exports = { login, me };
+// ── Change Email (Fix R6) ─────────────────────────────────────────────────────
+// PUT /api/auth/change-email  { newEmail, currentPassword }
+// Requires current password confirmation before updating email.
+const changeEmail = async (req, res, next) => {
+  try {
+    const { newEmail, currentPassword } = req.body;
+    if (!newEmail || !currentPassword) {
+      return res.status(400).json({ message: "newEmail and currentPassword are required." });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      return res.status(400).json({ message: "Invalid email format." });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isMatch) return res.status(401).json({ message: "Current password is incorrect." });
+
+    const exists = await prisma.user.findUnique({ where: { email: newEmail } });
+    if (exists && exists.id !== user.id) {
+      return res.status(409).json({ message: "This email is already in use." });
+    }
+
+    await prisma.user.update({ where: { id: user.id }, data: { email: newEmail } });
+    logger.info(`Email changed: ${user.email} → ${newEmail} (user ${user.id})`);
+    res.json({ message: "Email updated successfully." });
+  } catch (err) { next(err); }
+};
+
+module.exports = { login, me, refresh, changeEmail };

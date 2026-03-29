@@ -195,7 +195,7 @@ export default function OwnerDashboardPage() {
   const [announcements, setAnnouncements] = useState([])
   const [announcementsOpen, setAnnouncementsOpen] = useState(false)
   const [readAnnIds, setReadAnnIds] = useState(new Set())
-  const prevRevRef = useRef(0)
+  const prevRevRef = useRef(null) // null = skip confetti on first load
   const notifiedOrderIds = useRef(new Set())
 
   const readKey = useMemo(() => {
@@ -254,9 +254,15 @@ export default function OwnerDashboardPage() {
     return () => window.removeEventListener('keydown', handler)
   }, [])
 
-  // Check confetti milestone
   const totalRevenue = orders.filter(o => o.status === 'PAID').reduce((s, o) => s + (o.discountedTotal ?? o.totalPrice), 0)
+
+  // Milestone confetti — only fires when revenue crosses a new threshold AFTER load
   useEffect(() => {
+    // On first render, record baseline — no confetti
+    if (prevRevRef.current === null) {
+      prevRevRef.current = totalRevenue
+      return
+    }
     const prev = prevRevRef.current
     const crossed = Math.floor(totalRevenue / MILESTONE) > Math.floor(prev / MILESTONE)
     if (crossed && totalRevenue > 0) {
@@ -342,26 +348,33 @@ export default function OwnerDashboardPage() {
     }
   }, [user?.id, user?.restaurantId])  // stable primitive deps — prevents duplicate listeners
   const unreadCount = useMemo(() => announcements.filter(a => !readAnnIds.has(a.id)).length, [announcements, readAnnIds])
-  const announcementsPanelOpen = announcementsOpen || unreadCount > 0
   const markAnnouncementRead = (id) => setReadAnnIds(prev => new Set(prev).add(id))
   const markAllAnnouncementsRead = () => setReadAnnIds(new Set(announcements.map(a => a.id)))
   const fmtAnn = (d) => new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
-  const handleBellClick = () => {
-    if (unreadCount > 0) return setAnnouncementsOpen(true)
-    setAnnouncementsOpen(p => !p)
-  }
+  const handleBellClick = () => setAnnouncementsOpen(p => !p)
 
 
   const handleStatusChange = (orderId, status) => {
-    setOrders(p => p.map(o => o.id === orderId ? { ...o, status } : o))
-    if (status !== 'PENDING') setPendingCount(n => Math.max(0, n - 1))
+    setOrders(p => {
+      const next = p.map(o => o.id === orderId ? { ...o, status } : o)
+      // Recalculate from fresh state — avoids double-decrement / negative counts
+      setPendingCount(next.filter(o => o.status === 'PENDING').length)
+      return next
+    })
   }
 
   const askDeleteItem = (item, onSuccess) => setConfirm({
-    title: 'Delete Item?', message: `Delete "${item.name}" permanently?`, type: 'danger', confirmLabel: 'Delete',
+    title: 'Delete Item?', message: `Delete "${item.name}" permanently? This cannot be undone.`, type: 'danger', confirmLabel: 'Delete',
     onConfirm: async () => {
-      try { await api.delete(`/menu/${item.id}`); onSuccess(item.id); toast.success('Deleted') }
-      catch (err) { toast.error(err.message) } finally { setConfirm(null) }
+      try {
+        await api.delete(`/menu/${item.id}`)
+        onSuccess(item.id)
+        toast.success('Item deleted')
+        setConfirm(null) // only close on success
+      } catch (err) {
+        toast.error(err.message || 'Failed to delete item')
+        // Modal stays open — user sees the failure and can retry or cancel
+      }
     },
   })
 
@@ -449,18 +462,16 @@ export default function OwnerDashboardPage() {
                         <p className="text-sm font-bold text-gray-900">Announcements</p>
                         <p className="text-[11px] text-gray-400">{unreadCount} unread</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {unreadCount > 0 && (
-                          <button onClick={markAllAnnouncementsRead} className="text-[10px] font-semibold text-brand-600 hover:text-brand-700">
-                            Mark all read
-                          </button>
-                        )}
-                        {unreadCount === 0 && (
-                          <button onClick={() => setAnnouncementsOpen(false)} className="text-[10px] text-gray-400 hover:text-gray-600">
-                            Close
-                          </button>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button onClick={markAllAnnouncementsRead} className="text-[10px] font-semibold text-brand-600 hover:text-brand-700">
+                          Mark all read
+                        </button>
+                      )}
+                      <button onClick={() => setAnnouncementsOpen(false)} className="text-[10px] text-gray-400 hover:text-gray-600">
+                        Close
+                      </button>
+                    </div>
                     </div>
                     <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
                       {announcements.length === 0 ? (

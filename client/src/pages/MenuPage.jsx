@@ -2,7 +2,7 @@
  * MenuPage — Premium customer-facing menu
  * Theme: White/red — aurora hero, glassmorphism header
  */
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import api from '../lib/api'
 import socket from '../lib/socket'
@@ -15,10 +15,19 @@ import ErrorState from '../components/ErrorState'
 import { FaShoppingCart, FaMapMarkerAlt, FaUtensils, FaTools } from 'react-icons/fa'
 
 const CATEGORY_ICONS = {
-  'Drinks':      '🥤',
-  'Starters':    '🥗',
-  'Main Course': '🍛',
-  'Desserts':    '🍮',
+  // English
+  'Drinks':       '🥤', 'Beverages':    '☕', 'Coffee':       '☕',
+  'Starters':     '🥗', 'Appetizers':   '🥗', 'Snacks':       '🍟',
+  'Main Course':  '🍛', 'Mains':        '🍽️', 'Entrees':      '🍽️',
+  'Desserts':     '🍮', 'Sweets':       '🍰', 'Bakery':       '🥐',
+  'Pizza':        '🍕', 'Burgers':      '🍔', 'Sandwiches':   '🥪',
+  'Pasta':        '🍝', 'Noodles':      '🍜', 'Rice':         '🍚',
+  'Salads':       '🥙', 'Soups':        '🍲', 'Breakfast':    '🍳',
+  'Seafood':      '🦐', 'Grills':       '🍖', 'BBQ':          '🔥',
+  'Veg':          '🥦', 'Vegetarian':   '🥦', 'Vegan':        '🌱',
+  'Non-Veg':      '🍗', 'Specials':     '⭐', 'Chef Special':  '👨‍🍳',
+  // Nepali / South-Asian
+  'दाल भात':      '🍚', 'मोमो':         '🥟', 'चिया':         '☕',
 }
 
 export default function MenuPage() {
@@ -35,6 +44,8 @@ export default function MenuPage() {
   const [checkoutOpen, setCheckoutOpen]   = useState(false)
   const [maintenance, setMaintenance]     = useState(null)
   const [countdown, setCountdown]         = useState(null)
+
+  const itemsSectionRef = useRef(null) // for scroll-to-top on category switch
 
   const { totalItems, totalPrice } = useCart()
 
@@ -215,7 +226,11 @@ export default function MenuPage() {
         {/* Category tabs */}
         <div className="flex gap-2 overflow-x-auto max-w-2xl mx-auto px-4 pb-3 pt-1 scrollbar-none">
           {categoryList.map(cat => (
-            <button key={cat} onClick={() => setActiveCategory(cat)}
+            <button key={cat} onClick={() => {
+              setActiveCategory(cat)
+              // Scroll to items section top so user sees new category from top
+              setTimeout(() => itemsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+            }}
               className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                 activeCategory === cat
                   ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-md shadow-brand-500/25'
@@ -229,7 +244,7 @@ export default function MenuPage() {
       </header>
 
       {/* ── Menu Items ───────────────────────────────────────────────────── */}
-      <main className="max-w-2xl mx-auto px-4 mt-5">
+      <main ref={itemsSectionRef} className="max-w-2xl mx-auto px-4 mt-5">
         {activeCategory && (
           <div>
             <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">

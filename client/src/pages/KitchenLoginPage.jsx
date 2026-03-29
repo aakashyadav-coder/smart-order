@@ -14,6 +14,7 @@ export default function KitchenLoginPage() {
   const { login, isAuthenticated } = useAuth()
 
   const [form, setForm] = useState({ email: '', password: '' })
+  const [rememberMe, setRememberMe] = useState(true) // default ON for kitchen displays
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -27,8 +28,8 @@ export default function KitchenLoginPage() {
     setError('')
     setLoading(true)
     try {
-      const res = await api.post('/auth/login', form)
-      login(res.data.token)
+      const res = await api.post('/auth/login', { ...form, rememberMe })
+      login(res.data.token, res.data.refreshToken, rememberMe)
       toast.success(`Welcome, ${res.data.user.name}!`)
       navigate('/kitchen', { replace: true })
     } catch (err) {
@@ -112,6 +113,17 @@ export default function KitchenLoginPage() {
                 </button>
               </div>
             </div>
+
+            {/* Remember Me (Fix R5) */}
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded accent-brand-500"
+              />
+              <span className="text-gray-400 text-sm">Remember me for 30 days</span>
+            </label>
 
             <button
               type="submit"

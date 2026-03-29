@@ -8,8 +8,8 @@ import { useAuth } from '../context/AuthContext'
 import socket from '../lib/socket'
 import {
   FaThLarge, FaBuilding, FaUsers, FaClipboardList,
-  FaCog, FaHeartbeat, FaSignOutAlt, FaShieldAlt, FaBars,
-  FaBullhorn, FaInbox, FaChartBar, FaRocket, FaSearch, FaUserCog,
+  FaCog, FaHeartbeat, FaSignOutAlt, FaShieldAlt, FaBars, FaTimes,
+  FaBullhorn, FaInbox, FaChartBar, FaRocket, FaSearch, FaUserCog, FaHistory,
 } from 'react-icons/fa'
 import NotificationCenter from './NotificationCenter'
 import CommandPalette from './CommandPalette'
@@ -22,7 +22,7 @@ const NAV_ITEMS = [
   { to: '/super/users',        label: 'Users',        icon: FaUsers },
   { to: '/super/orders',       label: 'All Orders',   icon: FaClipboardList },
   { to: '/super/features',     label: 'Features',     icon: FaCog },
-  { to: '/super/logs',         label: 'Audit Logs',   icon: FaHeartbeat },
+  { to: '/super/logs',         label: 'Audit Logs',   icon: FaHistory },
   { to: '/super/health',       label: 'Health',       icon: FaHeartbeat },
   { to: '/super/announcements',label: 'Announcements',icon: FaBullhorn },
   { to: '/super/tickets',      label: 'Support',      icon: FaInbox },
@@ -147,6 +147,13 @@ export default function SuperLayout() {
 
       {/* Sidebar (mobile) */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-56 bg-gradient-to-b from-gray-950 via-slate-900 to-gray-950 border-r border-white/8 flex flex-col transform transition-transform duration-300 ease-out lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {/* Mobile close button */}
+        <div className="flex items-center justify-between p-4 border-b border-white/8 lg:hidden">
+          <span className="font-bold text-white text-sm">Smart Order</span>
+          <button onClick={() => setSidebarOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+            <FaTimes className="w-3.5 h-3.5 text-gray-300" />
+          </button>
+        </div>
         <SidebarContent />
       </aside>
 

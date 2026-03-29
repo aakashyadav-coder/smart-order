@@ -549,11 +549,17 @@ h1{font-size:24px;font-weight:900;color:#dc2626;margin-bottom:4px}.subtitle{colo
 <div class="kpi"><div class="kpi-label">Open Tickets</div><div class="kpi-value">${kpis?.openTickets ?? '-'}</div></div>
 <div class="kpi"><div class="kpi-label">Inactive Restaurants</div><div class="kpi-value">${kpis?.inactiveRestaurants ?? '-'}</div></div>
 </div></div><div class="footer">Smart Order SaaS – Super Admin Platform Report – ${now.toISOString()} – Confidential</div></body></html>`
+    // Use Blob URL instead of deprecated document.write()
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
     const iframe = document.createElement('iframe')
     iframe.style.cssText = 'position:absolute;left:-9999px;width:0;height:0;border:0;'
     document.body.appendChild(iframe)
-    iframe.contentDocument.open(); iframe.contentDocument.write(html); iframe.contentDocument.close()
-    setTimeout(() => { iframe.contentWindow.print(); document.body.removeChild(iframe) }, 300)
+    iframe.onload = () => {
+      iframe.contentWindow.print()
+      setTimeout(() => { document.body.removeChild(iframe); URL.revokeObjectURL(url) }, 1000)
+    }
+    iframe.src = url
   }
 
   return (

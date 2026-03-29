@@ -3,8 +3,9 @@
  */
 import React, { useEffect, useState, useMemo } from 'react'
 import toast from 'react-hot-toast'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import api from '../../lib/api'
+import ConfirmModal from '../../components/ConfirmModal'
 import {
   FaSearch,
   FaBuilding,
@@ -130,6 +131,7 @@ const Modal = ({ title, form, setForm, onSave, onClose, saving }) => (
 
 export default function RestaurantsPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [restaurants, setRestaurants] = useState([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
@@ -137,6 +139,12 @@ export default function RestaurantsPage() {
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
+  const [confirmDel, setConfirmDel] = useState(null) // { id, name }
+
+  // Support navigating here with { state: { openCreate: true } } from dashboard quick-actions
+  useEffect(() => {
+    if (location.state?.openCreate) openCreate()
+  }, []) // eslint-disable-line
 
   const fetchRestaurants = () => {
     api.get('/super/restaurants').then(r => setRestaurants(r.data)).finally(() => setLoading(false))
@@ -186,13 +194,18 @@ export default function RestaurantsPage() {
     } catch (e) { toast.error(e.message) }
   }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this restaurant and all its data?')) return
+  const handleDelete = (id, name) => {
+    setConfirmDel({ id, name })
+  }
+
+  const doDelete = async () => {
+    if (!confirmDel) return
     try {
-      await api.delete(`/super/restaurants/${id}`)
-      setRestaurants(p => p.filter(r => r.id !== id))
-      toast.success('Deleted')
+      await api.delete(`/super/restaurants/${confirmDel.id}`)
+      setRestaurants(p => p.filter(r => r.id !== confirmDel.id))
+      toast.success('Restaurant deleted')
     } catch (e) { toast.error(e.message) }
+    finally { setConfirmDel(null) }
   }
 
   const toggleSelect = (id) => setSelected(prev => {
@@ -319,7 +332,7 @@ export default function RestaurantsPage() {
                 <button onClick={() => handleToggleActive(r)} className={`flex-1 text-xs py-2 rounded-lg transition-colors border inline-flex items-center justify-center gap-1.5 ${r.active ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200' : 'bg-green-50 hover:bg-green-100 text-green-700 border-green-200'}`}>
                   {r.active ? <FaTimesCircle className="w-3 h-3" /> : <FaCheckCircle className="w-3 h-3" />}
                 </button>
-                <button onClick={() => handleDelete(r.id)} className="text-xs bg-red-50 hover:bg-red-100 text-red-500 border border-red-100 py-2 px-3 rounded-lg transition-colors">
+                <button onClick={() => handleDelete(r.id, r.name)} className="text-xs bg-red-50 hover:bg-red-100 text-red-500 border border-red-100 py-2 px-3 rounded-lg transition-colors">
                   <FaTrash className="w-3 h-3" />
                 </button>
               </div>
@@ -338,6 +351,18 @@ export default function RestaurantsPage() {
           form={form} setForm={setForm}
           onSave={handleSave} onClose={() => setModal(null)}
           saving={saving}
+        />
+      )}
+
+      {confirmDel && (
+        <ConfirmModal
+          open
+          type="danger"
+          title="Delete Restaurant?"
+          message={`Permanently delete "${confirmDel.name}" and ALL its menus, orders, and staff? This cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={doDelete}
+          onCancel={() => setConfirmDel(null)}
         />
       )}
     </div>

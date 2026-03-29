@@ -1,12 +1,15 @@
 /**
- * ProtectedRoute — redirects to /kitchen/login if not authenticated
+ * ProtectedRoute — redirects to /kitchen/login if not a KITCHEN user
+ * Also allows OWNER, ADMIN, SUPER_ADMIN to access kitchen view
  */
 import React from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
+const KITCHEN_ROLES = ['KITCHEN', 'OWNER', 'ADMIN', 'SUPER_ADMIN']
+
 export default function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth()
+  const { user, isAuthenticated, loading } = useAuth()
 
   if (loading) {
     return (
@@ -19,5 +22,9 @@ export default function ProtectedRoute({ children }) {
     )
   }
 
-  return isAuthenticated ? children : <Navigate to="/kitchen/login" replace />
+  if (!isAuthenticated || !KITCHEN_ROLES.includes(user?.role)) {
+    return <Navigate to="/kitchen/login" replace />
+  }
+
+  return children
 }

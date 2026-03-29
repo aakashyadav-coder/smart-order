@@ -2,19 +2,32 @@
  * CartDrawer — Premium slide-up cart panel
  * Theme: White, red gradient header
  */
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useCart } from '../context/CartContext'
 import { FaShoppingCart, FaTimes, FaTrash, FaPlus, FaMinus, FaUtensils } from 'react-icons/fa'
 
 export default function CartDrawer({ open, onClose, onCheckout, tableNumber }) {
   const { items, updateQuantity, removeItem, totalItems, totalPrice, clearCart } = useCart()
+  const [visible, setVisible] = useState(false)
+  const [animOut, setAnimOut] = useState(false)
 
-  if (!open) return null
+  useEffect(() => {
+    if (open) { setVisible(true); setAnimOut(false) }
+    else if (visible) {
+      setAnimOut(true)
+      const t = setTimeout(() => { setVisible(false); setAnimOut(false) }, 280)
+      return () => clearTimeout(t)
+    }
+  }, [open])
+
+  if (!visible) return null
 
   return (
-    <div className="overlay animate-fade-in" onClick={onClose}>
+    <div className={`overlay ${animOut ? 'opacity-0' : 'animate-fade-in'} transition-opacity duration-280`} onClick={onClose}>
       <div
-        className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[88vh] flex flex-col animate-slide-up overflow-hidden"
+        className={`w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[88vh] flex flex-col overflow-hidden ${
+          animOut ? 'animate-slide-down' : 'animate-slide-up'
+        }`}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}

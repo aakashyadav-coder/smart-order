@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SettingsPage - Super Admin profile, password change, 2FA status
  */
 import React, { useEffect, useState } from 'react'
@@ -6,13 +6,8 @@ import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import {
-  FaUser,
-  FaLock,
-  FaShieldAlt,
-  FaSave,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaExclamationTriangle,
+  FaUser, FaLock, FaShieldAlt, FaSave,
+  FaCheckCircle, FaTimesCircle, FaExclamationTriangle, FaEnvelope,
 } from 'react-icons/fa'
 
 function Section({ icon: Icon, title, children }) {
@@ -43,7 +38,9 @@ export default function SettingsPage() {
   const [twoFA, setTwoFA]       = useState(false)
 
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
-  const [changingPw, setChangingPw] = useState(false)
+  const [changingPw, setChangingPw]     = useState(false)
+  const [emailForm, setEmailForm]       = useState({ newEmail: '', currentPassword: '' })
+  const [changingEmail, setChangingEmail] = useState(false)
 
   useEffect(() => {
     api.get('/super/settings/profile').then(r => {
@@ -56,11 +53,27 @@ export default function SettingsPage() {
     if (!profile.name.trim()) return toast.error('Name is required')
     setSaving(true)
     try {
-      await api.put('/super/settings/profile', { name: profile.name, email: profile.email })
+      // Only name is saved here — email change requires password (see below)
+      await api.put('/super/settings/profile', { name: profile.name })
       toast.success('Profile updated!')
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed to update profile')
     } finally { setSaving(false) }
+  }
+
+  const handleChangeEmail = async () => {
+    const { newEmail, currentPassword } = emailForm
+    if (!newEmail || !currentPassword) return toast.error('Both fields are required')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) return toast.error('Enter a valid email address')
+    setChangingEmail(true)
+    try {
+      await api.put('/auth/change-email', { newEmail, currentPassword })
+      toast.success('Email updated! Please log in again.')
+      setEmailForm({ newEmail: '', currentPassword: '' })
+      setProfile(p => ({ ...p, email: newEmail }))
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to update email')
+    } finally { setChangingEmail(false) }
   }
 
   const handleChangePassword = async () => {
@@ -91,24 +104,52 @@ export default function SettingsPage() {
         <p className="text-gray-400 text-sm mt-1">Manage your super admin profile and security</p>
       </div>
 
-      {/* Profile */}
+      {/* Profile — name only */}
       <Section icon={FaUser} title="Profile Information">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Full Name">
             <input type="text" className="input bg-white border-gray-200 text-gray-900"
               value={profile.name} onChange={e => setProfile(p => ({ ...p, name: e.target.value }))} />
           </Field>
-          <Field label="Email Address">
-            <input type="email" className="input bg-white border-gray-200 text-gray-900"
-              value={profile.email} onChange={e => setProfile(p => ({ ...p, email: e.target.value }))} />
+          <Field label="Email Address (read-only)">
+            <input type="email" className="input bg-gray-50 border-gray-200 text-gray-500 cursor-not-allowed"
+              value={profile.email} readOnly />
           </Field>
         </div>
         <div className="mt-4 flex items-center gap-3">
           <button onClick={handleSaveProfile} disabled={saving}
             className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50">
-            <FaSave className="w-3.5 h-3.5" /> {saving ? 'Saving...' : 'Save Profile'}
+            <FaSave className="w-3.5 h-3.5" /> {saving ? 'Saving...' : 'Save Name'}
           </button>
           <span className="text-xs text-gray-400">Role: <strong className="text-gray-700">SUPER_ADMIN</strong></span>
+        </div>
+      </Section>
+
+      {/* Change Email — Fix R6: requires current password confirmation */}
+      <Section icon={FaEnvelope} title="Change Email Address">
+        <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 mb-4 flex items-center gap-2">
+          <FaExclamationTriangle className="w-3 h-3 flex-shrink-0" />
+          Changing your email requires your current password for security verification.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="New Email Address">
+            <input type="email" className="input bg-white border-gray-200 text-gray-900"
+              value={emailForm.newEmail}
+              onChange={e => setEmailForm(p => ({ ...p, newEmail: e.target.value }))}
+              placeholder="new@email.com" />
+          </Field>
+          <Field label="Current Password (to confirm)">
+            <input type="password" className="input bg-white border-gray-200 text-gray-900"
+              value={emailForm.currentPassword}
+              onChange={e => setEmailForm(p => ({ ...p, currentPassword: e.target.value }))}
+              placeholder="••••••••" />
+          </Field>
+        </div>
+        <div className="mt-4">
+          <button onClick={handleChangeEmail} disabled={changingEmail || !emailForm.newEmail || !emailForm.currentPassword}
+            className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors shadow-sm disabled:opacity-50">
+            <FaEnvelope className="w-3.5 h-3.5" /> {changingEmail ? 'Updating...' : 'Update Email'}
+          </button>
         </div>
       </Section>
 
@@ -179,7 +220,7 @@ export default function SettingsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
             { label: 'Platform', value: 'Smart Order SaaS' },
-            { label: 'Version', value: '3.0.0' },
+            { label: 'Version', value: `v${import.meta.env.VITE_APP_VERSION ?? '—'}` },
             { label: 'Region', value: 'Local / Custom' },
           ].map(i => (
             <div key={i.label} className="bg-gray-50 rounded-xl p-3 border border-gray-100">

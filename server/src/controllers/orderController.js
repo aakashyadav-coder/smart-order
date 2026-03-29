@@ -20,13 +20,17 @@ const createOrder = async (req, res, next) => {
       return res.status(400).json({ message: "Missing required order fields." });
     }
 
-    // Determine restaurant — fall back to first active restaurant
-    let resolvedRestaurantId = restaurantId;
-    if (!resolvedRestaurantId) {
-      const first = await prisma.restaurant.findFirst({ where: { active: true }, orderBy: { createdAt: "asc" } });
-      if (!first) return res.status(400).json({ message: "No active restaurant found." });
-      resolvedRestaurantId = first.id;
+    // Determine restaurant — restaurantId is REQUIRED for multi-tenant safety
+    // We never fall back to "first active restaurant" as that sends orders to the wrong place
+    if (!restaurantId) {
+      return res.status(400).json({ message: "restaurantId is required. Please scan the QR code again." });
     }
+    const resolvedRestaurantId = restaurantId;
+
+    // Verify restaurant exists and is active
+    const restaurant = await prisma.restaurant.findUnique({ where: { id: resolvedRestaurantId } });
+    if (!restaurant) return res.status(404).json({ message: "Restaurant not found." });
+    if (!restaurant.active) return res.status(400).json({ message: "This restaurant is currently not accepting orders." });
 
     // Calculate total price from DB prices (don't trust client-sent prices)
     const menuItemIds = items.map((i) => i.menuItemId);
@@ -80,7 +84,7 @@ const createOrder = async (req, res, next) => {
  */
 const getOrders = async (req, res, next) => {
   try {
-    const { status, limit = 500 } = req.query;
+    const { status, limit = 200 } = req.query;
 
     const where = {};
 
@@ -90,11 +94,16 @@ const getOrders = async (req, res, next) => {
       if (restaurantId) {
         where.restaurantId = restaurantId;
       } else {
-        // Fallback: fetch from DB to get restaurantId from user record
-        const { PrismaClient: PC } = require("@prisma/client");
-        const p = new PC();
-        const dbUser = await p.user.findUnique({ where: { id: req.user.id }, select: { restaurantId: true } });
+        // Reuse the module-level prisma instance — never create a new one per request
+        const dbUser = await prisma.user.findUnique({ where: { id: req.user.id }, select: { restaurantId: true } });
         if (dbUser?.restaurantId) where.restaurantId = dbUser.restaurantId;
+      }
+
+      // Kitchen/Owner: only load orders from the last 48 hours by default
+      // This prevents loading hundreds of old orders on every mount
+      if (!req.query.all) {
+        const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
+        where.createdAt = { gte: cutoff };
       }
     }
 
@@ -150,8 +159,10 @@ const updateOrderStatus = async (req, res, next) => {
 
     const updateData = { status };
     if (estimatedMinutes !== undefined) updateData.estimatedMinutes = parseInt(estimatedMinutes);
-    if (discount       !== undefined) updateData.discount        = parseFloat(discount);
-    if (discountedTotal !== undefined) updateData.discountedTotal = parseFloat(discountedTotal);
+    if (discount        !== undefined) updateData.discount         = parseFloat(discount);
+    if (discountedTotal !== undefined) updateData.discountedTotal  = parseFloat(discountedTotal);
+    // Record exact served time for kitchen analytics accuracy
+    if (status === "SERVED") updateData.servedAt = new Date();
 
     const order = await prisma.order.update({
       where: { id },

@@ -1,6 +1,8 @@
 /**
  * CheckoutModal — Premium order form
  * Theme: White modal, gradient header, icon inputs
+ * Fix #18: Outside-click no longer closes the modal (prevents accidental form loss)
+ * Fix #21: tableNumber validated as a positive integer before submission
  */
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -8,6 +10,9 @@ import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useCart } from '../context/CartContext'
 import { FaTimes, FaUser, FaPhoneAlt, FaShoppingCart } from 'react-icons/fa'
+
+// Nepali phone: 10 digits starting with 97/98, or international +XXX format
+const PHONE_REGEX = /^(\+?\d{1,3}[\s\-]?)?\d{7,14}$/
 
 export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
   const navigate = useNavigate()
@@ -17,14 +22,20 @@ export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
 
+  // Validate tableNumber is a safe positive integer
+  const parsedTable = parseInt(tableNumber)
+  const tableValid = !isNaN(parsedTable) && parsedTable > 0
+
   const validate = () => {
     const errs = {}
     if (!form.customerName.trim() || form.customerName.trim().length < 2) {
       errs.customerName = 'Please enter your name (at least 2 characters)'
     }
-    const phoneRegex = /^[+]?[\d\s\-()]{7,15}$/
-    if (!form.phone.trim() || !phoneRegex.test(form.phone.trim())) {
-      errs.phone = 'Please enter a valid phone number'
+    if (!form.phone.trim() || !PHONE_REGEX.test(form.phone.replace(/[\s\-()]/g, ''))) {
+      errs.phone = 'Please enter a valid phone number (7–15 digits)'
+    }
+    if (!tableValid) {
+      errs.table = 'Invalid table number in URL. Please scan the QR code again.'
     }
     return errs
   }
@@ -39,7 +50,7 @@ export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
       const payload = {
         customerName: form.customerName.trim(),
         phone: form.phone.trim(),
-        tableNumber: parseInt(tableNumber),
+        tableNumber: parsedTable,
         items: items.map(i => ({ menuItemId: i.menuItemId, quantity: i.quantity })),
         ...(restaurantId && { restaurantId }),
       }
@@ -58,7 +69,9 @@ export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
   }
 
   return (
-    <div className="overlay animate-fade-in" onClick={onClose}>
+    // Fix #18: removed onClick={onClose} from backdrop — outside-click no longer dismisses.
+    // User must click ✕ to close, preventing accidental form data loss.
+    <div className="overlay animate-fade-in">
       <div
         className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-bounce-in"
         onClick={e => e.stopPropagation()}
@@ -72,7 +85,7 @@ export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
               </div>
               <div>
                 <h2 className="text-lg font-extrabold leading-none">Checkout</h2>
-                <p className="text-brand-200 text-xs mt-0.5">Table #{tableNumber}</p>
+                <p className="text-brand-200 text-xs mt-0.5">Table #{tableValid ? parsedTable : '—'}</p>
               </div>
             </div>
             <button
@@ -85,6 +98,13 @@ export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* Table number error */}
+          {errors.table && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-red-600 text-sm font-medium">
+              {errors.table}
+            </div>
+          )}
+
           {/* Order summary */}
           <div className="bg-gray-50 rounded-2xl p-4 space-y-2 border border-gray-100">
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Order Summary</p>
@@ -138,7 +158,7 @@ export default function CheckoutModal({ tableNumber, restaurantId, onClose }) {
 
           <button
             type="submit"
-            disabled={loading || items.length === 0}
+            disabled={loading || items.length === 0 || !tableValid}
             className="btn-primary w-full py-3.5 text-base mt-2"
           >
             {loading ? (

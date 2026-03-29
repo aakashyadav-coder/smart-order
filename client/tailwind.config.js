@@ -27,6 +27,7 @@ export default {
       },
       animation: {
         'slide-up':    'slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+        'slide-down':  'slideDown 0.28s cubic-bezier(0.4, 0, 1, 1)',
         'fade-in':     'fadeIn 0.25s ease-out',
         'bounce-in':   'bounceIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
         'pulse-dot':   'pulseDot 1.5s ease-in-out infinite',
@@ -39,6 +40,10 @@ export default {
         slideUp: {
           '0%':   { transform: 'translateY(24px)', opacity: '0' },
           '100%': { transform: 'translateY(0)',    opacity: '1' },
+        },
+        slideDown: {
+          '0%':   { transform: 'translateY(0)',    opacity: '1' },
+          '100%': { transform: 'translateY(24px)', opacity: '0' },
         },
         fadeIn: {
           '0%':   { opacity: '0', transform: 'translateY(8px)' },

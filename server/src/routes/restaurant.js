@@ -26,6 +26,30 @@ router.get("/mine", authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── PUT /api/restaurant/mine (authenticated) — Update restaurant profile ─────
+router.put("/mine", authenticate, requireOwnerOrAbove, async (req, res, next) => {
+  try {
+    const { restaurantId } = req.user;
+    if (!restaurantId) return res.status(404).json({ message: "No restaurant linked." });
+    const { name, logoUrl, address } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ message: "Restaurant name is required." });
+    const restaurant = await prisma.restaurant.update({
+      where: { id: restaurantId },
+      data: {
+        name: name.trim(),
+        ...(logoUrl !== undefined && { logoUrl: logoUrl.trim() || null }),
+        ...(address !== undefined && { address: address.trim() || null }),
+      },
+      select: { id: true, name: true, logoUrl: true, address: true, phone: true, active: true },
+    });
+    // Emit real-time brand update so Kitchen + Menu pages refresh instantly
+    const io = req.app.get("io");
+    if (io) io.emit("restaurant_updated", { id: restaurant.id, name: restaurant.name, logoUrl: restaurant.logoUrl });
+    res.json(restaurant);
+  } catch (err) { next(err); }
+});
+
+
 // ── GET /api/restaurant/info/:id (public — for customer menu page) ───────────
 router.get("/info/:id", async (req, res, next) => {
   try {

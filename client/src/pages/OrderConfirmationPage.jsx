@@ -15,14 +15,12 @@ const STATUS_META = {
   PENDING:   { label: 'Order Received',    icon: FaClock,       color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200', step: 1 },
   ACCEPTED:  { label: 'Order Accepted',    icon: FaCheckCircle, color: 'text-blue-600',   bg: 'bg-blue-50',    border: 'border-blue-200',   step: 2 },
   PREPARING: { label: 'Being Prepared',    icon: FaFire,        color: 'text-purple-600', bg: 'bg-purple-50',  border: 'border-purple-200', step: 3 },
-  COMPLETED: { label: 'Ready for Pickup!', icon: FaCheckCircle, color: 'text-green-600',  bg: 'bg-green-50',   border: 'border-green-200',  step: 4 },
-  SERVED:    { label: 'Ready for Pickup!', icon: FaCheckCircle, color: 'text-green-600',  bg: 'bg-green-50',   border: 'border-green-200',  step: 4 },
+  SERVED:    { label: 'Ready! Enjoy 🎉',   icon: FaCheckCircle, color: 'text-green-600',  bg: 'bg-green-50',   border: 'border-green-200',  step: 4 },
+  PAID:      { label: 'Order Paid ✓',      icon: FaCheckCircle, color: 'text-green-600',  bg: 'bg-green-50',   border: 'border-green-200',  step: 4 },
   CANCELLED: { label: 'Order Cancelled',   icon: FaTimesCircle, color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200',    step: 0 },
 }
 
-const STEPS = ['PENDING', 'ACCEPTED', 'PREPARING', 'COMPLETED']
-
-const normalizeStatus = s => (s === 'SERVED' ? 'COMPLETED' : s)
+const STEPS = ['PENDING', 'ACCEPTED', 'PREPARING', 'SERVED']
 
 export default function OrderConfirmationPage() {
   const { id } = useParams()
@@ -33,7 +31,7 @@ export default function OrderConfirmationPage() {
 
   useEffect(() => {
     api.get(`/orders/${id}`)
-      .then(res => { setOrder(res.data); setStatus(normalizeStatus(res.data.status)) })
+      .then(res => { setOrder(res.data); setStatus(res.data.status) })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [id])
@@ -41,7 +39,7 @@ export default function OrderConfirmationPage() {
   useEffect(() => {
     socket.emit('join_order_room', { orderId: id })
     const handleStatusUpdate = ({ orderId, status: newStatus }) => {
-      if (orderId === id) setStatus(normalizeStatus(newStatus))
+      if (orderId === id) setStatus(newStatus)
     }
     socket.on('order_status_update', handleStatusUpdate)
     return () => socket.off('order_status_update', handleStatusUpdate)
@@ -160,9 +158,23 @@ export default function OrderConfirmationPage() {
               </div>
             ))}
           </div>
-          <div className="border-t border-gray-100 pt-3 flex justify-between font-bold text-gray-900">
-            <span>Total</span>
-            <span className="text-brand-600 text-lg">Rs. {order.totalPrice.toFixed(0)}</span>
+          <div className="border-t border-gray-100 pt-3 space-y-1">
+            {order.discount > 0 && (
+              <div className="flex justify-between text-sm text-gray-500">
+                <span>Subtotal</span>
+                <span>Rs. {order.totalPrice.toFixed(0)}</span>
+              </div>
+            )}
+            {order.discount > 0 && (
+              <div className="flex justify-between text-sm text-green-600 font-medium">
+                <span>Discount ({order.discount}%)</span>
+                <span>- Rs. {(order.totalPrice - (order.discountedTotal ?? order.totalPrice)).toFixed(0)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-bold text-gray-900">
+              <span>Total</span>
+              <span className="text-brand-600 text-lg">Rs. {(order.discountedTotal ?? order.totalPrice).toFixed(0)}</span>
+            </div>
           </div>
         </div>
 
@@ -185,8 +197,11 @@ export default function OrderConfirmationPage() {
           </div>
         </div>
 
-        {status === 'COMPLETED' && (
-          <Link to={`/menu?table=${order.tableNumber}`} className="btn-primary w-full py-3.5 text-center flex items-center justify-center gap-2">
+        {(status === 'SERVED' || status === 'PAID') && (
+          <Link
+            to={`/menu?table=${order.tableNumber}${order.restaurantId ? `&rid=${order.restaurantId}` : ''}`}
+            className="btn-primary w-full py-3.5 text-center flex items-center justify-center gap-2"
+          >
             <FaUtensils className="w-4 h-4" />
             Order Again
           </Link>

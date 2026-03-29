@@ -1,4 +1,4 @@
-﻿/**
+/**
  * SuperLoginPage - Premium dark login for Super Admin
  * Theme: Same dark template, purple-red accent
  */
@@ -13,8 +13,9 @@ export default function SuperLoginPage() {
   const navigate = useNavigate()
   const { login, isAuthenticated, user } = useAuth()
   const [form, setForm] = useState({ email: '', password: '' })
+  const [rememberMe, setRememberMe] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError]   = useState('')
   const [showPw, setShowPw] = useState(false)
 
   useEffect(() => {
@@ -26,12 +27,12 @@ export default function SuperLoginPage() {
     setError('')
     setLoading(true)
     try {
-      const res = await api.post('/auth/login', form)
+      const res = await api.post('/auth/login', { ...form, rememberMe })
       if (res.data.user.role !== 'SUPER_ADMIN') {
         setError('Access denied. This portal is for Super Admins only.')
         return
       }
-      login(res.data.token)
+      login(res.data.token, res.data.refreshToken, rememberMe)
       toast.success('Welcome, Super Admin!')
       navigate('/super', { replace: true })
     } catch (err) {
@@ -114,6 +115,17 @@ export default function SuperLoginPage() {
                 </button>
               </div>
             </div>
+
+            {/* Remember Me (Fix R5) */}
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded accent-purple-500"
+              />
+              <span className="text-gray-400 text-sm">Remember me for 30 days</span>
+            </label>
 
             <button
               type="submit"

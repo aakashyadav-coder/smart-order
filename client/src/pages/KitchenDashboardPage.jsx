@@ -132,7 +132,7 @@ function IconBadge({ children }) {
 }
 
 // ── Order Card ─────────────────────────────────────────────────────────────────
-function OrderCard({ order, col, isNew, onAccept, onPrepare, onServe, onCancel }) {
+function OrderCard({ order, col, isNew, isBusy, onAccept, onPrepare, onServe, onCancel }) {
   const isServed = col.id === 'SERVED'
   useTick(!isServed)
   const t = isServed ? null : elapsed(order.createdAt)
@@ -228,14 +228,17 @@ function OrderCard({ order, col, isNew, onAccept, onPrepare, onServe, onCancel }
           {col.id === 'PENDING' && (
             <>
               <button
-                onClick={() => onAccept(order)}
-                className="flex items-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 px-3.5 py-2 rounded-xl transition-all shadow-sm shadow-brand-500/25"
+                onClick={() => !isBusy && onAccept(order)}
+                disabled={isBusy}
+                className={`flex items-center gap-1.5 text-xs font-bold text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 px-3.5 py-2 rounded-xl transition-all shadow-sm shadow-brand-500/25 ${isBusy ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
-                <FaCheckCircle className="w-3.5 h-3.5 kitchen-icon" /> Accept
+                {isBusy ? <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaCheckCircle className="w-3.5 h-3.5 kitchen-icon" />}
+                Accept
               </button>
               <button
-                onClick={() => onCancel(order)}
-                className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors border border-gray-100"
+                onClick={() => !isBusy && onCancel(order)}
+                disabled={isBusy}
+                className={`w-9 h-9 flex items-center justify-center rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors border border-gray-100 ${isBusy ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
                 <FaTimesCircle className="w-4.5 h-4.5 kitchen-icon" />
               </button>
@@ -243,18 +246,22 @@ function OrderCard({ order, col, isNew, onAccept, onPrepare, onServe, onCancel }
           )}
           {col.id === 'ACCEPTED' && (
             <button
-              onClick={() => onPrepare(order.id)}
-              className="flex items-center gap-1.5 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 px-3.5 py-2 rounded-xl transition-colors shadow-sm"
+              onClick={() => !isBusy && onPrepare(order.id)}
+              disabled={isBusy}
+              className={`flex items-center gap-1.5 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 px-3.5 py-2 rounded-xl transition-colors shadow-sm ${isBusy ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              <FaFire className="w-3.5 h-3.5 kitchen-icon" /> Prepare
+              {isBusy ? <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaFire className="w-3.5 h-3.5 kitchen-icon" />}
+              Prepare
             </button>
           )}
           {col.id === 'PREPARING' && (
             <button
-              onClick={() => onServe(order.id)}
-              className="flex items-center gap-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 rounded-xl transition-colors shadow-sm"
+              onClick={() => !isBusy && onServe(order.id)}
+              disabled={isBusy}
+              className={`flex items-center gap-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 rounded-xl transition-colors shadow-sm ${isBusy ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
-              <FaCheckCircle className="w-3.5 h-3.5 kitchen-icon" /> Serve
+              {isBusy ? <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <FaCheckCircle className="w-3.5 h-3.5 kitchen-icon" />}
+              Serve
             </button>
           )}
           {col.id === 'SERVED' && (
@@ -269,7 +276,7 @@ function OrderCard({ order, col, isNew, onAccept, onPrepare, onServe, onCancel }
 }
 
 // ── Column Panel ───────────────────────────────────────────────────────────────
-function ColumnPanel({ col, orders, newIds, onAccept, onPrepare, onServe, onCancel }) {
+function ColumnPanel({ col, orders, newIds, busyOrderIds, onAccept, onPrepare, onServe, onCancel }) {
   const sorted = [...orders].sort((a, b) => {
     if (col.id === 'SERVED') {
       const ta = new Date(a.servedAt || a.updatedAt || a.createdAt).getTime()
@@ -315,6 +322,7 @@ function ColumnPanel({ col, orders, newIds, onAccept, onPrepare, onServe, onCanc
             order={order}
             col={col}
             isNew={newIds.has(order.id)}
+            isBusy={busyOrderIds?.has(order.id)}
             onAccept={onAccept}
             onPrepare={onPrepare}
             onServe={onServe}
@@ -343,6 +351,7 @@ export default function KitchenDashboardPage() {
   const [logoError, setLogoError] = useState(false)
   const [muted, setMuted] = useState(false)
   const [audioUnlocked, setAudioUnlocked] = useState(false)
+  const [busyOrderIds, setBusyOrderIds] = useState(new Set()) // orders with in-flight API calls
   const newIds = useRef(new Set())
   const ordersRef = useRef([])
   const overdueNotified = useRef(new Set())
@@ -477,11 +486,13 @@ export default function KitchenDashboardPage() {
   }, [user?.restaurantId])
 
   const doStatus = async (orderId, status) => {
+    setBusyOrderIds(prev => new Set(prev).add(orderId))
     try {
       const res = await api.put(`/orders/${orderId}/status`, { status })
       setOrders(p => p.map(o => o.id === orderId ? res.data : o))
       if (status === 'ACCEPTED') api.post('/otp/send', { orderId }).catch(() => { })
     } catch (e) { toast.error(e.message) }
+    finally { setBusyOrderIds(prev => { const n = new Set(prev); n.delete(orderId); return n }) }
   }
 
   const askAccept = o => setConfirm({
@@ -670,6 +681,7 @@ export default function KitchenDashboardPage() {
                 col={col}
                 orders={grouped[col.id] || []}
                 newIds={newIds.current}
+                busyOrderIds={busyOrderIds}
                 onAccept={askAccept}
                 onPrepare={id => doStatus(id, 'PREPARING')}
                 onServe={id => doStatus(id, 'SERVED')}
