@@ -57,16 +57,16 @@ export function MenuTab({ restaurantId, onDeleteItem }) {
             {editId ? 'Edit Item' : 'Add New Item'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-3">
-            <input required placeholder="Item name *" className="input text-sm" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
-            <input type="number" required min="0" step="0.01" placeholder="Price (Rs.) *" className="input text-sm" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} />
-            <textarea placeholder="Description" rows={2} className="input text-sm resize-none" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
-            <select className="input text-sm" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}>
+            <input required placeholder="Item name *" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white text-sm" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
+            <input type="number" required min="0" step="0.01" placeholder="Price (Rs.) *" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white text-sm" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} />
+            <textarea placeholder="Description" rows={2} className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white text-sm resize-none" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
+            <select className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white text-sm" value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}>
               {CATS.map(c => <option key={c}>{c}</option>)}
             </select>
-            <input placeholder="Image URL (optional)" className="input text-sm" value={form.imageUrl} onChange={e => setForm(p => ({ ...p, imageUrl: e.target.value }))} />
+            <input placeholder="Image URL (optional)" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white text-sm" value={form.imageUrl} onChange={e => setForm(p => ({ ...p, imageUrl: e.target.value }))} />
             <div className="flex gap-2 pt-1">
-              {editId && <button type="button" onClick={() => { setForm(EMPTY); setEditId(null) }} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>}
-              <button type="submit" disabled={saving} className="btn-primary flex-1 py-2.5 text-sm">{saving ? 'Saving…' : editId ? 'Update' : 'Add Item'}</button>
+              {editId && <button type="button" onClick={() => { setForm(EMPTY); setEditId(null) }} className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition-colors flex-1 py-2.5 text-sm">Cancel</button>}
+              <button type="submit" disabled={saving} className="inline-flex items-center justify-center rounded-xl bg-brand-600 text-white hover:bg-brand-700 font-semibold transition-colors flex-1 py-2.5 text-sm">{saving ? 'Saving…' : editId ? 'Update' : 'Add Item'}</button>
             </div>
           </form>
         </div>
@@ -74,7 +74,7 @@ export function MenuTab({ restaurantId, onDeleteItem }) {
 
       <div className="lg:col-span-2 space-y-4">
         <div className="relative">
-          <input type="text" placeholder="Search items or categories…" className="input text-sm pr-10" value={search} onChange={e => setSearch(e.target.value)} />
+          <input type="text" placeholder="Search items or categories…" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white text-sm pr-10" value={search} onChange={e => setSearch(e.target.value)} />
           {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><FaTimesCircle className="w-4 h-4" /></button>}
         </div>
         <p className="text-gray-400 text-xs">{filtered.length} of {items.length} items</p>

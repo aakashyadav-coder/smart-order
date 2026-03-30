@@ -295,10 +295,12 @@ export default function MenuPage() {
         onCheckout={() => { setCartOpen(false); setCheckoutOpen(true) }}
         tableNumber={tableNumber} />
 
-      {checkoutOpen && (
-        <CheckoutModal tableNumber={tableNumber} restaurantId={restaurantId}
-          onClose={() => setCheckoutOpen(false)} />
-      )}
+      <CheckoutModal
+        open={checkoutOpen}
+        tableNumber={tableNumber}
+        restaurantId={restaurantId}
+        onClose={() => setCheckoutOpen(false)}
+      />
     </div>
   )
 }

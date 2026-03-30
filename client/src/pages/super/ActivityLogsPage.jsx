@@ -104,7 +104,7 @@ function PurgePanel({ restaurants, onPurged }) {
           <div className="flex items-center gap-2 mb-3">
             <label className="text-xs text-gray-500 font-medium whitespace-nowrap">Older than</label>
             <input type="number" min="1" max="3650"
-              className="input bg-white border-gray-200 text-gray-900 text-sm w-24"
+              className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm w-24"
               value={logDays} onChange={e => { setLogDays(Number(e.target.value)); setConfirmLogs(false) }} />
             <span className="text-xs text-gray-500">days</span>
           </div>
@@ -129,7 +129,7 @@ function PurgePanel({ restaurants, onPurged }) {
           <p className="text-sm font-bold text-gray-800 mb-1">Purge Old Orders</p>
           <p className="text-xs text-gray-400 mb-3">Delete PAID/CANCELLED/SERVED orders older than N days from a specific restaurant.</p>
           <div className="space-y-2 mb-3">
-            <select className="input bg-white border-gray-200 text-gray-900 text-sm"
+            <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
               value={orderRestId} onChange={e => { setOrderRestId(e.target.value); setConfirmOrders(false) }}>
               <option value="">Select restaurant...</option>
               {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -137,7 +137,7 @@ function PurgePanel({ restaurants, onPurged }) {
             <div className="flex items-center gap-2">
               <label className="text-xs text-gray-500 font-medium whitespace-nowrap">Older than</label>
               <input type="number" min="1" max="3650"
-                className="input bg-white border-gray-200 text-gray-900 text-sm w-24"
+                className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm w-24"
                 value={orderDays} onChange={e => { setOrderDays(Number(e.target.value)); setConfirmOrders(false) }} />
               <span className="text-xs text-gray-500">days</span>
             </div>
@@ -206,14 +206,14 @@ export default function ActivityLogsPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-5">
-        <select className="input bg-white border-gray-200 text-gray-900 text-sm w-56"
+        <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm w-56"
           value={filter.action} onChange={e => setFilter(p => ({ ...p, action: e.target.value }))}>
           <option value="">All Actions</option>
           {ALL_ACTIONS.map(a => <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>)}
         </select>
-        <input type="date" className="input bg-white border-gray-200 text-gray-900 text-sm"
+        <input type="date" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
           value={filter.dateFrom} onChange={e => setFilter(p => ({ ...p, dateFrom: e.target.value }))} />
-        <input type="date" className="input bg-white border-gray-200 text-gray-900 text-sm"
+        <input type="date" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
           value={filter.dateTo} onChange={e => setFilter(p => ({ ...p, dateTo: e.target.value }))} />
         {(filter.action || filter.dateFrom || filter.dateTo) && (
           <button onClick={() => setFilter({ action: '', dateFrom: '', dateTo: '' })}

@@ -15,6 +15,9 @@ import {
   FaConciergeBell, FaWifi, FaSignOutAlt, FaBell, FaBellSlash,
   FaCheckCircle, FaFire, FaTimesCircle, FaSyncAlt, FaClock, FaStar
 } from 'react-icons/fa'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
 let _ctx = null
@@ -149,11 +152,10 @@ function OrderCard({ order, col, isNew, isBusy, onAccept, onPrepare, onServe, on
   return (
     <article
       className={`
-        kitchen-card rounded-2xl border border-gray-100 border-l-[4px] ${col.cardAccent}
-        hover:shadow-lg transition-all duration-200 overflow-hidden relative
+        kitchen-card rounded-2xl border border-gray-100/10 border-l-[4px] ${col.cardAccent}
+        transition-all duration-200 overflow-hidden relative
         ${isNew ? 'animate-slide-up' : ''}
-        ${isNew ? 'kitchen-card-new' : ''}
-        ${isCritical ? 'ring-1 ring-red-200' : ''}
+        ${isCritical ? 'ring-1 ring-red-500/40 shadow-lg shadow-red-500/10' : 'hover:shadow-lg hover:shadow-black/20'}
       `}
     >
       {/* TOP — table number + timer */}
@@ -191,13 +193,11 @@ function OrderCard({ order, col, isNew, isBusy, onAccept, onPrepare, onServe, on
               {label}
             </div>
             {showUrgentPopup && (
-              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border shadow-sm ${
-                urgentLabel === 'URGENT' 
-                  ? 'bg-red-600 text-white border-red-300/40 shadow-red-500/30 animate-pulse' 
-                  : 'bg-blue-500 text-white border-blue-300/40 shadow-blue-500/30'
-              }`}>
-                {urgentLabel}
-              </span>
+              <Badge className={`text-[10px] font-extrabold px-2 py-0.5 border ${
+                urgentLabel === 'URGENT'
+                  ? 'bg-red-600 text-white border-red-300/40 animate-pulse shadow shadow-red-500/30'
+                  : 'bg-blue-500 text-white border-blue-300/40 shadow shadow-blue-500/30'
+              }`}>{urgentLabel}</Badge>
             )}
           </div>
         )}
@@ -224,6 +224,16 @@ function OrderCard({ order, col, isNew, isBusy, onAccept, onPrepare, onServe, on
       {/* DIVIDER */}
       <div className="mx-4 border-t border-gray-100" />
 
+      {/* Timer bar */}
+      {!isServed && (
+        <div className="px-4 pt-2 pb-0.5">
+          <div className="h-0.5 w-full bg-white/10 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all duration-1000 ${
+              isCritical ? 'bg-red-500' : isHigh ? 'bg-amber-400' : 'bg-brand-500/60'
+            }`} style={{ width: `${Math.min(100, (m / 15) * 100)}%` }} />
+          </div>
+        </div>
+      )}
       {/* FOOTER */}
       <div className="px-4 py-3 flex items-center justify-between gap-2 bg-gray-50/50">
         <span className="text-gray-900 font-extrabold text-base tabular-nums">
@@ -585,6 +595,7 @@ export default function KitchenDashboardPage() {
   const active = orders.filter(o => ['PENDING', 'ACCEPTED', 'PREPARING'].includes(o.status)).length
 
   return (
+    <TooltipProvider>
     <div className="h-screen flex flex-col overflow-hidden relative kitchen-bg">
       <div className="absolute inset-0 kitchen-grid pointer-events-none" />
       <div className="absolute inset-0 kitchen-vignette pointer-events-none" />
@@ -634,30 +645,35 @@ export default function KitchenDashboardPage() {
           </div>
           <div className="h-3.5 w-px bg-white/10 hidden sm:block" />
           {/* Mute */}
-          <button
-            onClick={askToggleMute}
-            title={muted ? 'Unmute (M)' : 'Mute (M)'}
-            className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors text-sm ${muted ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'text-gray-500 hover:text-white hover:bg-white/10'
-              }`}
-          >
-            {muted ? <FaBellSlash className="w-4 h-4 kitchen-icon" /> : <FaBell className="w-4 h-4 kitchen-icon" />}
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={askToggleMute}
+                className={`w-8 h-8 rounded-xl transition-colors ${muted ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30' : 'text-gray-500 hover:text-white hover:bg-white/10'}`}>
+                {muted ? <FaBellSlash className="w-4 h-4 kitchen-icon" /> : <FaBell className="w-4 h-4 kitchen-icon" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{muted ? 'Unmute (M)' : 'Mute (M)'}</TooltipContent>
+          </Tooltip>
           {/* Refresh */}
-          <button
-            onClick={fetchOrders}
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
-            title="Refresh orders (R)"
-          >
-            <FaSyncAlt className="w-3.5 h-3.5 kitchen-icon" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={fetchOrders}
+                className="w-8 h-8 rounded-xl text-gray-500 hover:text-white hover:bg-white/10">
+                <FaSyncAlt className="w-3.5 h-3.5 kitchen-icon" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Refresh (R)</TooltipContent>
+          </Tooltip>
           {/* Logout */}
-          <button
-            onClick={askLogout}
-            className="flex items-center gap-1.5 text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors px-3 py-1.5 rounded-xl shadow-sm shadow-brand-600/30"
-          >
-            <FaSignOutAlt className="w-3.5 h-3.5 kitchen-icon" />
-            <span className="hidden sm:inline">Sign out</span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={askLogout} size="sm" className="gap-1.5 shadow-sm shadow-brand-600/30">
+                <FaSignOutAlt className="w-3.5 h-3.5 kitchen-icon" />
+                <span className="hidden sm:inline">Sign out</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Sign out</TooltipContent>
+          </Tooltip>
         </div>
       </header>
 
@@ -748,18 +764,17 @@ export default function KitchenDashboardPage() {
         </div>
       )}
 
-      {confirm && (
-        <ConfirmModal
-          open
-          title={confirm.title}
-          message={confirm.message}
-          confirmLabel={confirm.confirmLabel}
-          type={confirm.type}
-          onConfirm={confirm.onConfirm}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
+      <ConfirmModal
+        open={!!confirm}
+        title={confirm?.title}
+        message={confirm?.message}
+        confirmLabel={confirm?.confirmLabel}
+        type={confirm?.type}
+        onConfirm={confirm?.onConfirm}
+        onCancel={() => setConfirm(null)}
+      />
       </div>
     </div>
+    </TooltipProvider>
   )
 }

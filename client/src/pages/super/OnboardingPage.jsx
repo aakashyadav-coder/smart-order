@@ -94,18 +94,18 @@ function NudgeModal({ stage, onClose, onSend }) {
             This will send an announcement to all <strong>{s.label}</strong> restaurants.
           </div>
           <div>
-            <label className="label text-gray-600 text-xs">Announcement Title</label>
-            <input type="text" className="input bg-white border-gray-200 text-gray-900 text-sm"
+            <label className="block text-sm font-medium mb-1 text-gray-600 text-xs">Announcement Title</label>
+            <input type="text" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
               value={title} onChange={e => setTitle(e.target.value)} />
           </div>
           <div>
-            <label className="label text-gray-600 text-xs">Message</label>
-            <textarea rows={4} className="input bg-white border-gray-200 text-gray-900 text-sm resize-none"
+            <label className="block text-sm font-medium mb-1 text-gray-600 text-xs">Message</label>
+            <textarea rows={4} className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm resize-none"
               value={message} onChange={e => setMessage(e.target.value)} />
           </div>
         </div>
         <div className="flex gap-2 px-5 pb-5">
-          <button onClick={onClose} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
+          <button onClick={onClose} className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition-colors flex-1 py-2.5 text-sm">Cancel</button>
           <button onClick={handleSend} disabled={sending}
             className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-sm transition-colors shadow-sm inline-flex items-center justify-center gap-2">
             <FaBullhorn className="w-3.5 h-3.5" />

@@ -11,6 +11,9 @@ import {
 import {
   StatCardSkeleton, ChartSkeleton, OrderRowSkeleton, MenuSkeleton
 } from '../../components/Skeleton'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -246,28 +249,68 @@ function DonutChart({ slices }) {
 }
 
 // Stat card with animated counter + trend arrow
+// accent colour map: bg-X-50 → border-X-400 for the top bar
+const ACCENT_BAR = {
+  'bg-blue-50':   'bg-blue-400',
+  'bg-brand-50':  'bg-brand-400',
+  'bg-green-50':  'bg-green-400',
+  'bg-purple-50': 'bg-purple-400',
+  'bg-orange-50': 'bg-orange-400',
+  'bg-amber-50':  'bg-amber-400',
+  'bg-red-50':    'bg-red-400',
+}
+
 function StatCard({ icon: Icon, label, value, rawValue, trend, prefix = '', iconBg, iconColor }) {
   const counted = useCountUp(rawValue ?? 0)
   const displayValue = rawValue !== undefined ? `${prefix}${counted.toLocaleString()}` : value
+  const showTrend = trend !== undefined && trend !== null
+  const up = showTrend ? trend >= 0 : null
+  const accentBar = ACCENT_BAR[iconBg] || 'bg-gray-300'
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group">
-      <div className={`w-12 h-12 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110`}>
-        <Icon className={`w-6 h-6 ${iconColor}`} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider truncate">{label}</p>
-        <p className="font-display text-gray-900 text-2xl font-bold leading-tight tracking-tight">{displayValue}</p>
-        {trend !== undefined && (
-          <p className={`text-xs mt-0.5 font-semibold flex items-center gap-1 ${trend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-            <span>{trend >= 0 ? '↑' : '↓'}</span>
-            <span>{Math.abs(trend)}% vs yesterday</span>
+    <Card className="border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group overflow-hidden">
+      {/* Coloured top accent bar */}
+      <div className={`h-1 w-full ${accentBar}`} />
+
+      <CardContent className="p-5">
+        {/* Icon + trend row */}
+        <div className="flex items-center justify-between mb-4">
+          <div className={`w-11 h-11 rounded-2xl ${iconBg} flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-sm`}>
+            <Icon style={{ width: 20, height: 20 }} className={iconColor} />
+          </div>
+
+          {showTrend && (
+            <span className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-1 rounded-full ${
+              up ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
+            }`}>
+              {up ? '▲' : '▼'} {Math.abs(trend)}%
+            </span>
+          )}
+        </div>
+
+        {/* Hero number */}
+        <p className="text-[28px] font-extrabold text-gray-900 leading-none tracking-tight tabular-nums">
+          {displayValue}
+        </p>
+
+        {/* Label */}
+        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-2">
+          {label}
+        </p>
+
+        {/* Trend caption */}
+        {showTrend && (
+          <p className={`text-[10px] mt-1 font-semibold ${up ? 'text-green-500' : 'text-red-400'}`}>
+            {up ? '+' : ''}{trend}% vs yesterday
           </p>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
+
+
+
 
 // Top-selling items widget
 function TopItems({ orders }) {
@@ -280,33 +323,46 @@ function TopItems({ orders }) {
   const max = ranked[0]?.[1] || 1
 
   if (ranked.length === 0) return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-      <h3 className="font-bold text-gray-900 mb-3">Top Items</h3>
-      <p className="text-gray-400 text-sm text-center py-6">No orders yet</p>
-    </div>
+    <Card className="border-gray-100 shadow-sm">
+      <CardContent className="p-5">
+        <CardHeader className="p-0 mb-3">
+          <CardTitle className="text-base">Top Items</CardTitle>
+        </CardHeader>
+        <p className="text-gray-400 text-sm text-center py-6">No orders yet</p>
+      </CardContent>
+    </Card>
   )
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-gray-900">Top Selling</h3>
-        <div className="w-7 h-7 bg-orange-50 rounded-lg flex items-center justify-center"><FaUtensils className="w-3.5 h-3.5 text-orange-500" /></div>
-      </div>
-      <div className="space-y-3">
-        {ranked.map(([name, qty], i) => (
-          <div key={name} className="flex items-center gap-3">
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0 ${i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-gray-300 text-white' : i === 2 ? 'bg-amber-700 text-white' : 'bg-gray-100 text-gray-500'}`}>{i + 1}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-gray-800 text-sm font-semibold truncate">{name}</p>
-              <div className="h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-brand-500 to-brand-400 rounded-full transition-all duration-700" style={{ width: `${(qty / max) * 100}%` }} />
-              </div>
-            </div>
-            <span className="text-gray-900 text-sm font-bold flex-shrink-0">{qty}</span>
+    <Card className="border-gray-100 shadow-sm">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <CardTitle className="text-base">Top Selling</CardTitle>
+          <div className="w-7 h-7 bg-orange-50 rounded-lg flex items-center justify-center">
+            <FaUtensils className="w-3.5 h-3.5 text-orange-500" />
           </div>
-        ))}
-      </div>
-    </div>
+        </div>
+        <div className="space-y-3">
+          {ranked.map(([name, qty], i) => (
+            <div key={name} className="flex items-center gap-3">
+              <Badge
+                variant="outline"
+                className={`w-5 h-5 p-0 flex items-center justify-center text-[10px] font-black flex-shrink-0 rounded-full border-0 ${
+                  i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-gray-300 text-white' : i === 2 ? 'bg-amber-700 text-white' : 'bg-gray-100 text-gray-500'
+                }`}
+              >
+                {i + 1}
+              </Badge>
+              <div className="flex-1 min-w-0">
+                <p className="text-gray-800 text-sm font-semibold truncate">{name}</p>
+                <Progress value={(qty / max) * 100} className="h-1.5 mt-1 bg-gray-100" />
+              </div>
+              <span className="text-gray-900 text-sm font-bold flex-shrink-0">{qty}</span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 

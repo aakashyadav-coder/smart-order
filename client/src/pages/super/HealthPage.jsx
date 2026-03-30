@@ -141,10 +141,10 @@ function MaintenancePanel() {
       <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Message */}
         <div>
-          <label className="label text-gray-600 text-xs">Message shown to customers</label>
+          <label className="block text-sm font-medium mb-1 text-gray-600 text-xs">Message shown to customers</label>
           <input
             type="text"
-            className="input bg-white border-gray-200 text-gray-900 text-sm"
+            className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
             value={editMsg}
             onChange={e => setEditMsg(e.target.value)}
             placeholder="We'll be back soon!"
@@ -152,13 +152,13 @@ function MaintenancePanel() {
         </div>
         {/* Scheduled downtime */}
         <div>
-          <label className="label text-gray-600 text-xs flex items-center gap-1">
+          <label className="block text-sm font-medium mb-1 text-gray-600 text-xs flex items-center gap-1">
             <FaClock className="w-3 h-3" /> Scheduled downtime (optional - sets countdown timer)
           </label>
           <div className="flex gap-2">
-            <input type="date" className="input bg-white border-gray-200 text-gray-900 text-sm flex-1"
+            <input type="date" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm flex-1"
               value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} />
-            <input type="time" className="input bg-white border-gray-200 text-gray-900 text-sm w-32"
+            <input type="time" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm w-32"
               value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} />
           </div>
         </div>

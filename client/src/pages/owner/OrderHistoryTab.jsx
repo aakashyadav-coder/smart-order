@@ -11,7 +11,8 @@ import {
 import {
   StatCardSkeleton, ChartSkeleton, OrderRowSkeleton, MenuSkeleton
 } from '../../components/Skeleton'
-
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import { downloadCSV } from './ownerTabHelpers'
 
 // ── Order History Tab ──────────────────────────────────────────────────────────
@@ -128,7 +129,7 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid, onStatusC
           <input
             type="text"
             placeholder="Search name, phone, table…"
-            className="input text-sm w-full pl-9 focus:ring-brand-400 focus:border-brand-400"
+            className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white text-sm w-full pl-9 focus:ring-brand-400 focus:border-brand-400"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -137,7 +138,7 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid, onStatusC
           </svg>
         </div>
         <select
-          className="input w-44 text-sm bg-white focus:ring-brand-400 focus:border-brand-400"
+          className="px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white w-44 text-sm bg-white focus:ring-brand-400 focus:border-brand-400"
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
         >
@@ -152,14 +153,14 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid, onStatusC
         </button>
       </div>
 
-      {/* ── Summary pills ── */}
-      <div className="flex gap-2.5 text-xs flex-wrap">
-        <span className="bg-brand-50 border border-brand-200 text-brand-700 px-3 py-1.5 rounded-full font-bold">
+      {/* ── Summary badges ── */}
+      <div className="flex gap-2 flex-wrap">
+        <Badge variant="outline" className="bg-brand-50 border-brand-200 text-brand-700 px-3 py-1.5 text-xs font-bold rounded-full">
           {filtered.length} orders
-        </span>
-        <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-full font-bold">
+        </Badge>
+        <Badge variant="outline" className="bg-emerald-50 border-emerald-200 text-emerald-700 px-3 py-1.5 text-xs font-bold rounded-full">
           Rs. {totalRev.toFixed(0)} paid
-        </span>
+        </Badge>
       </div>
 
       {/* ── Table ── */}
@@ -170,7 +171,7 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid, onStatusC
           <p className="text-sm mt-1">Try adjusting your filters</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <Card className="border-gray-100 shadow-sm overflow-hidden rounded-2xl">
 
           {/* Header row — brand gradient */}
           <div className="grid grid-cols-[36px_2fr_1.5fr_1fr_1fr_140px] items-center px-6 py-3.5 bg-gradient-to-r from-brand-700 to-brand-600">
@@ -216,10 +217,12 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid, onStatusC
 
                 {/* Status */}
                 <div className="flex justify-center">
-                  <span className={`inline-flex items-center gap-1.5 text-[10px] font-black px-2.5 py-1 rounded-full border ${cfg.badge}`}>
+                  <Badge
+                    className={`text-[10px] font-black px-2.5 py-1 gap-1.5 border ${cfg.badge}`}
+                  >
                     <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${o.status === 'PENDING' ? cfg.dot + ' animate-pulse' : cfg.dot}`} />
                     {o.status}
-                  </span>
+                  </Badge>
                 </div>
 
                 {/* Amount */}
@@ -257,7 +260,7 @@ export function OrderHistoryTab({ orders, loading, restaurant, onPaid, onStatusC
               </div>
             )
           })}
-        </div>
+        </Card>
       )}
 
       {selected && <BillModal order={selected} restaurant={restaurant} onClose={() => setSelected(null)} onPaid={updated => { onPaid(updated); setSelected(null) }} />}

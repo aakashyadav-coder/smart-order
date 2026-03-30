@@ -69,20 +69,20 @@ export default function AnnouncementsPage() {
         </h2>
         <div className="space-y-3">
           <div>
-            <label className="label text-gray-600 text-xs">Title *</label>
+            <label className="block text-sm font-medium mb-1 text-gray-600 text-xs">Title *</label>
             <input type="text" placeholder="e.g. Scheduled Maintenance on Saturday"
-              className="input bg-white border-gray-200 text-gray-900 text-sm"
+              className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
               value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
           </div>
           <div>
-            <label className="label text-gray-600 text-xs">Message *</label>
+            <label className="block text-sm font-medium mb-1 text-gray-600 text-xs">Message *</label>
             <textarea rows={3} placeholder="Write your message here..."
-              className="input bg-white border-gray-200 text-gray-900 text-sm resize-none"
+              className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm resize-none"
               value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))} />
           </div>
           <div>
-            <label className="label text-gray-600 text-xs">Target (optional)</label>
-            <select className="input bg-white border-gray-200 text-gray-900 text-sm"
+            <label className="block text-sm font-medium mb-1 text-gray-600 text-xs">Target (optional)</label>
+            <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
               value={form.restaurantId} onChange={e => setForm(p => ({ ...p, restaurantId: e.target.value }))}>
               <option value="">Broadcast to all restaurants</option>
               {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}

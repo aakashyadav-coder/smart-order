@@ -163,11 +163,11 @@ export default function SettingsPage() {
       <Section icon={FaUser} title="Profile Information">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Full Name">
-            <input type="text" className="input bg-white border-gray-200 text-gray-900"
+            <input type="text" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900"
               value={profile.name} onChange={e => setProfile(p => ({ ...p, name: e.target.value }))} />
           </Field>
           <Field label="Email Address (read-only)">
-            <input type="email" className="input bg-gray-50 border-gray-200 text-gray-500 cursor-not-allowed"
+            <input type="email" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-gray-50 border-gray-200 text-gray-500 cursor-not-allowed"
               value={profile.email} readOnly />
           </Field>
         </div>
@@ -188,13 +188,13 @@ export default function SettingsPage() {
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="New Email Address">
-            <input type="email" className="input bg-white border-gray-200 text-gray-900"
+            <input type="email" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900"
               value={emailForm.newEmail}
               onChange={e => setEmailForm(p => ({ ...p, newEmail: e.target.value }))}
               placeholder="New email address" />
           </Field>
           <Field label="Current Password (to confirm)">
-            <input type="password" className="input bg-white border-gray-200 text-gray-900"
+            <input type="password" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900"
               value={emailForm.currentPassword}
               onChange={e => setEmailForm(p => ({ ...p, currentPassword: e.target.value }))}
               placeholder="••••••••" />
@@ -212,18 +212,18 @@ export default function SettingsPage() {
       <Section icon={FaLock} title="Change Password">
         <div className="space-y-3">
           <Field label="Current Password">
-            <input type="password" className="input bg-white border-gray-200 text-gray-900"
+            <input type="password" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900"
               value={pwForm.currentPassword} onChange={e => setPwForm(p => ({ ...p, currentPassword: e.target.value }))}
               placeholder="********" />
           </Field>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="New Password">
-              <input type="password" className="input bg-white border-gray-200 text-gray-900"
+              <input type="password" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900"
                 value={pwForm.newPassword} onChange={e => setPwForm(p => ({ ...p, newPassword: e.target.value }))}
                 placeholder="Min. 8 characters" />
             </Field>
             <Field label="Confirm New Password">
-              <input type="password" className="input bg-white border-gray-200 text-gray-900"
+              <input type="password" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900"
                 value={pwForm.confirmPassword} onChange={e => setPwForm(p => ({ ...p, confirmPassword: e.target.value }))}
                 placeholder="Repeat new password" />
             </Field>
@@ -321,7 +321,7 @@ export default function SettingsPage() {
                     placeholder="000000"
                     value={totpCode}
                     onChange={e => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="input bg-white border-gray-200 text-gray-900 font-mono text-lg tracking-[0.3em] text-center w-40"
+                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 font-mono text-lg tracking-[0.3em] text-center w-40"
                   />
                 </div>
                 <div className="flex gap-3">
@@ -383,7 +383,7 @@ export default function SettingsPage() {
                     placeholder="Current password"
                     value={disablePw}
                     onChange={e => setDisablePw(e.target.value)}
-                    className="input bg-white border-red-200 text-gray-900 flex-1"
+                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-red-200 text-gray-900 flex-1"
                   />
                   <div className="flex gap-2">
                     <button

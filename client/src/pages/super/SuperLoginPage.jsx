@@ -1,30 +1,32 @@
 /**
- * SuperLoginPage - Light image login for Super Admin
- * Step 1: email + password
- * Step 2: 6-digit TOTP code (shown only when totpEnabled=true on the account)
+ * SuperLoginPage — shadcn/ui refactor
+ * Step 1: email + password  |  Step 2: 6-digit TOTP
  */
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
-import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa'
+import { FaEye, FaEyeSlash, FaShieldAlt } from 'react-icons/fa'
+import { Mail, Lock, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function SuperLoginPage() {
   const navigate = useNavigate()
   const { login, isAuthenticated, user } = useAuth()
 
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm]           = useState({ email: '', password: '' })
   const [rememberMe, setRememberMe] = useState(false)
-  const [showPw, setShowPw] = useState(false)
-
-  const [step, setStep] = useState(1) // 1 | 2
+  const [showPw, setShowPw]       = useState(false)
+  const [step, setStep]           = useState(1)
   const [preAuthToken, setPreAuthToken] = useState('')
-  const [digits, setDigits] = useState(Array(6).fill(''))
-  const digitRefs = useRef([])
-
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [digits, setDigits]       = useState(Array(6).fill(''))
+  const digitRefs                 = useRef([])
+  const [loading, setLoading]     = useState(false)
+  const [error, setError]         = useState('')
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'SUPER_ADMIN') navigate('/super', { replace: true })
@@ -36,14 +38,12 @@ export default function SuperLoginPage() {
     setLoading(true)
     try {
       const res = await api.post('/auth/login', { ...form, rememberMe })
-
       if (res.data.requireTotp) {
         setPreAuthToken(res.data.preAuthToken)
         setStep(2)
         setTimeout(() => digitRefs.current[0]?.focus(), 80)
         return
       }
-
       if (res.data.user.role !== 'SUPER_ADMIN') {
         setError('Access denied. This portal is for Super Admins only.')
         return
@@ -60,22 +60,17 @@ export default function SuperLoginPage() {
 
   const handleDigitChange = (idx, val) => {
     if (val.length === 6 && /^\d{6}$/.test(val)) {
-      const arr = val.split('')
-      setDigits(arr)
+      setDigits(val.split(''))
       digitRefs.current[5]?.focus()
       return
     }
     const d = val.replace(/\D/g, '').slice(-1)
-    const next = [...digits]
-    next[idx] = d
-    setDigits(next)
+    const next = [...digits]; next[idx] = d; setDigits(next)
     if (d && idx < 5) digitRefs.current[idx + 1]?.focus()
   }
 
   const handleDigitKeyDown = (idx, e) => {
-    if (e.key === 'Backspace' && !digits[idx] && idx > 0) {
-      digitRefs.current[idx - 1]?.focus()
-    }
+    if (e.key === 'Backspace' && !digits[idx] && idx > 0) digitRefs.current[idx - 1]?.focus()
   }
 
   const handleTotpSubmit = async (e) => {
@@ -105,135 +100,127 @@ export default function SuperLoginPage() {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6 relative">
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-xl overflow-hidden grid md:grid-cols-2">
+
+        {/* Left — illustration */}
         <div className="hidden md:flex items-center justify-center bg-gray-50 p-10">
-          <img
-            src="/images/smart-pic.png"
-            alt="Super admin login illustration"
-            className="w-full max-w-sm h-auto object-contain"
-          />
+          <img src="/images/smart-pic.png" alt="Super admin login" className="w-full max-w-sm h-auto object-contain" />
         </div>
 
+        {/* Right — form */}
         <div className="p-8 sm:p-12">
-          <div className="mb-8">
-            <h1 className="text-3xl font-semibold text-gray-900">
-              {step === 2 ? 'Enter code' : 'Sign in'}
-            </h1>
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 bg-gradient-to-br from-brand-600 to-brand-800 rounded-xl flex items-center justify-center shadow-lg shadow-brand-600/30">
+              <FaShieldAlt className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="font-extrabold text-gray-900 text-base leading-none">Code Yatra</p>
+              <p className="text-brand-600 text-xs font-semibold mt-0.5">Super Admin Portal</p>
+            </div>
           </div>
 
+          <h1 className="text-3xl font-semibold text-gray-900 mb-6">
+            {step === 2 ? 'Enter code' : 'Sign in'}
+          </h1>
+
           {error && (
-            <div className="mb-5 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">
-              {error}
-            </div>
+            <Alert variant="destructive" className="mb-5">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
+          {/* Step 1 — Credentials */}
           {step === 1 && (
-            <form onSubmit={handleCredentials} className="space-y-6">
-              <div>
-                <label className="block text-sm text-gray-500 mb-1">Email</label>
+            <form onSubmit={handleCredentials} className="space-y-5">
+              <div className="space-y-1.5">
+                <Label htmlFor="super-email">Email</Label>
                 <div className="relative">
-                  <FaUser className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="email"
-                    required
-                    autoComplete="email"
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    id="super-email"
+                    type="email" required autoComplete="email"
                     placeholder="Email address"
-                    className="w-full border-b border-gray-300 focus:border-blue-500 outline-none pl-7 py-2 text-gray-900 placeholder:text-gray-300"
+                    className="pl-10"
                     value={form.email}
                     onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm text-gray-500 mb-1">Password</label>
+              <div className="space-y-1.5">
+                <Label htmlFor="super-password">Password</Label>
                 <div className="relative">
-                  <FaLock className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    id="super-password"
                     type={showPw ? 'text' : 'password'}
-                    required
-                    autoComplete="current-password"
-                    placeholder="********"
-                    className="w-full border-b border-gray-300 focus:border-blue-500 outline-none pl-7 pr-10 py-2 text-gray-900 placeholder:text-gray-300"
+                    required autoComplete="current-password"
+                    placeholder="••••••••"
+                    className="pl-10 pr-10"
                     value={form.password}
                     onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPw(v => !v)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-0.5"
                   >
                     {showPw ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <label className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-1">
+                <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer">
                   <input
-                    type="checkbox"
-                    checked={rememberMe}
+                    type="checkbox" checked={rememberMe}
                     onChange={e => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                    className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                   />
                   Remember me
                 </label>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md w-full sm:w-40 transition-colors disabled:opacity-60"
-                >
-                  {loading ? 'Authenticating...' : 'Log in'}
-                </button>
+                <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Authenticating…</> : 'Log in'}
+                </Button>
               </div>
             </form>
           )}
 
+          {/* Step 2 — TOTP */}
           {step === 2 && (
-            <form onSubmit={handleTotpSubmit} className="space-y-6">
-              <p className="text-sm text-gray-500">
-                Enter the 6-digit code from your authenticator app.
-              </p>
-
+            <form onSubmit={handleTotpSubmit} className="space-y-5">
+              <p className="text-sm text-gray-500">Enter the 6-digit code from your authenticator app.</p>
               <div className="flex gap-3">
                 {digits.map((d, i) => (
                   <input
                     key={i}
                     ref={el => (digitRefs.current[i] = el)}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
+                    type="text" inputMode="numeric" maxLength={6}
                     value={d}
                     onChange={e => handleDigitChange(i, e.target.value)}
                     onKeyDown={e => handleDigitKeyDown(i, e)}
-                    className="w-10 h-12 text-center text-lg border-b border-gray-300 focus:border-blue-500 outline-none"
+                    className="w-10 h-12 text-center text-lg font-bold border border-gray-300 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-400 outline-none transition-all"
                   />
                 ))}
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <button
-                  type="button"
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
+                <Button
+                  type="button" variant="ghost"
                   onClick={() => { setStep(1); setDigits(Array(6).fill('')); setError('') }}
-                  className="text-sm text-gray-400 hover:text-gray-600"
                 >
-                  Back to login
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={loading || digits.join('').length !== 6}
-                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-6 rounded-md w-full sm:w-40 transition-colors disabled:opacity-60"
-                >
-                  {loading ? 'Verifying...' : 'Verify'}
-                </button>
+                  ← Back to login
+                </Button>
+                <Button type="submit" disabled={loading || digits.join('').length !== 6}>
+                  {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying…</> : 'Verify'}
+                </Button>
               </div>
             </form>
           )}
 
           {step === 1 && (
             <div className="mt-8 text-xs text-gray-400">
-              <a href="/kitchen/login" className="hover:text-gray-600">Kitchen staff login</a>
+              <a href="/kitchen/login" className="hover:text-gray-600 transition-colors">Kitchen staff login</a>
             </div>
           )}
         </div>

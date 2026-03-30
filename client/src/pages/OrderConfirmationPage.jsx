@@ -62,7 +62,7 @@ export default function OrderConfirmationPage() {
         <div className="text-center">
           <FaTimesCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
           <p className="text-gray-600 font-medium">{error || 'Order not found'}</p>
-          <Link to="/menu" className="btn-primary mt-4 inline-flex">Back to Menu</Link>
+          <Link to="/menu" className="inline-flex items-center justify-center rounded-xl bg-brand-600 text-white hover:bg-brand-700 font-semibold transition-colors mt-4 inline-flex">Back to Menu</Link>
         </div>
       </div>
     )
@@ -200,7 +200,7 @@ export default function OrderConfirmationPage() {
         {(status === 'SERVED' || status === 'PAID') && (
           <Link
             to={`/menu?table=${order.tableNumber}${order.restaurantId ? `&rid=${order.restaurantId}` : ''}`}
-            className="btn-primary w-full py-3.5 text-center flex items-center justify-center gap-2"
+            className="inline-flex items-center justify-center rounded-xl bg-brand-600 text-white hover:bg-brand-700 font-semibold transition-colors w-full py-3.5 text-center flex items-center justify-center gap-2"
           >
             <FaUtensils className="w-4 h-4" />
             Order Again

@@ -80,11 +80,11 @@ const Modal = ({ title, form, setForm, onSave, onClose, saving }) => (
           { key: 'tableCount',  label: 'Number of Tables',   placeholder: '10', type: 'number' },
         ].map(f => (
           <div key={f.key}>
-            <label className="label text-gray-600 text-xs">{f.label}</label>
+            <label className="block text-sm font-medium mb-1 text-gray-600 text-xs">{f.label}</label>
             <input
               type={f.type || 'text'}
               placeholder={f.placeholder}
-              className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:ring-brand-500 focus:border-brand-500"
+              className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:ring-brand-500 focus:border-brand-500"
               value={form[f.key]}
               onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
             />
@@ -92,7 +92,7 @@ const Modal = ({ title, form, setForm, onSave, onClose, saving }) => (
         ))}
         {/* Opening Hours */}
         <div>
-          <label className="label text-gray-600 text-xs font-medium mb-2 block">Opening Hours</label>
+          <label className="block text-sm font-medium mb-1 text-gray-600 text-xs font-medium mb-2 block">Opening Hours</label>
           <div className="space-y-1.5">
             {DAYS.map(d => (
               <div key={d} className="flex items-center gap-2">
@@ -106,11 +106,11 @@ const Modal = ({ title, form, setForm, onSave, onClose, saving }) => (
                 {!form.openingHours?.[d]?.closed ? (
                   <>
                     <input type="time" value={form.openingHours?.[d]?.open || '09:00'}
-                      className="input bg-white border-gray-200 text-gray-900 text-xs py-1 px-2 h-7 flex-1"
+                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-xs py-1 px-2 h-7 flex-1"
                       onChange={e => setForm(p => ({ ...p, openingHours: { ...p.openingHours, [d]: { ...p.openingHours[d], open: e.target.value } } }))} />
                     <span className="text-xs text-gray-400">-</span>
                     <input type="time" value={form.openingHours?.[d]?.close || '22:00'}
-                      className="input bg-white border-gray-200 text-gray-900 text-xs py-1 px-2 h-7 flex-1"
+                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-xs py-1 px-2 h-7 flex-1"
                       onChange={e => setForm(p => ({ ...p, openingHours: { ...p.openingHours, [d]: { ...p.openingHours[d], close: e.target.value } } }))} />
                   </>
                 ) : <span className="text-xs text-red-400 italic">Closed</span>}
@@ -120,7 +120,7 @@ const Modal = ({ title, form, setForm, onSave, onClose, saving }) => (
         </div>
       </div>
       <div className="flex gap-2 px-5 pb-5">
-        <button onClick={onClose} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
+        <button onClick={onClose} className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition-colors flex-1 py-2.5 text-sm">Cancel</button>
         <button onClick={onSave} disabled={saving || !form.name} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-sm transition-colors shadow-sm">
           {saving ? 'Saving...' : 'Save'}
         </button>
@@ -242,7 +242,7 @@ export default function RestaurantsPage() {
           <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
           <input
             type="text" placeholder="Search restaurants..."
-            className="input bg-white border-gray-200 text-gray-900 text-sm pl-9"
+            className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm pl-9"
             value={search} onChange={e => setSearch(e.target.value)}
           />
         </div>

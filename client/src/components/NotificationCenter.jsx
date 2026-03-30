@@ -1,20 +1,23 @@
 /**
- * NotificationCenter — Bell icon dropdown with in-app notification history
- * Driven by socket events: support_ticket_new, maintenance_update, user_last_login
- * Groups by type, tracks read/unread state in memory
+ * NotificationCenter — rebuilt with shadcn ScrollArea, Button, Badge
+ * Bell icon dropdown with real-time socket events
  */
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import socket from '../lib/socket'
 import { FaBell, FaCheck, FaTrash, FaTicketAlt, FaTools, FaUser, FaExclamationTriangle } from 'react-icons/fa'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
 
 const MAX_NOTIFS = 100
 
 const TYPE_CONFIG = {
-  ticket:      { icon: FaTicketAlt, bg: 'bg-red-100', text: 'text-red-600', label: 'Support Ticket' },
-  maintenance: { icon: FaTools,     bg: 'bg-amber-100', text: 'text-amber-600', label: 'Maintenance' },
-  login:       { icon: FaUser,      bg: 'bg-green-100', text: 'text-green-600', label: 'User Login' },
-  health:      { icon: FaExclamationTriangle, bg: 'bg-orange-100', text: 'text-orange-600', label: 'Health Alert' },
+  ticket:      { icon: FaTicketAlt,          bg: 'bg-red-100',    text: 'text-red-600',    label: 'Support Ticket' },
+  maintenance: { icon: FaTools,              bg: 'bg-amber-100',  text: 'text-amber-600',  label: 'Maintenance' },
+  login:       { icon: FaUser,               bg: 'bg-green-100',  text: 'text-green-600',  label: 'User Login' },
+  health:      { icon: FaExclamationTriangle,bg: 'bg-orange-100', text: 'text-orange-600', label: 'Health Alert' },
 }
 
 function timeAgo(ts) {
@@ -77,8 +80,8 @@ export default function NotificationCenter() {
   }, [])
 
   const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-  const markRead = (id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
-  const clearAll = () => setNotifications([])
+  const markRead    = (id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+  const clearAll    = () => setNotifications([])
 
   const handleClick = (n) => {
     markRead(n.id)
@@ -86,7 +89,6 @@ export default function NotificationCenter() {
     setOpen(false)
   }
 
-  // Group notifications
   const grouped = notifications.reduce((acc, n) => {
     const group = acc.find(g => g.type === n.type)
     if (group) group.items.push(n)
@@ -96,53 +98,56 @@ export default function NotificationCenter() {
 
   return (
     <div ref={dropdownRef} className="relative">
-      <button
+      <Button
+        variant="outline"
+        size="icon"
         onClick={() => setOpen(o => !o)}
-        className="relative w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm"
+        className="relative w-9 h-9 rounded-xl"
         title="Notifications"
       >
         <FaBell className="w-4 h-4 text-gray-600" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-brand-600 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-bounce-in">
+          <Badge className="absolute -top-1.5 -right-1.5 w-5 h-5 p-0 flex items-center justify-center text-[10px] font-black border-0 animate-bounce-in">
             {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
+          </Badge>
         )}
-      </button>
+      </Button>
 
       {open && (
-        <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl border border-gray-200 shadow-2xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl border border-gray-200 shadow-2xl z-50 overflow-hidden animate-fade-in">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/80">
             <p className="text-sm font-extrabold text-gray-900">Notifications</p>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
-                <button onClick={markAllRead}
-                  className="text-xs text-brand-600 hover:text-brand-700 font-semibold flex items-center gap-1">
+                <Button variant="ghost" size="sm" onClick={markAllRead}
+                  className="text-xs text-brand-600 hover:text-brand-700 h-auto py-1 px-2 gap-1">
                   <FaCheck className="w-2.5 h-2.5" /> Mark all read
-                </button>
+                </Button>
               )}
               {notifications.length > 0 && (
-                <button onClick={clearAll}
-                  className="text-xs text-gray-400 hover:text-red-500 transition-colors">
+                <Button variant="ghost" size="icon" onClick={clearAll}
+                  className="w-6 h-6 text-gray-400 hover:text-red-500">
                   <FaTrash className="w-3 h-3" />
-                </button>
+                </Button>
               )}
             </div>
           </div>
 
           {/* Body */}
-          <div className="max-h-96 overflow-y-auto divide-y divide-gray-50">
+          <ScrollArea className="max-h-96">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-gray-300">
                 <FaBell className="w-6 h-6 mb-2" />
                 <p className="text-sm font-medium text-gray-400">No notifications yet</p>
                 <p className="text-xs mt-1 text-gray-300">Events will appear here in real time</p>
               </div>
-            ) : grouped.map(group => {
+            ) : grouped.map((group, gi) => {
               const cfg = TYPE_CONFIG[group.type] || TYPE_CONFIG.ticket
               const GroupIcon = cfg.icon
               return (
                 <div key={group.type}>
+                  {gi > 0 && <Separator />}
                   {/* Group header */}
                   <div className="px-4 py-1.5 bg-gray-50/70">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -168,7 +173,7 @@ export default function NotificationCenter() {
                 </div>
               )
             })}
-          </div>
+          </ScrollArea>
         </div>
       )}
     </div>

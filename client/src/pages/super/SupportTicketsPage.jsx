@@ -46,21 +46,21 @@ function TicketModal({ ticket, onClose, onSave }) {
             <p className="text-sm text-gray-800 leading-relaxed">{ticket.message}</p>
           </div>
           <div>
-            <label className="label text-gray-600 text-xs">Status</label>
-            <select className="input bg-white border-gray-200 text-gray-900 text-sm"
+            <label className="block text-sm font-medium mb-1 text-gray-600 text-xs">Status</label>
+            <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
               value={status} onChange={e => setStatus(e.target.value)}>
               {STATUSES.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
             </select>
           </div>
           <div>
-            <label className="label text-gray-600 text-xs">Reply to Restaurant</label>
+            <label className="block text-sm font-medium mb-1 text-gray-600 text-xs">Reply to Restaurant</label>
             <textarea rows={4} placeholder="Type your reply here..."
-              className="input bg-white border-gray-200 text-gray-900 text-sm resize-none"
+              className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm resize-none"
               value={reply} onChange={e => setReply(e.target.value)} />
           </div>
         </div>
         <div className="flex gap-2 px-5 pb-5">
-          <button onClick={onClose} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
+          <button onClick={onClose} className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition-colors flex-1 py-2.5 text-sm">Cancel</button>
           <button onClick={handleSave} disabled={saving}
             className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-sm transition-colors shadow-sm">
             {saving ? 'Saving...' : 'Save & Reply'}
@@ -150,7 +150,7 @@ export default function SupportTicketsPage() {
 
       {/* Filter bar */}
       <div className="flex items-center gap-3 mb-4">
-        <select className="input bg-white border-gray-200 text-gray-900 text-sm w-44"
+        <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm w-44"
           value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           <option value="">All Statuses</option>
           {STATUSES.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}

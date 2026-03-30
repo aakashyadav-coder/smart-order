@@ -1,14 +1,18 @@
 /**
- * ConfirmModal — Premium confirmation dialog
- * Theme: White modal, SVG icons, red danger / brand info
+ * ConfirmModal — rebuilt with shadcn Dialog
  */
-import React, { useEffect } from 'react'
-import { FaExclamationTriangle, FaCheckCircle, FaTimes } from 'react-icons/fa'
+import React from 'react'
+import { FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
 
 const TYPE_CFG = {
-  danger:  { icon: FaExclamationTriangle, iconBg: 'bg-red-50', iconColor: 'text-red-500', confirmClass: 'bg-red-600 hover:bg-red-700 text-white shadow-sm hover:shadow-red-500/25 hover:shadow-md' },
-  warning: { icon: FaExclamationTriangle, iconBg: 'bg-amber-50', iconColor: 'text-amber-500', confirmClass: 'bg-amber-500 hover:bg-amber-600 text-white' },
-  info:    { icon: FaCheckCircle,        iconBg: 'bg-brand-50', iconColor: 'text-brand-600', confirmClass: 'bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-700 hover:to-brand-600 text-white shadow-sm' },
+  danger:  { icon: FaExclamationTriangle, iconBg: 'bg-red-50',    iconColor: 'text-red-500' },
+  warning: { icon: FaExclamationTriangle, iconBg: 'bg-amber-50',  iconColor: 'text-amber-500' },
+  info:    { icon: FaCheckCircle,         iconBg: 'bg-brand-50',  iconColor: 'text-brand-600' },
 }
 
 export default function ConfirmModal({
@@ -16,66 +20,46 @@ export default function ConfirmModal({
   confirmLabel = 'Confirm', cancelLabel = 'Cancel',
   type = 'danger', loading = false
 }) {
-  useEffect(() => {
-    if (!open) return
-    const handler = (e) => { if (e.key === 'Escape') onCancel?.() }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [open, onCancel])
-
-  if (!open) return null
-
   const cfg = TYPE_CFG[type] || TYPE_CFG.danger
   const Icon = cfg.icon
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
-
-      {/* Modal */}
-      <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-sm animate-bounce-in border border-gray-100">
-        {/* Close button */}
-        <button
-          onClick={onCancel}
-          className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-        >
-          <FaTimes className="w-3.5 h-3.5 text-gray-500" />
-        </button>
-
-        <div className="p-6">
-          <div className="flex flex-col items-center text-center gap-4">
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onCancel?.() }}>
+      <DialogContent className="max-w-sm rounded-3xl">
+        <DialogHeader>
+          <div className="flex flex-col items-center text-center gap-4 pb-2">
             <div className={`w-14 h-14 ${cfg.iconBg} rounded-2xl flex items-center justify-center`}>
               <Icon className={`w-7 h-7 ${cfg.iconColor}`} />
             </div>
             <div>
-              <h3 className="text-gray-900 font-extrabold text-lg">{title}</h3>
-              {message && <p className="text-gray-500 text-sm mt-2 leading-relaxed">{message}</p>}
+              <DialogTitle className="text-gray-900 text-lg">{title}</DialogTitle>
+              {message && (
+                <DialogDescription className="mt-2 leading-relaxed">{message}</DialogDescription>
+              )}
             </div>
           </div>
-        </div>
+        </DialogHeader>
 
-        <div className="flex gap-2.5 px-6 pb-6">
-          <button
+        <DialogFooter className="flex-row gap-2.5 sm:gap-2.5">
+          <Button
+            variant="secondary"
+            className="flex-1"
             onClick={onCancel}
-            className="flex-1 py-2.5 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all text-sm"
           >
             {cancelLabel}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={type === 'danger' ? 'destructive' : 'default'}
+            className="flex-1"
             onClick={onConfirm}
             disabled={loading}
-            className={`flex-1 py-2.5 rounded-xl font-semibold transition-all text-sm disabled:opacity-50 ${cfg.confirmClass}`}
           >
             {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                Processing…
-              </span>
+              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing…</>
             ) : confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

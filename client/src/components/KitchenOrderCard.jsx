@@ -1,19 +1,23 @@
 /**
- * KitchenOrderCard — a single order card with action buttons
+ * KitchenOrderCard — rebuilt with shadcn Button, Badge
+ * Atmospheric kitchen-* CSS classes preserved
  */
 import React, { useState } from 'react'
+import { Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 const STATUS_CONFIG = {
-  PENDING:    { label: 'Pending',    badge: 'badge-pending',   next: 'ACCEPTED',  nextLabel: '✅ Accept Order' },
-  ACCEPTED:   { label: 'Accepted',   badge: 'badge-accepted',  next: 'PREPARING', nextLabel: '👨‍🍳 Start Preparing' },
-  PREPARING:  { label: 'Preparing',  badge: 'badge-preparing', next: 'COMPLETED', nextLabel: '🎉 Mark Complete' },
-  COMPLETED:  { label: 'Completed',  badge: 'badge-completed', next: null,        nextLabel: null },
-  CANCELLED:  { label: 'Cancelled',  badge: 'badge-cancelled', next: null,        nextLabel: null },
+  PENDING:   { label: 'Pending',   variant: 'dark-pending',   next: 'ACCEPTED',  nextLabel: '✅ Accept Order' },
+  ACCEPTED:  { label: 'Accepted',  variant: 'accepted',       next: 'PREPARING', nextLabel: '👨‍🍳 Start Preparing' },
+  PREPARING: { label: 'Preparing', variant: 'dark-preparing', next: 'COMPLETED', nextLabel: '🎉 Mark Complete' },
+  COMPLETED: { label: 'Completed', variant: 'dark-completed', next: null,        nextLabel: null },
+  CANCELLED: { label: 'Cancelled', variant: 'destructive',    next: null,        nextLabel: null },
 }
 
 const timeAgo = (dateStr) => {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000)
-  if (diff < 60)  return `${diff}s ago`
+  if (diff < 60)   return `${diff}s ago`
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
   return `${Math.floor(diff / 3600)}h ago`
 }
@@ -46,10 +50,12 @@ export default function KitchenOrderCard({ order, onUpdateStatus, onSendOTP }) {
       <div className={`flex items-center justify-between px-4 py-3 ${isNew ? 'bg-brand-500/10' : 'bg-gray-800/50'}`}>
         <div className="flex items-center gap-2">
           <span className="font-extrabold text-white text-sm">Table #{order.tableNumber}</span>
-          {isNew && <span className="text-xs bg-brand-500 text-white px-2 py-0.5 rounded-full font-bold animate-pulse">NEW</span>}
+          {isNew && (
+            <Badge className="bg-brand-500 text-white border-0 text-xs animate-pulse">NEW</Badge>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          <span className={`badge ${cfg.badge} text-xs`}>{cfg.label}</span>
+          <Badge variant={cfg.variant} className="text-xs">{cfg.label}</Badge>
           <span className="text-gray-500 text-xs">{timeAgo(order.createdAt)}</span>
         </div>
       </div>
@@ -84,28 +90,27 @@ export default function KitchenOrderCard({ order, onUpdateStatus, onSendOTP }) {
       {/* Actions */}
       {cfg.next && (
         <div className="px-4 pb-4 pt-2 space-y-2">
-          <button
+          <Button
             onClick={handleNext}
             disabled={loading}
-            className="btn-primary w-full py-2.5 text-sm"
+            className="w-full"
+            size="sm"
           >
             {loading ? (
-              <span className="flex items-center gap-2 justify-center">
-                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Updating…
-              </span>
+              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Updating…</>
             ) : cfg.nextLabel}
-          </button>
+          </Button>
 
-          {/* Send OTP manually */}
           {(order.status === 'ACCEPTED' || order.status === 'PREPARING') && (
-            <button
+            <Button
+              variant="ghost-dark"
               onClick={handleOTP}
               disabled={otpLoading}
-              className="btn-ghost w-full py-2 text-xs text-gray-400 border border-gray-700"
+              className="w-full text-xs border border-gray-700"
+              size="sm"
             >
               {otpLoading ? 'Sending…' : '🔐 Resend OTP SMS'}
-            </button>
+            </Button>
           )}
         </div>
       )}

@@ -179,8 +179,8 @@ export default function UsersPage() {
 
   const InputField = ({ label, field, type = 'text', placeholder, form, setForm }) => (
     <div>
-      <label className="label text-gray-600 text-xs">{label}</label>
-      <input type={type} placeholder={placeholder} className="input bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:ring-brand-500 focus:border-brand-500"
+      <label className="block text-sm font-medium mb-1 text-gray-600 text-xs">{label}</label>
+      <input type={type} placeholder={placeholder} className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 placeholder-gray-400 text-sm focus:ring-brand-500 focus:border-brand-500"
         value={form[field] ?? ''} onChange={e => setForm(p => ({ ...p, [field]: e.target.value }))} />
     </div>
   )
@@ -218,15 +218,15 @@ export default function UsersPage() {
             <InputField label="Email *" field="email" type="email" placeholder="Email address" form={form} setForm={setForm} />
             <InputField label={mode === 'create' ? 'Password *' : 'New Password (leave blank to keep)'} field="password" type="password" placeholder="********" form={form} setForm={setForm} />
             <div>
-              <label className="label text-gray-600 text-xs">Role *</label>
-              <select className="input bg-white border-gray-200 text-gray-900 text-sm focus:ring-brand-500 focus:border-brand-500"
+              <label className="block text-sm font-medium mb-1 text-gray-600 text-xs">Role *</label>
+              <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm focus:ring-brand-500 focus:border-brand-500"
                 value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
                 {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
             <div>
-              <label className="label text-gray-600 text-xs">Restaurant</label>
-              <select className="input bg-white border-gray-200 text-gray-900 text-sm focus:ring-brand-500 focus:border-brand-500"
+              <label className="block text-sm font-medium mb-1 text-gray-600 text-xs">Restaurant</label>
+              <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm focus:ring-brand-500 focus:border-brand-500"
                 value={form.restaurantId} onChange={e => setForm(p => ({ ...p, restaurantId: e.target.value }))}>
                 <option value="">- No restaurant -</option>
                 {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -238,7 +238,7 @@ export default function UsersPage() {
             </div>
           </div>
           <div className="flex gap-2 px-5 pb-5">
-            <button onClick={onClose} className="btn-secondary flex-1 py-2.5 text-sm">Cancel</button>
+            <button onClick={onClose} className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 font-semibold transition-colors flex-1 py-2.5 text-sm">Cancel</button>
             <button onClick={() => onSave(form)} disabled={saving} className="flex-1 py-2.5 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-sm transition-colors shadow-sm">
               {saving ? 'Saving...' : 'Save User'}
             </button>
@@ -279,12 +279,12 @@ export default function UsersPage() {
         <div className="relative flex-1 min-w-48">
           <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input type="text" placeholder="Search name or email..."
-            className="input bg-white border-gray-200 text-gray-900 text-sm pl-9 shadow-sm"
+            className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm pl-9 shadow-sm"
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="relative w-44">
           <FaIdBadge className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <select className="input bg-white border-gray-200 text-gray-900 text-sm w-full pl-9 shadow-sm"
+          <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm w-full pl-9 shadow-sm"
             value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
             <option value="">All Roles</option>
             {ROLES.map(r => <option key={r} value={r}>{r}</option>)}

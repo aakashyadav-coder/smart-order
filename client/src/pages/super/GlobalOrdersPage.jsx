@@ -90,24 +90,24 @@ export default function GlobalOrdersPage() {
         <div className="relative">
           <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
           <input type="text" placeholder="Search customer..."
-            className="input bg-white border-gray-200 text-gray-900 text-sm pl-9 w-full"
+            className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm pl-9 w-full"
             value={filter.search} onChange={e => setFilter(p => ({ ...p, search: e.target.value }))} />
         </div>
-        <select className="input bg-white border-gray-200 text-gray-900 text-sm"
+        <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
           value={filter.restaurantId} onChange={e => setFilter(p => ({ ...p, restaurantId: e.target.value }))}>
           <option value="">All Restaurants</option>
           {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
         </select>
-        <select className="input bg-white border-gray-200 text-gray-900 text-sm"
+        <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
           value={filter.status} onChange={e => setFilter(p => ({ ...p, status: e.target.value }))}>
           <option value="">All Statuses</option>
           {['PENDING','ACCEPTED','PREPARING','SERVED','CANCELLED','PAID'].map(s => (
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
-        <input type="date" className="input bg-white border-gray-200 text-gray-900 text-sm"
+        <input type="date" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
           value={filter.dateFrom} onChange={e => setFilter(p => ({ ...p, dateFrom: e.target.value }))} />
-        <input type="date" className="input bg-white border-gray-200 text-gray-900 text-sm"
+        <input type="date" className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
           value={filter.dateTo} onChange={e => setFilter(p => ({ ...p, dateTo: e.target.value }))} />
       </div>
 

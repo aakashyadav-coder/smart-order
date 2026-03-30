@@ -126,7 +126,7 @@ export default function FeaturesPage() {
           Select Restaurant
         </label>
         <select
-          className="input bg-white border-gray-200 text-gray-900 max-w-sm"
+          className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 max-w-sm"
           value={selected}
           onChange={e => setSelected(e.target.value)}
         >
