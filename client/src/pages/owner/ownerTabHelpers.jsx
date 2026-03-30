@@ -126,6 +126,88 @@ function LineChart({ data, labels, color = '#e11d48' }) {
   )
 }
 
+// Dual-series pulse chart (orders bars + revenue line)
+function PulseChart({ labels = [], revenue = [], counts = [] }) {
+  const n = Math.max(revenue.length, counts.length, 1)
+  const rev = revenue.length ? revenue : Array(n).fill(0)
+  const cnt = counts.length ? counts : Array(n).fill(0)
+  const maxRev = Math.max(...rev, 1)
+  const maxCnt = Math.max(...cnt, 1)
+  const showEvery = n > 12 ? Math.ceil(n / 6) : 1
+
+  const points = rev.map((v, i) => {
+    const x = n === 1 ? 50 : (i / (n - 1)) * 100
+    const y = 86 - (v / maxRev) * 56
+    return { x, y, v }
+  })
+  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ')
+  const area = `${line} L 100,92 L 0,92 Z`
+  const last = points[points.length - 1] || { x: 0, y: 0, v: 0 }
+  const barW = 100 / n
+
+  return (
+    <div className="relative">
+      <div className="relative h-56 rounded-2xl bg-gradient-to-b from-white to-slate-50 border border-gray-100 overflow-hidden">
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          <defs>
+            <linearGradient id="pulseArea" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#22c55e" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#22c55e" stopOpacity="0.02" />
+            </linearGradient>
+            <linearGradient id="pulseBars" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#e11d48" stopOpacity="0.85" />
+              <stop offset="100%" stopColor="#e11d48" stopOpacity="0.1" />
+            </linearGradient>
+            <filter id="pulseGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="1.2" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {[20, 40, 60, 80].map(y => (
+            <line key={y} x1="0" x2="100" y1={y} y2={y} stroke="#eef2f7" strokeDasharray="2 3" />
+          ))}
+
+          {cnt.map((v, i) => {
+            const h = (v / maxCnt) * 26
+            const x = i * barW + barW * 0.2
+            const w = barW * 0.6
+            const y = 92 - h
+            return <rect key={i} x={x} y={y} width={w} height={h} rx="1.6" fill="url(#pulseBars)" />
+          })}
+
+          <path d={area} fill="url(#pulseArea)" />
+          <path d={line} stroke="#22c55e" strokeWidth="2.4" fill="none" filter="url(#pulseGlow)" />
+          <circle cx={last.x} cy={last.y} r="2.6" fill="white" stroke="#22c55e" strokeWidth="2" />
+        </svg>
+
+        <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-[10px] font-bold text-gray-600 bg-white/90 border border-gray-100 shadow-sm">
+          24h Pulse
+        </div>
+        <div className="absolute top-3 right-3 px-2.5 py-1 rounded-lg text-[10px] font-bold text-gray-700 bg-white/90 border border-gray-100 shadow-sm">
+          Rs. {Math.round(last.v).toLocaleString()}
+        </div>
+      </div>
+
+      <div className="flex justify-between text-[9px] text-gray-400 mt-2">
+        {labels.map((l, i) => (
+          <span key={i} style={{ display: (i % showEvery === 0 || i === labels.length - 1) ? 'block' : 'none' }}>
+            {l}
+          </span>
+        ))}
+      </div>
+
+      <div className="mt-2 flex items-center gap-2 text-[10px] text-gray-500">
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-[#e11d48]" /> Orders</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-[#22c55e]" /> Revenue</span>
+      </div>
+    </div>
+  )
+}
+
 // Donut chart (pure SVG)
 function DonutChart({ slices }) {
   const total = slices.reduce((s, x) => s + x.value, 0)
@@ -229,4 +311,4 @@ function TopItems({ orders }) {
 }
 
 
-export { downloadCSV, useCountUp, BarChart, LineChart, DonutChart, StatCard, TopItems }
+export { downloadCSV, useCountUp, BarChart, LineChart, PulseChart, DonutChart, StatCard, TopItems }

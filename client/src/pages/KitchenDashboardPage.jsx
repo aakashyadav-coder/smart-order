@@ -346,6 +346,7 @@ export default function KitchenDashboardPage() {
   const { user, logout, loading: authLoading } = useAuth()
 
   const [orders, setOrders] = useState([])
+  const [nowTick, setNowTick] = useState(Date.now())
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(null)
   const [connected, setConnected] = useState(socket.connected)
@@ -362,6 +363,7 @@ export default function KitchenDashboardPage() {
   const notifiedOrderIds = useRef(new Set())
   const ordersRef = useRef([])
   const overdueNotified = useRef(new Set())
+  const DAY_MS = 24 * 60 * 60 * 1000
 
   const unlockAudio = async () => {
     ensureAudio()
@@ -410,6 +412,12 @@ export default function KitchenDashboardPage() {
     if (user?.restaurantId) socket.emit('join_restaurant', { restaurantId: user.restaurantId })
     else console.warn('[Kitchen] restaurantId missing — order events will not be received')
   }, [authLoading, fetchOrders, user?.restaurantId])
+
+  // Keep a rolling 24h window for served/cancelled without touching the DB
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(Date.now()), 60000)
+    return () => clearInterval(t)
+  }, [])
 
   // Unlock audio after refresh (browsers require a user gesture)
   useEffect(() => {
@@ -559,9 +567,20 @@ export default function KitchenDashboardPage() {
     return () => window.removeEventListener('keydown', handler)
   }, [fetchOrders]) // eslint-disable-line
 
+  const isRecent = (o) => {
+    const ts = o?.servedAt || o?.updatedAt || o?.createdAt
+    const t = new Date(ts).getTime()
+    if (Number.isNaN(t)) return false
+    return (nowTick - t) < DAY_MS
+  }
+  const servedRecent = orders.filter(o => o.status === 'SERVED' && isRecent(o))
   const grouped = {}
-  COLUMNS.forEach(c => { grouped[c.id] = orders.filter(o => o.status === c.id) })
-  const cancelled = orders.filter(o => o.status === 'CANCELLED')
+  COLUMNS.forEach(c => {
+    grouped[c.id] = c.id === 'SERVED'
+      ? servedRecent
+      : orders.filter(o => o.status === c.id)
+  })
+  const cancelled = orders.filter(o => o.status === 'CANCELLED' && isRecent(o))
   const pending = grouped['PENDING']?.length || 0
   const active = orders.filter(o => ['PENDING', 'ACCEPTED', 'PREPARING'].includes(o.status)).length
 

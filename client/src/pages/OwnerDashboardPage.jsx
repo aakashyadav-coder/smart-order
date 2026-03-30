@@ -385,7 +385,6 @@ export default function OwnerDashboardPage() {
 
   const LIVE_STATS = [
     { label: 'Orders',  value: orders.length,                 color: 'text-blue-600',  bg: 'bg-blue-50 border-blue-100' },
-    { label: 'Paid',    value: `Rs.${totalRevenue.toFixed(0)}`, color: 'text-green-600', bg: 'bg-green-50 border-green-100' },
     { label: 'Pending', value: pendingCount, color: pendingCount>0?'text-amber-600':'text-gray-400', bg: pendingCount>0?'bg-amber-50 border-amber-200':'bg-gray-50 border-gray-100' },
   ]
 
@@ -544,4 +543,3 @@ export default function OwnerDashboardPage() {
     </div>
   )
 }
-

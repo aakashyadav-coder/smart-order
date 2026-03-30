@@ -31,7 +31,7 @@ const NAV_ITEMS = [
 ]
 
 export default function SuperLayout() {
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen]   = useState(false)
   const [paletteOpen, setPaletteOpen]   = useState(false)
@@ -114,25 +114,6 @@ export default function SuperLayout() {
         })}
       </nav>
 
-      {/* User footer */}
-      <div className="p-4 border-t border-white/8">
-        <div className="flex items-center gap-2.5 mb-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-700 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-            {user?.name?.[0]?.toUpperCase() || 'S'}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-semibold truncate leading-none">{user?.name}</p>
-            <p className="text-gray-500 text-xs truncate mt-0.5">{user?.email}</p>
-          </div>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-2 text-xs text-gray-500 hover:text-brand-400 transition-colors py-2 px-2 rounded-lg hover:bg-white/8 font-medium"
-        >
-          <FaSignOutAlt className="w-4 h-4" />
-          Sign Out
-        </button>
-      </div>
     </div>
   )
 
@@ -189,6 +170,14 @@ export default function SuperLayout() {
               className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm">
               <FaUserCog className="w-4 h-4 text-gray-600" />
             </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 h-9 rounded-xl bg-brand-600 text-white text-xs font-semibold shadow-sm hover:bg-brand-700 transition-colors"
+              title="Sign Out"
+            >
+              <FaSignOutAlt className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
           </div>
         </header>
 
@@ -217,4 +206,3 @@ export default function SuperLayout() {
     </div>
   )
 }
-

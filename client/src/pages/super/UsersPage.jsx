@@ -249,14 +249,14 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="relative">
+    <div className="relative p-4">
       <div className="absolute inset-0 -z-10">
         <div className="absolute -top-20 -right-16 h-64 w-64 rounded-full bg-brand-100 blur-3xl opacity-60" />
         <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-amber-100 blur-3xl opacity-50" />
         <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-brand-50" />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-5 mb-7">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-sm">
@@ -275,7 +275,7 @@ export default function UsersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-5">
+      <div className="flex flex-wrap gap-4 mb-6">
         <div className="relative flex-1 min-w-48">
           <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input type="text" placeholder="Search name or email..."
@@ -328,7 +328,7 @@ export default function UsersPage() {
                 <button
                   type="button"
                   onClick={() => toggleGroup(group.key)}
-                  className="w-full flex items-center justify-between px-5 py-4 bg-gray-50/80 border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between px-6 py-4 bg-gray-50/80 border-b border-gray-100 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {isOpen ? <FaFolderOpen className="text-brand-600 w-4 h-4" /> : <FaFolder className="text-gray-500 w-4 h-4" />}
@@ -350,7 +350,7 @@ export default function UsersPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-100 bg-white">
-                          <th className="px-4 py-3 w-8">
+                          <th className="px-5 py-3.5 w-10">
                             <input
                               type="checkbox"
                               className="accent-brand-600"
@@ -360,27 +360,27 @@ export default function UsersPage() {
                             />
                           </th>
                           {['Name', 'Role', 'Restaurant', 'Last Login', 'Status', 'Actions'].map(h => (
-                            <th key={h} className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider">{h}</th>
+                            <th key={h} className="text-left px-5 py-3.5 text-gray-500 font-semibold text-xs uppercase tracking-wider">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {group.users.map(u => (
                           <tr key={u.id} className={`hover:bg-gray-50 transition-colors ${selected.has(u.id) ? 'bg-brand-50' : ''}`}>
-                            <td className="px-4 py-3">
+                            <td className="px-5 py-4">
                               <input type="checkbox" checked={selected.has(u.id)} onChange={() => toggleSelect(u.id)} className="accent-brand-600" />
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-5 py-4">
                               <p className="text-gray-900 font-medium">{u.name}</p>
                               <p className="text-gray-400 text-xs">{u.email}</p>
                             </td>
-                            <td className="px-4 py-3"><span className={`badge text-xs ${ROLE_COLORS[u.role] || 'badge-pending'}`}>{u.role}</span></td>
-                            <td className="px-4 py-3 text-gray-400 text-xs">{u.restaurant?.name || group.name || '-'}</td>
-                            <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{fmtDate(u.lastLoginAt)}</td>
-                            <td className="px-4 py-3">
+                            <td className="px-5 py-4"><span className={`badge text-xs ${ROLE_COLORS[u.role] || 'badge-pending'}`}>{u.role}</span></td>
+                            <td className="px-5 py-4 text-gray-400 text-xs">{u.restaurant?.name || group.name || '-'}</td>
+                            <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">{fmtDate(u.lastLoginAt)}</td>
+                            <td className="px-5 py-4">
                               <span className={`badge text-xs ${u.active ? 'badge-completed' : 'badge-cancelled'}`}>{u.active ? 'Active' : 'Inactive'}</span>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-5 py-4">
                               <div className="flex items-center gap-2">
                                 <button onClick={() => openEdit(u)} className="text-xs text-gray-400 hover:text-gray-700 transition-colors w-8 h-8 rounded-lg hover:bg-gray-100 inline-flex items-center justify-center">
                                   <FaEdit className="w-4 h-4" />
@@ -419,4 +419,3 @@ export default function UsersPage() {
     </div>
   )
 }
-
