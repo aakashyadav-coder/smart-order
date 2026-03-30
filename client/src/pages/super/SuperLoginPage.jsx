@@ -107,7 +107,7 @@ export default function SuperLoginPage() {
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-xl overflow-hidden grid md:grid-cols-2">
         <div className="hidden md:flex items-center justify-center bg-gray-50 p-10">
           <img
-            src="/images/superlogin.png"
+            src="/images/smart-pic.png"
             alt="Super admin login illustration"
             className="w-full max-w-sm h-auto object-contain"
           />
