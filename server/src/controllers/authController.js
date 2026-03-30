@@ -226,22 +226,8 @@ const totpVerify = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// ── Nodemailer transporter (lazy init) ───────────────────────────────────────
-let _transporter = null;
-const getTransporter = () => {
-  if (_transporter) return _transporter;
-  const nodemailer = require("nodemailer");
-  _transporter = nodemailer.createTransport({
-    host:   process.env.SMTP_HOST   || "smtp.gmail.com",
-    port:   parseInt(process.env.SMTP_PORT || "587"),
-    secure: parseInt(process.env.SMTP_PORT || "587") === 465,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-  return _transporter;
-};
+// ── SendGrid Setup ────────────────────────────────────────────────────────────
+const sgMail = require("@sendgrid/mail");
 
 const buildOtpEmail = (otp) => `
 <!DOCTYPE html>
@@ -312,18 +298,18 @@ const forgotPassword = async (req, res, next) => {
 
     await prisma.passwordResetOtp.create({ data: { email, otpHash, expiresAt } });
 
-    // Check if SMTP is configured
-    const smtpConfigured = process.env.SMTP_USER && process.env.SMTP_PASS;
+    // Check if SendGrid is configured
+    const sendgridConfigured = process.env.SENDGRID_API_KEY;
 
-    if (smtpConfigured) {
-      const transporter = getTransporter();
-      await transporter.sendMail({
-        from:    process.env.SMTP_FROM || `"Smart Order" <${process.env.SMTP_USER}>`,
+    if (sendgridConfigured) {
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+      await sgMail.send({
+        from:    process.env.SENDGRID_FROM_EMAIL || "info.codeyatra@gmail.com",
         to:      email,
         subject: `${otp} — Your Smart Order password reset code`,
         html:    buildOtpEmail(otp),
       });
-      logger.info(`Password reset OTP sent to ${email}`);
+      logger.info(`Password reset OTP sent to ${email} via SendGrid`);
     } else {
       // Dev fallback: log to console
       logger.warn(`[DEV] SMTP not configured — OTP for ${email}: ${otp}`);
