@@ -8,6 +8,7 @@
  */
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import api from '../lib/api'
+import socket from '../lib/socket'
 
 const AuthContext = createContext(null)
 
@@ -139,6 +140,17 @@ export const AuthProvider = ({ children }) => {
   }
 
   const logout = () => clearAuth()
+
+  // ── Socket auth sync ───────────────────────────────────────────────────────
+  // Force a reconnect whenever the auth token changes so the socket handshake
+  // always carries the latest JWT (or no JWT after logout).
+  useEffect(() => {
+    // If the socket is mid-connection, disconnect() still resets it cleanly.
+    try {
+      socket.disconnect()
+      socket.connect()
+    } catch { /* ignore */ }
+  }, [token])
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, loading, isAuthenticated: !!user }}>

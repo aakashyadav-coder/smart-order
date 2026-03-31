@@ -258,6 +258,7 @@ export default function OwnerDashboardPage() {
   }, [user?.id, user?.restaurantId])
 
   const annLoadedRef = useRef(false)
+  const normalizeAnnId = useCallback((id) => (id == null ? '' : String(id)), [])
 
   // Load persisted read IDs when user resolves
   useEffect(() => {
@@ -265,9 +266,10 @@ export default function OwnerDashboardPage() {
     annLoadedRef.current = false          // reset flag on key change
     try {
       const raw = localStorage.getItem(readKey)
-      setReadAnnIds(new Set(raw ? JSON.parse(raw) : []))
+      const stored = raw ? JSON.parse(raw) : []
+      setReadAnnIds(new Set(stored.map(normalizeAnnId)))
     } catch { setReadAnnIds(new Set()) }
-  }, [readKey])
+  }, [readKey, normalizeAnnId])
 
   // Persist to localStorage — skip the very first run after readKey resolves
   // to avoid overwriting stored data with the empty initial state
@@ -407,9 +409,9 @@ export default function OwnerDashboardPage() {
       socket.off('connect', onReconnect)
     }
   }, [user?.id, user?.restaurantId])  // stable primitive deps — prevents duplicate listeners
-  const unreadCount = useMemo(() => announcements.filter(a => !readAnnIds.has(a.id)).length, [announcements, readAnnIds])
-  const markAnnouncementRead = (id) => setReadAnnIds(prev => new Set(prev).add(id))
-  const markAllAnnouncementsRead = () => setReadAnnIds(new Set(announcements.map(a => a.id)))
+  const unreadCount = useMemo(() => announcements.filter(a => !readAnnIds.has(normalizeAnnId(a.id))).length, [announcements, readAnnIds, normalizeAnnId])
+  const markAnnouncementRead = (id) => setReadAnnIds(prev => new Set(prev).add(normalizeAnnId(id)))
+  const markAllAnnouncementsRead = () => setReadAnnIds(new Set(announcements.map(a => normalizeAnnId(a.id))))
   const fmtAnn = (d) => new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
 
 
@@ -540,7 +542,7 @@ export default function OwnerDashboardPage() {
                           <div className="p-6 text-center text-gray-400 text-sm">No announcements</div>
                         ) : (
                           announcements.map(a => {
-                            const isRead = readAnnIds.has(a.id)
+                            const isRead = readAnnIds.has(normalizeAnnId(a.id))
                             return (
                               <div key={a.id} className={`px-4 py-3 ${isRead ? 'bg-white' : 'bg-brand-50/40'}`}>
                                 <div className="flex items-start justify-between gap-3">
