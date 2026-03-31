@@ -2,10 +2,8 @@
  * Order Controller — create, list, and update orders
  * Emits Socket.io events on order creation and status update
  */
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("../lib/prisma");
 const { emitNewOrder, emitOrderStatusUpdate } = require("../socket");
-
-const prisma = new PrismaClient();
 
 /**
  * POST /api/orders
@@ -146,6 +144,7 @@ const getOrderById = async (req, res, next) => {
 /**
  * PUT /api/orders/:id/status
  * Update order status (authenticated kitchen/admin)
+ * S2 FIX: Non-super-admin users can only update orders belonging to their own restaurant.
  */
 const updateOrderStatus = async (req, res, next) => {
   try {
@@ -155,6 +154,15 @@ const updateOrderStatus = async (req, res, next) => {
     const validStatuses = ["PENDING", "ACCEPTED", "PREPARING", "SERVED", "CANCELLED", "PAID"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: `Invalid status. Must be one of: ${validStatuses.join(", ")}` });
+    }
+
+    // S2 FIX: Verify the order belongs to the user's restaurant before mutating.
+    if (req.user?.role !== "SUPER_ADMIN") {
+      const existing = await prisma.order.findUnique({ where: { id }, select: { restaurantId: true } });
+      if (!existing) return res.status(404).json({ message: "Order not found." });
+      if (existing.restaurantId !== req.user?.restaurantId) {
+        return res.status(403).json({ message: "Access denied. This order does not belong to your restaurant." });
+      }
     }
 
     const updateData = { status };

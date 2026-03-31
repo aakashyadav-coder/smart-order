@@ -2,12 +2,12 @@
  * Super Admin Controller — full platform management
  * All routes require SUPER_ADMIN role
  */
-const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 const { logActivity } = require("../services/activityLogService");
 const { emitRestaurantUpdate, emitAnnouncement } = require("../socket");
 const OTPAuth = require("otpauth");
 const QRCode = require("qrcode");
+const prisma = require("../lib/prisma");
 
 // ── In-memory Maintenance Mode state ─────────────────────────────────────────
 // (Resets on server restart — intentional for simple SaaS use)
@@ -16,8 +16,6 @@ let maintenanceState = {
   message: "We'll be back soon! Scheduled maintenance in progress.",
   scheduledAt: null, // ISO string — future time for countdown
 };
-
-const prisma = new PrismaClient();
 
 const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const RANGE_PRESETS = {
@@ -348,11 +346,17 @@ const getUsers = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// S3 FIX: Valid assignable roles — SUPER_ADMIN cannot be assigned via this endpoint.
+const ASSIGNABLE_ROLES = ["OWNER", "ADMIN", "KITCHEN"];
+
 const createUser = async (req, res, next) => {
   try {
     const { name, email, password, role, restaurantId, active } = req.body;
     if (!name || !email || !password || !role) {
       return res.status(400).json({ message: "name, email, password, role are required." });
+    }
+    if (!ASSIGNABLE_ROLES.includes(role)) {
+      return res.status(400).json({ message: `Invalid role. Must be one of: ${ASSIGNABLE_ROLES.join(", ")}.` });
     }
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
@@ -368,6 +372,11 @@ const updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, email, password, role, restaurantId, active } = req.body;
+
+    // S3 FIX: prevent SUPER_ADMIN role escalation via this endpoint.
+    if (role !== undefined && !ASSIGNABLE_ROLES.includes(role)) {
+      return res.status(400).json({ message: `Invalid role. Must be one of: ${ASSIGNABLE_ROLES.join(", ")}.` });
+    }
 
     const data = {};
     if (name         !== undefined) data.name = name;
@@ -454,10 +463,12 @@ const getAllOrders = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// ── Activity Logs ──────────────────────────────────────────────────────────────
+// ── Activity Logs ────────────────────────────────────────────────────────────
 const getActivityLogs = async (req, res, next) => {
   try {
-    const { limit = 200, action, dateFrom, dateTo } = req.query;
+    // S7 FIX: Cap limit at 1000 to prevent massive full-table scans.
+    const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit || "200")));
+    const { action, dateFrom, dateTo } = req.query;
     const where = {};
     if (action) where.action = action;
     if (dateFrom || dateTo) {
@@ -470,7 +481,7 @@ const getActivityLogs = async (req, res, next) => {
       where,
       include: { user: { select: { name: true, email: true, role: true } } },
       orderBy: { createdAt: "desc" },
-      take: parseInt(limit),
+      take: limit,
     });
     res.json(logs);
   } catch (err) { next(err); }
@@ -964,6 +975,18 @@ const getSuperProfile = async (req, res, next) => {
 const updateSuperProfile = async (req, res, next) => {
   try {
     const { name, email } = req.body;
+
+    // S6 FIX: Validate email format and uniqueness before updating.
+    if (email !== undefined) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: "Invalid email format." });
+      }
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing && existing.id !== req.user.id) {
+        return res.status(409).json({ message: "This email is already in use." });
+      }
+    }
+
     const updated = await prisma.user.update({
       where: { id: req.user.id },
       data: { ...(name && { name }), ...(email && { email }) },

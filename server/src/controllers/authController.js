@@ -5,12 +5,10 @@
  */
 const bcrypt  = require("bcryptjs");
 const jwt     = require("jsonwebtoken");
-const { PrismaClient } = require("@prisma/client");
+const prisma  = require("../lib/prisma");
 const { z }   = require("zod");
 const { emitUserLastLogin } = require("../socket");
 const logger  = require("../logger");
-
-const prisma  = new PrismaClient();
 
 const loginSchema = z.object({
   email:      z.string().email("Invalid email"),
@@ -371,8 +369,8 @@ const resetPassword = async (req, res, next) => {
     if (!resetToken || !newPassword) {
       return res.status(400).json({ message: "resetToken and newPassword are required." });
     }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters." });
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters." });
     }
 
     let payload;

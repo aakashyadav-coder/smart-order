@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
-import Heatmap from './Heatmap'
+
 import {
   FaChartLine, FaClipboardList, FaUtensils, FaUsers,
   FaTimesCircle, FaCheckCircle, FaPrint, FaPlus, FaTrash, FaInbox, FaPaperPlane

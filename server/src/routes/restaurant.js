@@ -4,12 +4,11 @@
  * GET /api/restaurant/analytics?range=24h|30d|6m — sales analytics
  */
 const { Router } = require("express");
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("../lib/prisma");
 const { authenticate, requireOwnerOrAbove } = require("../middleware/auth");
 const { emitSupportTicket } = require("../socket");
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // ── GET /api/restaurant/mine ─────────────────────────────────────────────────
 // ── GET /api/restaurant/mine (authenticated) ────────────────────────────────

@@ -1,8 +1,7 @@
 /**
  * Activity Log service — records audit trail events
  */
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const prisma = require("../lib/prisma");
 
 /**
  * @param {object} opts

@@ -30,3 +30,11 @@ Thumbs.db
 
 # Prisma migrations (keep schema, ignore generated)
 # server/prisma/migrations/
+
+# Build and debug artifact files (never commit these)
+client/build_log.txt
+client/build_err.txt
+client/build_error.txt
+client/build_out.txt
+client/build_result.txt
+client/vite_error.txt

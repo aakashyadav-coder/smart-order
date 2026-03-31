@@ -79,9 +79,15 @@ const initSocket = (io) => {
     });
 
     // Owner joins their restaurant room — requires authenticated user
+    // S4 FIX: Verify the requested restaurantId matches the JWT's restaurantId (SUPER_ADMIN exempt).
     socket.on("join_restaurant", ({ restaurantId }) => {
       if (!socket.user) {
         return socket.emit("error", { message: "Unauthorized: authentication required." });
+      }
+      // SUPER_ADMIN may join any restaurant room for monitoring (intentional bypass).
+      const isSuperAdmin = socket.user.role === "SUPER_ADMIN";
+      if (!isSuperAdmin && restaurantId && restaurantId !== socket.user.restaurantId) {
+        return socket.emit("error", { message: "Unauthorized: cannot join another restaurant's room." });
       }
       if (restaurantId) {
         socket.join(`restaurant_${restaurantId}`);

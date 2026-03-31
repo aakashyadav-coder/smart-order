@@ -1,10 +1,8 @@
 /**
  * OTP Controller — generate, send, and verify OTPs
  */
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("../lib/prisma");
 const { generateOTPCode, sendOTPSMS } = require("../services/otpService");
-
-const prisma = new PrismaClient();
 
 /**
  * POST /api/otp/send

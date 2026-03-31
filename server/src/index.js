@@ -78,8 +78,21 @@ initSocket(io);
 
 // ── Security Middleware ────────────────────────────────────────────────────────
 // Helmet sets safe HTTP headers. HSTS is enabled in production for HTTPS enforcement.
+const apiOrigin = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(",")[0].trim() : "";
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:     ["'self'"],
+      scriptSrc:      ["'self'"],
+      styleSrc:       ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc:        ["'self'", "https://fonts.gstatic.com"],
+      imgSrc:         ["'self'", "data:", "https:"],
+      connectSrc:     ["'self'", apiOrigin, "wss:", "ws:"].filter(Boolean),
+      frameSrc:       ["'none'"],
+      objectSrc:      ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === "production" ? [] : null,
+    },
+  },
   crossOriginEmbedderPolicy: false,
   hsts: process.env.NODE_ENV === "production"
     ? { maxAge: 31536000, includeSubDomains: true, preload: true }
@@ -101,6 +114,7 @@ const authLimiter = rateLimit({
   skip: () => process.env.NODE_ENV === "development",
 });
 
+// S1 FIX: orderLimiter defined here so it can be applied BEFORE the route below.
 const orderLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 15,
@@ -131,19 +145,17 @@ app.use((req, res, next) => {
 const { getMaintenancePublic } = require("./controllers/superAdminController");
 
 // ── Routes ────────────────────────────────────────────────────────────────────
+// S1 FIX: orderLimiter applied BEFORE route registration so it actually fires.
 app.use("/api/auth",       authLimiter, authRoutes);
 app.use("/api/menu",       menuRoutes);
-app.use("/api/orders",     orderRoutes);
+app.use("/api/orders",     (req, res, next) => {
+  if (req.method === "POST") return orderLimiter(req, res, next);
+  return next();
+}, orderRoutes);
 app.use("/api/otp",        otpRoutes);
 app.use("/api/super",      superAdminRoutes);
 app.use("/api/features",   featuresRoutes);
 app.use("/api/restaurant", restaurantRoutes);
-
-// Apply order limiter only to POST (new order creation)
-app.use("/api/orders", (req, res, next) => {
-  if (req.method === "POST") return orderLimiter(req, res, next);
-  next();
-});
 
 // Public maintenance status
 app.get("/api/maintenance", getMaintenancePublic);

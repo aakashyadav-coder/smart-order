@@ -2,11 +2,9 @@
  * menuBulkController — Bulk menu upload via CSV / Excel
  * Super Admin only — parses file with xlsx, upserts or replaces menu items
  */
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("../lib/prisma");
 const xlsx = require("xlsx");
 const { logActivity } = require("../services/activityLogService");
-
-const prisma = new PrismaClient();
 
 const MAX_ROWS = 500;
 

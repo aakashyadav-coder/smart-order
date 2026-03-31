@@ -1,10 +1,9 @@
 /**
  * Feature toggle controller — per-restaurant feature management
  */
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("../lib/prisma");
 const { logActivity } = require("../services/activityLogService");
 
-const prisma = new PrismaClient();
 
 // GET /api/features/:restaurantId
 const getFeatures = async (req, res, next) => {

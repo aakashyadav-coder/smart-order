@@ -1,23 +1,17 @@
 /**
  * Menu Controller — CRUD menu items (with restaurant scoping)
  */
-const { PrismaClient } = require("@prisma/client");
+const prisma = require("../lib/prisma");
 const { logActivity } = require("../services/activityLogService");
 
-const prisma = new PrismaClient();
-
 // GET /api/menu?restaurantId=xxx
+// B4 FIX: restaurantId is required — never fall back to first restaurant (multi-tenant data leak).
 const getMenu = async (req, res, next) => {
   try {
-    let { restaurantId } = req.query;
+    const { restaurantId } = req.query;
 
     if (!restaurantId) {
-      const first = await prisma.restaurant.findFirst({
-        where: { active: true },
-        orderBy: { createdAt: "asc" },
-      });
-      if (!first) return res.status(404).json({ message: "No restaurants found." });
-      restaurantId = first.id;
+      return res.status(400).json({ message: "restaurantId is required. Please use the QR code link." });
     }
 
     const items = await prisma.menuItem.findMany({
