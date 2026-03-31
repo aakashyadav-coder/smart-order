@@ -19,15 +19,18 @@ const socket = io(SOCKET_URL, {
   reconnectionDelayMax: 5000,
   // Callback form: fresh on every (re)connection attempt.
   // Uses the same URL-based key selection as AuthContext so the right
-  // JWT is always sent: SA token on /super/* tabs, user token everywhere else.
+  // JWT is always sent for each portal.
   auth: (cb) => {
-    const isSuperPortal = window.location.pathname.startsWith('/super')
-    const token = isSuperPortal
+    const path = window.location.pathname
+    const token = path.startsWith('/super')
       ? localStorage.getItem('smart_order_sa_token')
-      : localStorage.getItem('smart_order_token')
+      : path.startsWith('/owner')
+        ? localStorage.getItem('smart_order_owner_token')
+        : path.startsWith('/kitchen')
+          ? localStorage.getItem('smart_order_kitchen_token')
+          : localStorage.getItem('smart_order_token')
     cb({ token })
   },
 })
 
 export default socket
-

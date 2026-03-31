@@ -3,8 +3,10 @@
  * Each role-group uses SEPARATE localStorage keys so that logging out
  * of Kitchen or Owner never affects an open Super Admin session and vice versa.
  *
- *   SUPER_ADMIN  →  smart_order_sa_token  / smart_order_sa_refresh
- *   OWNER/ADMIN/KITCHEN → smart_order_token / smart_order_refresh
+ *   SUPER_ADMIN (super portal) → smart_order_sa_token / smart_order_sa_refresh
+ *   OWNER portal              → smart_order_owner_token / smart_order_owner_refresh
+ *   KITCHEN portal            → smart_order_kitchen_token / smart_order_kitchen_refresh
+ *   fallback (other portals)  → smart_order_token / smart_order_refresh
  */
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import api from '../lib/api'
@@ -13,8 +15,10 @@ import socket from '../lib/socket'
 const AuthContext = createContext(null)
 
 // ── Role-namespaced key helpers ────────────────────────────────────────────────
-const SA_KEYS   = { access: 'smart_order_sa_token',  refresh: 'smart_order_sa_refresh' }
-const USER_KEYS = { access: 'smart_order_token',     refresh: 'smart_order_refresh' }
+const SA_KEYS      = { access: 'smart_order_sa_token',      refresh: 'smart_order_sa_refresh' }
+const OWNER_KEYS   = { access: 'smart_order_owner_token',   refresh: 'smart_order_owner_refresh' }
+const KITCHEN_KEYS = { access: 'smart_order_kitchen_token', refresh: 'smart_order_kitchen_refresh' }
+const USER_KEYS    = { access: 'smart_order_token',         refresh: 'smart_order_refresh' }
 
 /** Decode a JWT payload without verifying signature */
 const decodePayload = (token) => {
@@ -22,16 +26,21 @@ const decodePayload = (token) => {
   catch { return null }
 }
 
-/** Return the correct key pair for a given role string */
-const keysFor = (role) => (role === 'SUPER_ADMIN' ? SA_KEYS : USER_KEYS)
+/** Return the correct key pair for the current portal path */
+const keysForPath = (path) => {
+  if (path.startsWith('/super')) return SA_KEYS
+  if (path.startsWith('/owner')) return OWNER_KEYS
+  if (path.startsWith('/kitchen')) return KITCHEN_KEYS
+  return USER_KEYS
+}
 
 /**
  * Determine which key pair to use based on the current URL.
- * /super/* tabs always use SA_KEYS. All other portals use USER_KEYS.
- * This prevents a kitchen tab from accidentally loading the super admin session.
+ * /super/*, /owner/*, /kitchen/* each use their own keys.
+ * This prevents one portal from logging out another.
  */
 const getStoredToken = () => {
-  const keys = window.location.pathname.startsWith('/super') ? SA_KEYS : USER_KEYS
+  const keys = keysForPath(window.location.pathname)
   const t    = localStorage.getItem(keys.access)
   if (!t) return { token: null, keys }
   const p = decodePayload(t)
@@ -127,7 +136,7 @@ export const AuthProvider = ({ children }) => {
   // ── Login ───────────────────────────────────────────────────────────────────
   const login = (accessToken, refreshToken, rememberMe = false) => {
     const payload = decodePayload(accessToken)
-    const keys    = keysFor(payload?.role)
+    const keys    = keysForPath(window.location.pathname)
     keysRef.current = keys                      // switch active key pair
 
     localStorage.setItem(keys.access, accessToken)
