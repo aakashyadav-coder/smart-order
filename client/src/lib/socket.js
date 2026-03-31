@@ -18,18 +18,20 @@ const socket = io(SOCKET_URL, {
   reconnectionAttempts: 10,
   reconnectionDelayMax: 5000,
   // Callback form: fresh on every (re)connection attempt.
-  // Uses the same URL-based key selection as AuthContext so the right
-  // JWT is always sent for each portal.
+  // Only send JWTs for privileged portals; public customer pages connect as guest.
   auth: (cb) => {
     const path = window.location.pathname
-    const token = path.startsWith('/super')
-      ? localStorage.getItem('smart_order_sa_token')
-      : path.startsWith('/owner')
-        ? localStorage.getItem('smart_order_owner_token')
-        : path.startsWith('/kitchen')
-          ? localStorage.getItem('smart_order_kitchen_token')
-          : localStorage.getItem('smart_order_token')
-    cb({ token })
+    if (path.startsWith('/super')) {
+      return cb({ token: localStorage.getItem('smart_order_sa_token') })
+    }
+    if (path.startsWith('/owner')) {
+      return cb({ token: localStorage.getItem('smart_order_owner_token') })
+    }
+    if (path.startsWith('/kitchen')) {
+      return cb({ token: localStorage.getItem('smart_order_kitchen_token') })
+    }
+    // Public pages: no token to avoid auth errors blocking the connection
+    return cb({})
   },
 })
 

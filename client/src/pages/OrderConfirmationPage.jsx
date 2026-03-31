@@ -37,12 +37,17 @@ export default function OrderConfirmationPage() {
   }, [id])
 
   useEffect(() => {
-    socket.emit('join_order_room', { orderId: id })
+    const join = () => socket.emit('join_order_room', { orderId: id })
+    join()
     const handleStatusUpdate = ({ orderId, status: newStatus }) => {
       if (orderId === id) setStatus(newStatus)
     }
     socket.on('order_status_update', handleStatusUpdate)
-    return () => socket.off('order_status_update', handleStatusUpdate)
+    socket.on('connect', join) // re-join after reconnects
+    return () => {
+      socket.off('order_status_update', handleStatusUpdate)
+      socket.off('connect', join)
+    }
   }, [id])
 
   if (loading) {
