@@ -7,6 +7,10 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
 import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip,
+  Legend, ResponsiveContainer, Cell,
+} from 'recharts'
+import {
   FaArrowUp,
   FaArrowDown,
   FaMinus,
@@ -95,98 +99,125 @@ function KpiStrip({ platform }) {
   )
 }
 
-/* ---------------- Revenue Bar Chart (pure SVG) ---------------- */
+/* ---------------- Revenue Bar Chart (Recharts) ---------------- */
 function RevenueBarChart({ labels, restaurants, colors }) {
-  const [hoveredBucket, setHoveredBucket] = useState(null)
   const top5 = restaurants.slice(0, 5)
   if (!top5.length || !labels.length) return (
     <div className="h-64 flex items-center justify-center text-gray-400 text-sm">No revenue data for this period</div>
   )
 
-  const bucketCount = labels.length
-  // For each bucket combine top5 revenues
-  const bucketTotals = Array.from({ length: bucketCount }, (_, i) =>
-    top5.reduce((sum, r) => sum + (r.revenueSeries[i] || 0), 0)
-  )
-  const maxBucketTotal = Math.max(...bucketTotals, 1)
+  // Build data: [{ label, "Rest A": 1200, "Rest B": 800, ... }, ...]
+  const chartData = labels.map((label, i) => {
+    const point = { label }
+    top5.forEach(r => { point[r.name] = r.revenueSeries[i] || 0 })
+    return point
+  })
 
-  const W = 780, H = 180
-  const padL = 0, padR = 8, padT = 8, padB = 0
-  const chartW = W - padL - padR
-  const chartH = H - padT - padB
+  const yFormatter = (v) => {
+    if (v >= 1000000) return `Rs.${(v / 1000000).toFixed(1)}M`
+    if (v >= 1000)    return `Rs.${(v / 1000).toFixed(0)}k`
+    return `Rs.${v}`
+  }
 
-  const bucketW = chartW / bucketCount
-  const barGroupW = bucketW * 0.72
-  const barW = barGroupW / Math.max(top5.length, 1)
-  const showEvery = bucketCount > 14 ? Math.ceil(bucketCount / 7) : 1
+  const showEvery = labels.length > 14 ? Math.ceil(labels.length / 7) : 1
+  const xTickFormatter = (v, index) => {
+    if (index % showEvery !== 0 && index !== labels.length - 1) return ''
+    return v?.length > 7 ? v.slice(0, 7) : v
+  }
 
-  return (
-    <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${W} ${H + 24}`} className="w-full" style={{ minWidth: '400px' }}>
-        {/* Horizontal grid lines */}
-        {[0.25, 0.5, 0.75, 1].map(f => {
-          const y = padT + chartH * (1 - f)
-          return (
-            <g key={f}>
-              <line x1={padL} x2={W - padR} y1={y} y2={y} stroke="#f0f2f5" strokeWidth="1" />
-              <text x={padL} y={y - 2} fontSize="7" fill="#bcc3cc">{fmtMoney(maxBucketTotal * f)}</text>
-            </g>
-          )
-        })}
+  function BarTooltip({ active, payload, label }) {
+    if (!active || !payload?.length) return null
+    const total = payload.reduce((s, p) => s + (p.value || 0), 0)
+    return (
+      <div className="bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-black/10 px-4 py-3 min-w-[180px]">
+        <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest mb-2">{label}</p>
+        {payload.map((entry, i) => (
+          <div key={i} className="flex items-center justify-between gap-4 mb-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: entry.fill }} />
+              <span className="text-xs text-gray-600 font-medium truncate max-w-[100px]">{entry.name}</span>
+            </div>
+            <span className="text-xs font-extrabold text-gray-900">{fmtMoney(entry.value)}</span>
+          </div>
+        ))}
+        <div className="border-t border-gray-100 mt-2 pt-2 flex justify-between">
+          <span className="text-[11px] text-gray-400 font-semibold">Total</span>
+          <span className="text-xs font-extrabold text-gray-900">{fmtMoney(total)}</span>
+        </div>
+      </div>
+    )
+  }
 
-        {/* Bars */}
-        {labels.map((label, bi) => {
-          const gx = padL + bi * bucketW + (bucketW - barGroupW) / 2
-          let stackY = padT + chartH
-          const isHovered = hoveredBucket === bi
-          return (
-            <g key={bi}
-              onMouseEnter={() => setHoveredBucket(bi)}
-              onMouseLeave={() => setHoveredBucket(null)}
-              style={{ cursor: 'default' }}
-            >
-              {top5.map((rest, ri) => {
-                const v = rest.revenueSeries[bi] || 0
-                const barH = maxBucketTotal > 0 ? (v / maxBucketTotal) * chartH : 0
-                const x = gx + ri * barW
-                const y = stackY - barH
-                stackY -= 0  // not stacked - grouped
-                const thisBarH = barH
-                const thisY = padT + chartH - thisBarH
-                return (
-                  <rect key={ri}
-                    x={gx + ri * barW} y={thisY}
-                    width={Math.max(barW - 1.5, 1)} height={Math.max(thisBarH, 0)}
-                    fill={colors[ri % colors.length]}
-                    opacity={isHovered ? 1 : 0.85}
-                    rx="2"
-                  />
-                )
-              })}
-              {/* Bucket label */}
-              {(bi % showEvery === 0 || bi === bucketCount - 1) && (
-                <text x={gx + barGroupW / 2} y={H + 16} textAnchor="middle" fontSize="7.5" fill="#9ca3af">{label}</text>
-              )}
-              {/* Hover tooltip */}
-              {isHovered && (
-                <g>
-                  <rect x={gx - 4} y={padT} width={barGroupW + 8} height={chartH} fill="#f9fafb" opacity="0.6" rx="4" />
-                </g>
-              )}
-            </g>
-          )
-        })}
-      </svg>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-3 mt-3">
-        {top5.map((r, i) => (
-          <div key={r.id} className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm flex-shrink-0" style={{ background: colors[i % colors.length] }} />
-            <span className="text-xs text-gray-600 font-medium">{r.name}</span>
+  function BarLegend({ payload }) {
+    if (!payload?.length) return null
+    return (
+      <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-2">
+        {payload.map((entry, i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: entry.color }} />
+            <span className="text-[11px] text-gray-500 font-semibold truncate max-w-[120px]">{entry.value}</span>
           </div>
         ))}
       </div>
+    )
+  }
+
+  return (
+    <div style={{ height: 300 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={chartData}
+          margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
+          barCategoryGap="30%"
+          barGap={2}
+          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+        >
+          <defs>
+            {top5.map((r, i) => (
+              <linearGradient key={r.id} id={`bar-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor={colors[i % colors.length]} stopOpacity={1} />
+                <stop offset="100%" stopColor={colors[i % colors.length]} stopOpacity={0.7} />
+              </linearGradient>
+            ))}
+          </defs>
+
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+
+          <XAxis
+            dataKey="label"
+            tickFormatter={xTickFormatter}
+            tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            tickFormatter={yFormatter}
+            tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }}
+            axisLine={false}
+            tickLine={false}
+            width={72}
+          />
+
+          <RechartTooltip
+            content={<BarTooltip />}
+            cursor={{ fill: '#f8fafc', radius: 4 }}
+          />
+
+          <Legend content={<BarLegend />} />
+
+          {top5.map((r, i) => (
+            <Bar
+              key={r.id}
+              dataKey={r.name}
+              fill={`url(#bar-grad-${i})`}
+              radius={[4, 4, 0, 0]}
+              animationDuration={700}
+              animationEasing="ease-out"
+              maxBarSize={32}
+            />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   )
 }

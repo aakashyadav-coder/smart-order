@@ -5,6 +5,10 @@
  * - No horizontal overflow / scroll
  */
 import React, { useEffect, useState, useRef, useCallback } from 'react'
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip,
+  Legend, ResponsiveContainer, ReferenceLine,
+} from 'recharts'
 import { useNavigate } from 'react-router-dom'
 import api from '../../lib/api'
 import socket from '../../lib/socket'
@@ -41,220 +45,158 @@ const RANGE_OPTIONS = [
   { key: '30d', label: '30D', title: 'Last 30 Days' },
   { key: '6m',  label: '6M',  title: 'Last 6 Months' },
 ]
-const COLORS = ['#ef4444', '#0ea5e9', '#22c55e', '#f59e0b']
+const COLORS = ['#e11d48', '#0ea5e9', '#22c55e', '#f59e0b']
 
 const fmtNum = (v) => (v || 0).toLocaleString()
 const fmtVal = (v, metric) => metric === 'revenue' ? `Rs. ${fmtNum(v)}` : fmtNum(v)
 
-/* ─────────────────── helpers ─────────────────── */
-function niceMax(raw) {
-  if (!raw || raw <= 0) return 10
-  const exp = Math.pow(10, Math.floor(Math.log10(raw)))
-  return Math.ceil(raw / exp) * exp
-}
-
-function yTicks(max, count = 4) {
-  const step = max / count
-  return Array.from({ length: count + 1 }, (_, i) => Math.round(step * i))
-}
-
-/* Build smooth cubic-bezier SVG path from data points */
-function smoothPath(pts) {
-  if (pts.length < 2) return pts.length === 1 ? `M ${pts[0].x},${pts[0].y}` : ''
-  let d = `M ${pts[0].x},${pts[0].y}`
-  for (let i = 1; i < pts.length; i++) {
-    const cp1x = pts[i - 1].x + (pts[i].x - pts[i - 1].x) * 0.45
-    const cp1y = pts[i - 1].y
-    const cp2x = pts[i].x - (pts[i].x - pts[i - 1].x) * 0.45
-    const cp2y = pts[i].y
-    d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${pts[i].x},${pts[i].y}`
-  }
-  return d
-}
-
-/* ─────────────────── Professional Line Chart ─────────────────── */
-function LineChart({ labels, series, metric }) {
-  const svgRef   = useRef(null)
-  const [tooltip, setTooltip] = useState(null) // { x, y, label, values }
-
-  const W = 600, H = 240
-  const PAD = { top: 16, right: 16, bottom: 32, left: 56 }
-  const chartW = W - PAD.left - PAD.right
-  const chartH = H - PAD.top  - PAD.bottom
-
-  const allVals = series.flatMap(s => s.data)
-  const rawMax  = Math.max(...allVals, 0)
-  const maxVal  = niceMax(rawMax)
-  const ticks   = yTicks(maxVal)
-
-  const xOf = (i) => PAD.left + (labels.length > 1 ? (i / (labels.length - 1)) * chartW : chartW / 2)
-  const yOf = (v) => PAD.top  + chartH - (v / maxVal) * chartH
-
-  /* Build point arrays */
-  const seriesPts = series.map(s => ({
-    ...s,
-    pts: s.data.map((v, i) => ({ x: xOf(i), y: yOf(v), v, label: labels[i] })),
-  }))
-
-  /* X-label skip */
-  const showEvery = labels.length > 14 ? Math.ceil(labels.length / 7) : labels.length > 7 ? 2 : 1
-
-  /* Mouse hover */
-  const onMouseMove = useCallback((e) => {
-    const rect = svgRef.current?.getBoundingClientRect()
-    if (!rect) return
-    const svgX = ((e.clientX - rect.left) / rect.width)  * W
-    if (labels.length < 2) return
-    const idx = Math.round(((svgX - PAD.left) / chartW) * (labels.length - 1))
-    const clamped = Math.max(0, Math.min(labels.length - 1, idx))
-    const x = xOf(clamped)
-    const y = seriesPts[0]?.pts[clamped]?.y ?? PAD.top
-    setTooltip({ idx: clamped, x, y, label: labels[clamped] })
-  }, [labels, seriesPts, chartW])
-
-  const onMouseLeave = () => setTooltip(null)
-
+/* ─────────────────── Custom Tooltip ─────────────────── */
+function ChartTooltip({ active, payload, label, metric }) {
+  if (!active || !payload?.length) return null
   return (
-    <div className="w-full overflow-hidden">
-      <svg
-        ref={svgRef}
-        viewBox={`0 0 ${W} ${H}`}
-        className="w-full block"
-        style={{ height: 240 }}
-        preserveAspectRatio="xMidYMid meet"
-        onMouseMove={onMouseMove}
-        onMouseLeave={onMouseLeave}
-      >
-        <defs>
-          {COLORS.map((c, i) => (
-            <linearGradient key={i} id={`area-${i}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%"   stopColor={c} stopOpacity="0.18" />
-              <stop offset="100%" stopColor={c} stopOpacity="0.01" />
-            </linearGradient>
-          ))}
-        </defs>
-
-        {/* Y-axis grid + labels */}
-        {ticks.map(t => {
-          const y = yOf(t)
-          return (
-            <g key={t}>
-              <line
-                x1={PAD.left} y1={y} x2={W - PAD.right} y2={y}
-                stroke="#f1f5f9" strokeWidth="1"
-              />
-              <text
-                x={PAD.left - 8} y={y + 4}
-                textAnchor="end" fontSize="10" fill="#94a3b8" fontFamily="inherit"
-              >
-                {t >= 1000 ? `${(t / 1000).toFixed(t % 1000 === 0 ? 0 : 1)}k` : t}
-              </text>
-            </g>
-          )
-        })}
-
-        {/* X-axis baseline */}
-        <line
-          x1={PAD.left} y1={PAD.top + chartH}
-          x2={W - PAD.right} y2={PAD.top + chartH}
-          stroke="#e2e8f0" strokeWidth="1"
-        />
-
-        {/* X-axis labels */}
-        {labels.map((lbl, i) => {
-          if (i % showEvery !== 0 && i !== labels.length - 1) return null
-          return (
-            <text
-              key={i}
-              x={xOf(i)} y={H - 8}
-              textAnchor="middle" fontSize="10" fill="#94a3b8" fontFamily="inherit"
-            >{lbl}</text>
-          )
-        })}
-
-        {/* Area fills */}
-        {seriesPts.map((s, i) => {
-          if (s.pts.length < 2) return null
-          const line = smoothPath(s.pts)
-          const last = s.pts[s.pts.length - 1]
-          const first = s.pts[0]
-          const area = `${line} L ${last.x},${PAD.top + chartH} L ${first.x},${PAD.top + chartH} Z`
-          return <path key={i} d={area} fill={`url(#area-${i})`} />
-        })}
-
-        {/* Lines */}
-        {seriesPts.map((s, i) => {
-          if (s.pts.length < 1) return null
-          return (
-            <path
-              key={i}
-              d={smoothPath(s.pts)}
-              fill="none"
-              stroke={COLORS[i % COLORS.length]}
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          )
-        })}
-
-        {/* Tooltip vertical line */}
-        {tooltip && (
-          <line
-            x1={tooltip.x} y1={PAD.top}
-            x2={tooltip.x} y2={PAD.top + chartH}
-            stroke="#94a3b8" strokeWidth="1" strokeDasharray="4 3"
-          />
-        )}
-
-        {/* Dots on hover */}
-        {tooltip && seriesPts.map((s, i) => {
-          const pt = s.pts[tooltip.idx]
-          if (!pt) return null
-          return (
-            <g key={i}>
-              <circle cx={pt.x} cy={pt.y} r="5" fill="white" stroke={COLORS[i % COLORS.length]} strokeWidth="2" />
-              <circle cx={pt.x} cy={pt.y} r="2.5" fill={COLORS[i % COLORS.length]} />
-            </g>
-          )
-        })}
-
-        {/* Tooltip box */}
-        {tooltip && (() => {
-          const boxW = 160, boxH = 16 + seriesPts.length * 18 + 8
-          let bx = tooltip.x + 10
-          if (bx + boxW > W - PAD.right) bx = tooltip.x - boxW - 10
-          const by = PAD.top + 8
-          return (
-            <g>
-              <rect x={bx} y={by} width={boxW} height={boxH} rx="8" fill="white"
-                stroke="#e2e8f0" strokeWidth="1"
-                style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.10))' }}
-              />
-              <text x={bx + 10} y={by + 14} fontSize="10" fill="#64748b" fontFamily="inherit" fontWeight="600">
-                {tooltip.label}
-              </text>
-              {seriesPts.map((s, i) => {
-                const v = s.pts[tooltip.idx]?.v ?? 0
-                return (
-                  <g key={i}>
-                    <circle cx={bx + 14} cy={by + 22 + i * 18} r="4" fill={COLORS[i % COLORS.length]} />
-                    <text x={bx + 24} y={by + 26 + i * 18} fontSize="10" fill="#374151" fontFamily="inherit" fontWeight="500">
-                      {s.name.length > 14 ? s.name.slice(0, 13) + '…' : s.name}
-                    </text>
-                    <text x={bx + boxW - 8} y={by + 26 + i * 18} fontSize="10" fill="#111827" fontFamily="inherit" fontWeight="700" textAnchor="end">
-                      {metric === 'revenue' ? `Rs.${fmtNum(v)}` : fmtNum(v)}
-                    </text>
-                  </g>
-                )
-              })}
-            </g>
-          )
-        })()}
-      </svg>
+    <div className="bg-white border border-gray-100 rounded-2xl shadow-2xl shadow-black/10 px-4 py-3 min-w-[160px]">
+      <p className="text-[11px] text-gray-400 font-bold uppercase tracking-widest mb-2">{label}</p>
+      {payload.map((entry, i) => (
+        <div key={i} className="flex items-center justify-between gap-4 mb-1">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: entry.color }} />
+            <span className="text-xs text-gray-600 font-medium truncate max-w-[100px]">{entry.name}</span>
+          </div>
+          <span className="text-xs font-extrabold text-gray-900">
+            {metric === 'revenue' ? `Rs.${fmtNum(entry.value)}` : fmtNum(entry.value)}
+          </span>
+        </div>
+      ))}
     </div>
   )
 }
+
+/* ─────────────────── Custom Legend ─────────────────── */
+function ChartLegend({ payload }) {
+  if (!payload?.length) return null
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-1">
+      {payload.map((entry, i) => (
+        <div key={i} className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: entry.color }} />
+          <span className="text-[11px] text-gray-500 font-semibold truncate max-w-[120px]">{entry.value}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+
+/* ─────────────────── 24h → 12h label helper ─────────────────── */
+function to12h(raw) {
+  if (!raw && raw !== 0) return ''
+  // Accept numeric, "14", "14:00", "2:00 PM", etc.
+  let h = NaN
+  const s = String(raw).trim()
+  // "14:00" or "2:00"
+  const colonMatch = s.match(/^(\d{1,2}):/)
+  if (colonMatch) h = parseInt(colonMatch[1], 10)
+  // plain number
+  else if (/^\d{1,2}$/.test(s)) h = parseInt(s, 10)
+  if (isNaN(h)) return s.length > 6 ? s.slice(0, 6) : s
+  if (h === 0)  return '12am'
+  if (h < 12)   return `${h}am`
+  if (h === 12) return '12pm'
+  return `${h - 12}pm`
+}
+
+/* ─────────────────── Professional Recharts Area Chart ─────────────────── */
+function PulseAreaChart({ labels, series, metric, range }) {
+  // Build flat data array: [{ label, RestA, RestB, ... }, ...]
+  const chartData = labels.map((lbl, i) => {
+    const point = { label: lbl }
+    series.forEach(s => { point[s.name] = s.data[i] ?? 0 })
+    return point
+  })
+
+  const yFormatter = (v) => {
+    if (metric === 'revenue') {
+      if (v >= 1000000) return `Rs.${(v / 1000000).toFixed(1)}M`
+      if (v >= 1000)    return `Rs.${(v / 1000).toFixed(0)}k`
+      return `Rs.${v}`
+    }
+    if (v >= 1000) return `${(v / 1000).toFixed(1)}k`
+    return String(v)
+  }
+
+  const xTickFormatter = (v) => {
+    if (!v && v !== 0) return ''
+    if (range === '24h') return to12h(v)
+    const s = String(v)
+    return s.length > 6 ? s.slice(0, 6) : s
+  }
+
+  return (
+    <div className="w-full" style={{ height: 280 }}>
+      {/* Gradient defs rendered outside SVG via Recharts defs */}
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData} margin={{ top: 10, right: 16, left: 8, bottom: 0 }}
+          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+        >
+          <defs>
+            {series.map((s, i) => (
+              <linearGradient key={s.name} id={`grad-pulse-${i}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%"  stopColor={COLORS[i % COLORS.length]} stopOpacity={0.25} />
+                <stop offset="95%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0.01} />
+              </linearGradient>
+            ))}
+          </defs>
+
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="#f1f5f9"
+            vertical={false}
+          />
+
+          <XAxis
+            dataKey="label"
+            tickFormatter={xTickFormatter}
+            tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }}
+            axisLine={false}
+            tickLine={false}
+            interval="preserveStartEnd"
+          />
+
+          <YAxis
+            tickFormatter={yFormatter}
+            tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }}
+            axisLine={false}
+            tickLine={false}
+            width={metric === 'revenue' ? 72 : 42}
+          />
+
+          <RechartTooltip
+            content={<ChartTooltip metric={metric} />}
+            cursor={{ stroke: '#e2e8f0', strokeWidth: 1, strokeDasharray: '4 3' }}
+          />
+
+          <Legend content={<ChartLegend />} />
+
+          {series.map((s, i) => (
+            <Area
+              key={s.name}
+              type="monotone"
+              dataKey={s.name}
+              stroke={COLORS[i % COLORS.length]}
+              strokeWidth={2.5}
+              fill={`url(#grad-pulse-${i})`}
+              dot={false}
+              activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff', fill: COLORS[i % COLORS.length] }}
+              animationDuration={800}
+              animationEasing="ease-out"
+            />
+          ))}
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
 
 /* ─────────────────── Analytics Dashboard Card ─────────────────── */
 function AnalyticsDashboard({ analytics, analyticsLoading, analyticsError }) {
@@ -352,7 +294,7 @@ function AnalyticsDashboard({ analytics, analyticsLoading, analyticsError }) {
             <p className="text-xs text-gray-300">Data will appear once orders are placed</p>
           </div>
         ) : (
-          <LineChart labels={labels} series={series} metric={metric} />
+          <PulseAreaChart labels={labels} series={series} metric={metric} range={range} />
         )}
       </div>
 

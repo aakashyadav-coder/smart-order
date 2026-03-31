@@ -773,6 +773,13 @@ export default function KitchenDashboardPage() {
         onConfirm={confirm?.onConfirm}
         onCancel={() => setConfirm(null)}
       />
+
+      {/* Footer */}
+      <footer className="flex-shrink-0 border-t border-white/[0.06] py-2 px-5 text-center">
+        <p className="text-[11px] text-gray-600 font-medium">
+          © 2026 CodeYatra PVT.LTD. All Rights Reserved
+        </p>
+      </footer>
       </div>
     </div>
     </TooltipProvider>

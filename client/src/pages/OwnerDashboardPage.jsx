@@ -607,6 +607,13 @@ export default function OwnerDashboardPage() {
             )}
             {TABS[activeTab] || null}
           </main>
+
+          {/* Footer */}
+          <footer className="flex-shrink-0 border-t border-gray-100 bg-white/80 py-3 px-6 text-center">
+            <p className="text-[11px] text-gray-400 font-medium">
+              © 2026 CodeYatra PVT.LTD. All Rights Reserved
+            </p>
+          </footer>
         </div>
 
         <ConfirmModal open={!!confirm} title={confirm?.title} message={confirm?.message} confirmLabel={confirm?.confirmLabel || 'Confirm'} type={confirm?.type || 'danger'} onConfirm={confirm?.onConfirm} onCancel={() => setConfirm(null)} />

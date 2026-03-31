@@ -272,7 +272,7 @@ export default function OwnerLoginPage() {
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-brand-700 to-brand-500">
                   <FaStore className="w-4 h-4 text-white" />
                 </div>
-                <span className="font-bold text-gray-900 text-lg">Smart Order</span>
+                <span className="font-bold text-gray-900 text-lg">Khaja X</span>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Sign in</h1>
               <p className="text-sm text-gray-400">Restaurant owner portal</p>
