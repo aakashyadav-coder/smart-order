@@ -9,7 +9,7 @@ import socket from '../lib/socket'
 import {
   FaThLarge, FaBuilding, FaUsers, FaClipboardList,
   FaCog, FaHeartbeat, FaSignOutAlt, FaShieldAlt, FaBars,
-  FaBullhorn, FaInbox, FaChartBar, FaRocket, FaSearch, FaUserCog, FaHistory,
+  FaBullhorn, FaInbox, FaChartBar, FaRocket, FaSearch, FaUserCog, FaHistory, FaFileUpload,
 } from 'react-icons/fa'
 import NotificationCenter from './NotificationCenter'
 import ConfirmModal from './ConfirmModal'
@@ -34,6 +34,7 @@ const NAV_GROUPS = [
     items: [
       { to: '/super/onboarding', label: 'Onboarding', icon: FaRocket },
       { to: '/super/restaurants', label: 'Restaurants', icon: FaBuilding },
+      { to: '/super/menu-upload', label: 'Menu Upload', icon: FaFileUpload },
       { to: '/super/users', label: 'Users', icon: FaUsers },
       { to: '/super/orders', label: 'All Orders', icon: FaClipboardList },
     ],

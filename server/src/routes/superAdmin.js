@@ -1,4 +1,5 @@
 const { Router } = require("express");
+const multer = require("multer");
 const {
   getStats, getAnalytics,
   getDashboardKPIs, getRevenueBI,
@@ -16,7 +17,28 @@ const {
   initTotp, verifyTotp, disableTotp,
   globalSearch,
 } = require("../controllers/superAdminController");
+const { bulkUploadMenu, getRestaurantMenu, parseMenuPreview } = require("../controllers/menuBulkController");
 const { authenticate, requireSuperAdmin } = require("../middleware/auth");
+
+// Multer — memory storage (≤ 5 MB, CSV/Excel only)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [
+      'text/csv',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/octet-stream',
+    ];
+    const ext = file.originalname.split('.').pop().toLowerCase();
+    if (allowed.includes(file.mimetype) || ['csv','xlsx','xls'].includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only CSV and Excel files are allowed.'));
+    }
+  },
+});
 
 const router = Router();
 
@@ -64,6 +86,11 @@ router.patch("/restaurants/bulk", bulkUpdateRestaurants);
 router.get("/restaurants/:id", getRestaurantDetail);
 router.put("/restaurants/:id", updateRestaurant);
 router.delete("/restaurants/:id", deleteRestaurant);
+
+// Bulk Menu Upload (Super Admin only)
+router.get("/restaurants/:restaurantId/menu", getRestaurantMenu);
+router.post("/restaurants/:restaurantId/menu/bulk-upload", upload.single('file'), bulkUploadMenu);
+router.post("/menu/parse-preview", upload.single('file'), parseMenuPreview);
 
 // Users
 router.get("/users", getUsers);

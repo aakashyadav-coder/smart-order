@@ -35,6 +35,7 @@ import SupportTicketsPage    from './pages/super/SupportTicketsPage'
 import RevenuePage           from './pages/super/RevenuePage'
 import OnboardingPage        from './pages/super/OnboardingPage'
 import SettingsPage          from './pages/super/SettingsPage'
+import MenuUploadPage        from './pages/super/MenuUploadPage'
 
 // Route guards & layouts
 import ProtectedRoute  from './components/ProtectedRoute'
@@ -80,6 +81,7 @@ export default function App() {
         <Route path="revenue"              element={<RevenuePage />} />
         <Route path="onboarding"           element={<OnboardingPage />} />
         <Route path="settings"             element={<SettingsPage />} />
+        <Route path="menu-upload"          element={<MenuUploadPage />} />
       </Route>
 
       {/* ── 404 ──────────────────────────────────────────────── */}
