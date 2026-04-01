@@ -1,0 +1,33 @@
+{
+  "name": "smart-order",
+  "version": "1.0.0",
+  "description": "A full-stack restaurant ordering system where customers scan a QR code at their table, browse the menu, place orders, and track live status. Kitchen staff manage orders through a real-time dashboard with Socket.io notifications.",
+  "main": "playwright.config.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test:e2e":          "playwright test",
+    "test:e2e:ui":       "playwright test --ui",
+    "test:e2e:headed":   "playwright test --headed",
+    "test:server":       "cd server && npm test",
+    "test:client":       "cd client && npm test -- --run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aakashyadav-coder/smart-order.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+
+  "bugs": {
+    "url": "https://github.com/aakashyadav-coder/smart-order/issues"
+  },
+  "homepage": "https://github.com/aakashyadav-coder/smart-order#readme",
+  "devDependencies": {
+    "@playwright/test": "*",
+    "@types/node": "^22.0.0",
+    "typescript":  "^5.4.0"
+  }
+}

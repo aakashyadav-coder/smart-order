@@ -12,6 +12,7 @@ const otpLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many OTP attempts. Please wait 10 minutes and try again." },
+  skip: () => ["development", "test"].includes(process.env.NODE_ENV),
 });
 
 // POST /api/otp/send  — kitchen sends OTP to customer (authenticated)

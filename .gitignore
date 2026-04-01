@@ -38,3 +38,10 @@ client/build_error.txt
 client/build_out.txt
 client/build_result.txt
 client/vite_error.txt
+
+# Test output (generated — never commit)
+coverage/
+client/coverage/
+server/coverage/
+playwright-report/
+test-results/

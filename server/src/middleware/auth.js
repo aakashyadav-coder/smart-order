@@ -11,6 +11,10 @@ const authenticate = (req, res, next) => {
   const token = authHeader.split(" ")[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Reject non-access tokens (pre_auth, refresh, password_reset) used as Bearer
+    if (decoded.type !== undefined) {
+      return res.status(401).json({ message: "Invalid token type. Please log in again." });
+    }
     req.user = decoded; // { id, email, role, restaurantId, name }
     next();
   } catch (err) {

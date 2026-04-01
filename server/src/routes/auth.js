@@ -12,7 +12,7 @@ const resetLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many reset attempts. Please wait 15 minutes and try again." },
-  skip: () => process.env.NODE_ENV === "development",
+  skip: () => ["development", "test"].includes(process.env.NODE_ENV),
 });
 
 // POST /api/auth/login         — Step 1: password check; returns token OR { requireTotp, preAuthToken }
