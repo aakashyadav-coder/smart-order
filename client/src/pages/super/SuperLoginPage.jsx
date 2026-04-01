@@ -18,15 +18,15 @@ export default function SuperLoginPage() {
   const navigate = useNavigate()
   const { login, isAuthenticated, user } = useAuth()
 
-  const [form, setForm]           = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ email: '', password: '' })
   const [rememberMe, setRememberMe] = useState(false)
-  const [showPw, setShowPw]       = useState(false)
-  const [step, setStep]           = useState(1)
+  const [showPw, setShowPw] = useState(false)
+  const [step, setStep] = useState(1)
   const [preAuthToken, setPreAuthToken] = useState('')
-  const [digits, setDigits]       = useState(Array(6).fill(''))
-  const digitRefs                 = useRef([])
-  const [loading, setLoading]     = useState(false)
-  const [error, setError]         = useState('')
+  const [digits, setDigits] = useState(Array(6).fill(''))
+  const digitRefs = useRef([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'SUPER_ADMIN') navigate('/super', { replace: true })
@@ -103,24 +103,14 @@ export default function SuperLoginPage() {
 
         {/* Left — illustration */}
         <div className="hidden md:flex items-center justify-center bg-gray-50 p-10">
-          <img src="/images/smart-pic.png" alt="Super admin login" className="w-full max-w-sm h-auto object-contain" />
+          <img src="/images/admin.png" alt="Super admin login" className="w-full max-w-sm h-auto object-contain" />
         </div>
 
         {/* Right — form */}
         <div className="p-8 sm:p-12">
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-br from-brand-600 to-brand-800 rounded-xl flex items-center justify-center shadow-lg shadow-brand-600/30">
-              <FaShieldAlt className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="font-extrabold text-gray-900 text-base leading-none">Code Yatra</p>
-              <p className="text-brand-600 text-xs font-semibold mt-0.5">Super Admin Portal</p>
-            </div>
-          </div>
 
           <h1 className="text-3xl font-semibold text-gray-900 mb-6">
-            {step === 2 ? 'Enter code' : 'Sign in'}
+            {step === 2 ? 'Enter code' : 'Enter Admin Portal'}
           </h1>
 
           {error && (
@@ -219,16 +209,20 @@ export default function SuperLoginPage() {
           )}
 
           {step === 1 && (
-            <div className="mt-8 text-xs text-gray-400">
-              <a href="/kitchen/login" className="hover:text-gray-600 transition-colors">Kitchen staff login</a>
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <a href="/kitchen/login" className="text-xs text-brand-600 hover:text-brand-700 transition-colors">
+                Kitchen staff login →
+              </a>
+              <a href="/owner/login" className="ml-4 text-xs text-brand-600 hover:text-brand-700 transition-colors">
+                Owner login →
+              </a>
             </div>
           )}
         </div>
       </div>
 
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center">
-        <p className="text-sm font-semibold text-gray-900">Code Yatra</p>
-        <p className="text-xs text-gray-400 mt-1">Super Admin Portal</p>
+        <p className="mt-6 text-xs text-gray-400">© 2026 CodeYatra PVT.LTD. All Rights Reserved</p>
       </div>
     </div>
   )

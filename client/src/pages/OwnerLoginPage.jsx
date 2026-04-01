@@ -52,17 +52,17 @@ function OtpInput({ digits, setDigits, digitRefs }) {
 
 // ── Forgot Password Dialog ─────────────────────────────────────────────────
 function ForgotPasswordDialog({ open, onClose }) {
-  const [step, setStep]           = useState(1)
-  const [email, setEmail]         = useState('')
-  const [digits, setDigits]       = useState(Array(6).fill(''))
+  const [step, setStep] = useState(1)
+  const [email, setEmail] = useState('')
+  const [digits, setDigits] = useState(Array(6).fill(''))
   const [resetToken, setResetToken] = useState('')
-  const [newPw, setNewPw]         = useState('')
+  const [newPw, setNewPw] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
   const [showNewPw, setShowNewPw] = useState(false)
-  const [loading, setLoading]     = useState(false)
-  const [error, setError]         = useState('')
-  const [success, setSuccess]     = useState('')
-  const digitRefs                 = useRef([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const digitRefs = useRef([])
 
   const handleSendOtp = async (e) => {
     e?.preventDefault()
@@ -167,7 +167,7 @@ function ForgotPasswordDialog({ open, onClose }) {
                 <Label>6-digit code sent to <span className="text-brand-600 font-semibold">{email}</span></Label>
                 <OtpInput digits={digits} setDigits={setDigits} digitRefs={digitRefs} />
                 <Button type="button" variant="ghost" size="sm" className="w-full text-xs text-gray-500 hover:text-brand-600"
-                  onClick={() => { setDigits(Array(6).fill('')); handleSendOtp({ preventDefault: () => {} }) }}>
+                  onClick={() => { setDigits(Array(6).fill('')); handleSendOtp({ preventDefault: () => { } }) }}>
                   Didn't receive it? Resend OTP
                 </Button>
               </div>
@@ -218,11 +218,11 @@ export default function OwnerLoginPage() {
   const navigate = useNavigate()
   const { login, isAuthenticated, user } = useAuth()
 
-  const [form, setForm]             = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ email: '', password: '' })
   const [rememberMe, setRememberMe] = useState(false)
-  const [loading, setLoading]       = useState(false)
-  const [error, setError]           = useState('')
-  const [showPw, setShowPw]         = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [showForgot, setShowForgot] = useState(false)
 
   useEffect(() => {
