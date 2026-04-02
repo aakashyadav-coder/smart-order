@@ -245,7 +245,7 @@ const getRestaurantDetail = async (req, res, next) => {
 
 const createRestaurant = async (req, res, next) => {
   try {
-    const { name, address, phone, logoUrl, tableCount, cuisineType, openingHours } = req.body;
+    const { name, address, phone, logoUrl, tableCount, cuisineType, openingHours, ownerEmail } = req.body;
     if (!name) return res.status(400).json({ message: "Restaurant name is required." });
 
     const restaurant = await prisma.restaurant.create({
@@ -257,15 +257,60 @@ const createRestaurant = async (req, res, next) => {
         tableCount: tableCount ? parseInt(tableCount) : null,
         cuisineType: cuisineType?.trim() || null,
         openingHours: openingHours || null,
+        ownerEmail: ownerEmail?.trim().toLowerCase() || null,
         features: { create: {} }, // default feature toggles
       },
       include: { features: true },
     });
 
-    await logActivity({ userId: req.user.id, action: "RESTAURANT_CREATED", entity: "Restaurant", entityId: restaurant.id, metadata: { name } });
+    // ── Auto-link owner by email ──────────────────────────────────────────────
+    if (ownerEmail && ownerEmail.trim()) {
+      const email = ownerEmail.trim().toLowerCase();
+      let owner = await prisma.user.findUnique({ where: { email } });
+
+      if (!owner) {
+        // Create a placeholder owner account (no password yet — they should reset)
+        const { randomBytes } = require("crypto");
+        const tempPass = randomBytes(16).toString("hex");
+        const passwordHash = await bcrypt.hash(tempPass, 10);
+        owner = await prisma.user.create({
+          data: {
+            name: email.split("@")[0], // placeholder name
+            email,
+            passwordHash,
+            role: "OWNER",
+            restaurantId: restaurant.id,
+          },
+        });
+        await logActivity({ userId: req.user.id, action: "OWNER_ACCOUNT_CREATED", entity: "User", entityId: owner.id, metadata: { email, restaurantId: restaurant.id } });
+      }
+
+      // Create the ownership link
+      try {
+        await prisma.restaurantOwner.create({
+          data: { userId: owner.id, restaurantId: restaurant.id },
+        });
+      } catch (_) { /* unique constraint — already linked */ }
+
+      // Count how many branches this user now owns
+      const branchCount = await prisma.restaurantOwner.count({ where: { userId: owner.id } });
+
+      // Auto-upgrade to CENTRAL_ADMIN if they own 2+ branches
+      if (branchCount >= 2 && owner.role !== "CENTRAL_ADMIN" && owner.role !== "SUPER_ADMIN") {
+        await prisma.user.update({
+          where: { id: owner.id },
+          data: { role: "CENTRAL_ADMIN" },
+        });
+        await logActivity({ userId: req.user.id, action: "USER_UPGRADED_TO_CENTRAL_ADMIN", entity: "User", entityId: owner.id, metadata: { branchCount } });
+      }
+    }
+    // ── End owner linking ─────────────────────────────────────────────────────
+
+    await logActivity({ userId: req.user.id, action: "RESTAURANT_CREATED", entity: "Restaurant", entityId: restaurant.id, metadata: { name, ownerEmail } });
     res.status(201).json(restaurant);
   } catch (err) { next(err); }
 };
+
 
 const updateRestaurant = async (req, res, next) => {
   try {
@@ -347,7 +392,7 @@ const getUsers = async (req, res, next) => {
 };
 
 // S3 FIX: Valid assignable roles — SUPER_ADMIN cannot be assigned via this endpoint.
-const ASSIGNABLE_ROLES = ["OWNER", "ADMIN", "KITCHEN"];
+const ASSIGNABLE_ROLES = ["CENTRAL_ADMIN", "OWNER", "ADMIN", "KITCHEN"];
 
 const createUser = async (req, res, next) => {
   try {

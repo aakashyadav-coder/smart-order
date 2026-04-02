@@ -8,6 +8,9 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 
+// Landing page
+import LandingPage            from './pages/LandingPage'
+
 // Customer pages
 import MenuPage               from './pages/MenuPage'
 import OrderConfirmationPage  from './pages/OrderConfirmationPage'
@@ -38,16 +41,22 @@ import SettingsPage          from './pages/super/SettingsPage'
 import MenuUploadPage        from './pages/super/MenuUploadPage'
 
 // Route guards & layouts
-import ProtectedRoute  from './components/ProtectedRoute'
-import OwnerRoute      from './components/OwnerRoute'
-import SuperAdminRoute from './components/SuperAdminRoute'
-import SuperLayout     from './components/SuperLayout'
+import ProtectedRoute   from './components/ProtectedRoute'
+import OwnerRoute       from './components/OwnerRoute'
+import SuperAdminRoute  from './components/SuperAdminRoute'
+import CentralAdminRoute from './components/CentralAdminRoute'
+import SuperLayout      from './components/SuperLayout'
+
+// Central Admin
+import CentralDashboardPage from './pages/central/CentralDashboardPage'
 
 export default function App() {
   return (
     <Routes>
+      {/* ── Landing page ──────────────────────────────── */}
+      <Route path="/"          element={<LandingPage />} />
+
       {/* ── Customer ─────────────────────────────────── */}
-      <Route path="/"          element={<Navigate to="/menu" replace />} />
       <Route path="/menu"      element={<MenuPage />} />
       <Route path="/order/:id" element={<OrderConfirmationPage />} />
 
@@ -61,6 +70,11 @@ export default function App() {
       <Route path="/owner/login" element={<OwnerLoginPage />} />
       <Route path="/owner" element={
         <OwnerRoute><OwnerDashboardPage /></OwnerRoute>
+      } />
+
+      {/* ── Central Admin (Multi-Branch Owner) ───────── */}
+      <Route path="/central" element={
+        <CentralAdminRoute><CentralDashboardPage /></CentralAdminRoute>
       } />
 
       {/* ── Super Admin ───────────────────────────────── */}

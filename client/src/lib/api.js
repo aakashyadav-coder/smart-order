@@ -13,8 +13,9 @@ const api = axios.create({
 // Uses the same URL-based key selection as AuthContext so the right
 // JWT is always sent for each portal.
 const keysForPath = (path) => {
-  if (path.startsWith('/super')) return { access: 'smart_order_sa_token' }
-  if (path.startsWith('/owner')) return { access: 'smart_order_owner_token' }
+  if (path.startsWith('/super'))   return { access: 'smart_order_sa_token' }
+  if (path.startsWith('/central')) return { access: 'smart_order_central_token' }
+  if (path.startsWith('/owner'))   return { access: 'smart_order_owner_token' }
   if (path.startsWith('/kitchen')) return { access: 'smart_order_kitchen_token' }
   return { access: 'smart_order_token' }
 }

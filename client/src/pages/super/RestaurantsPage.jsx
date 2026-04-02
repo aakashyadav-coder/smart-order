@@ -29,7 +29,7 @@ const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
 const DAY_LABELS = { mon:'Mon', tue:'Tue', wed:'Wed', thu:'Thu', fri:'Fri', sat:'Sat', sun:'Sun' }
 
 const DEFAULT_HOURS = DAYS.reduce((acc, d) => ({ ...acc, [d]: { open: '09:00', close: '22:00', closed: false } }), {})
-const EMPTY = { name: '', address: '', phone: '', logoUrl: '', tableCount: '', cuisineType: '', openingHours: DEFAULT_HOURS }
+const EMPTY = { name: '', address: '', phone: '', logoUrl: '', cuisineType: '', tableCount: '', ownerEmail: '', openingHours: DEFAULT_HOURS }
 
 function OnboardingBadge({ r }) {
   const checks = [
@@ -61,7 +61,7 @@ function OnboardingBadge({ r }) {
   )
 }
 
-const Modal = ({ title, form, setForm, onSave, onClose, saving }) => (
+const Modal = ({ title, form, setForm, onSave, onClose, saving, isCreate }) => (
   <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
     <div className="super-card w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/70 rounded-t-2xl sticky top-0">
@@ -90,7 +90,23 @@ const Modal = ({ title, form, setForm, onSave, onClose, saving }) => (
             />
           </div>
         ))}
-        {/* Opening Hours */}
+        {/* Owner Email — creates/links the owner account */}
+        {isCreate && (
+          <div>
+            <label className="block text-xs font-bold mb-1 text-violet-700">Owner Email (optional)</label>
+            <input
+              type="email"
+              placeholder="owner@restaurant.com"
+              className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-violet-400/30 focus:border-violet-500 bg-violet-50 border-violet-200 text-gray-900 placeholder-gray-400"
+              value={form.ownerEmail}
+              onChange={e => setForm(p => ({ ...p, ownerEmail: e.target.value }))}
+            />
+            <p className="text-[11px] text-violet-500 mt-1">
+              If this email already owns other branches, they'll be auto-upgraded to Central Admin.
+            </p>
+          </div>
+        )}
+
         <div>
           <label className="block text-sm font-medium mb-1 text-gray-600 text-xs font-medium mb-2 block">Opening Hours</label>
           <div className="space-y-1.5">
@@ -351,6 +367,7 @@ export default function RestaurantsPage() {
           form={form} setForm={setForm}
           onSave={handleSave} onClose={() => setModal(null)}
           saving={saving}
+          isCreate={modal === 'create'}
         />
       )}
 

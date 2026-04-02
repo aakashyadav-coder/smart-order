@@ -12,49 +12,67 @@ datasource db {
 
 // ── Roles ─────────────────────────────────────────────────────────────────────
 enum Role {
-  SUPER_ADMIN  // Platform developer — controls everything
-  OWNER        // Restaurant owner — manages their restaurant
-  KITCHEN      // Kitchen staff — views/updates orders
-  ADMIN        // Legacy alias for OWNER (backward compat)
+  SUPER_ADMIN    // Platform developer — controls everything
+  CENTRAL_ADMIN  // Multi-branch owner — manages N restaurants from one dashboard
+  OWNER          // Single-branch restaurant owner
+  KITCHEN        // Kitchen staff — views/updates orders
+  ADMIN          // Legacy alias for OWNER (backward compat)
 }
 
 // ── Users ─────────────────────────────────────────────────────────────────────
 model User {
-  id               String        @id @default(cuid())
-  name             String
-  email            String        @unique
-  passwordHash     String
-  role             Role          @default(KITCHEN)
-  active           Boolean       @default(true)
-  restaurantId     String?
-  restaurant       Restaurant?   @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
-  activityLogs     ActivityLog[]
-  lastLoginAt      DateTime?
-  totpSecret       String?
-  totpEnabled      Boolean       @default(false)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id                 String               @id @default(cuid())
+  name               String
+  email              String               @unique
+  passwordHash       String
+  role               Role                 @default(KITCHEN)
+  active             Boolean              @default(true)
+  restaurantId       String?              // Primary branch (used for OWNER/KITCHEN)
+  restaurant         Restaurant?          @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  ownedRestaurants   RestaurantOwner[]    // All branches this user owns (CENTRAL_ADMIN / OWNER)
+  activityLogs       ActivityLog[]
+  lastLoginAt        DateTime?
+  totpSecret         String?
+  totpEnabled        Boolean              @default(false)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 }
 
 // ── Restaurant ────────────────────────────────────────────────────────────────
 model Restaurant {
-  id               String          @id @default(cuid())
+  id               String            @id @default(cuid())
   name             String
   address          String?
   phone            String?
   logoUrl          String?
-  active           Boolean         @default(true)
+  active           Boolean           @default(true)
   tableCount       Int?
   cuisineType      String?
   openingHours     Json?
+  ownerEmail       String?           // Canonical owner email — set at creation by Super Admin
   users            User[]
+  owners           RestaurantOwner[] // All users who own this branch
   menuItems        MenuItem[]
   orders           Order[]
   features         FeatureToggle?
   announcements    Announcement[]
   supportTickets   SupportTicket[]
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+// ── Restaurant Ownership (multi-branch join table) ─────────────────────────────
+model RestaurantOwner {
+  id           String     @id @default(cuid())
+  userId       String
+  restaurantId String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([userId, restaurantId])
+  @@index([userId])
+  @@index([restaurantId])
 }
 
 // ── Feature Toggles (per restaurant) ─────────────────────────────────────────

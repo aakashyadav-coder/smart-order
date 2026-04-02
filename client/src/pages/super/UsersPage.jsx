@@ -21,8 +21,14 @@ import {
   FaBan,
 } from 'react-icons/fa'
 
-const ROLES = ['OWNER', 'KITCHEN', 'ADMIN']
-const ROLE_COLORS = { SUPER_ADMIN: 'badge-cancelled', OWNER: 'badge-accepted', KITCHEN: 'badge-preparing', ADMIN: 'badge-pending' }
+const ROLES = ['CENTRAL_ADMIN', 'OWNER', 'KITCHEN', 'ADMIN']
+const ROLE_COLORS = {
+  SUPER_ADMIN:   'badge-cancelled',
+  CENTRAL_ADMIN: 'badge-completed',   // purple-ish via badge-completed
+  OWNER:         'badge-accepted',
+  KITCHEN:       'badge-preparing',
+  ADMIN:         'badge-pending',
+}
 const buildForm = (u) => ({
   name: u?.name || '',
   email: u?.email || '',

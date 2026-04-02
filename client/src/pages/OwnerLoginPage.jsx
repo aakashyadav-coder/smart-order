@@ -229,6 +229,9 @@ export default function OwnerLoginPage() {
     if (isAuthenticated && (user?.role === 'OWNER' || user?.role === 'ADMIN')) {
       navigate('/owner', { replace: true })
     }
+    if (isAuthenticated && user?.role === 'CENTRAL_ADMIN') {
+      navigate('/central', { replace: true })
+    }
   }, [isAuthenticated, user, navigate])
 
   const handleSubmit = async (e) => {
@@ -238,13 +241,17 @@ export default function OwnerLoginPage() {
     try {
       const res = await api.post('/auth/login', { ...form, rememberMe })
       const role = res.data.user.role
-      if (role !== 'OWNER' && role !== 'ADMIN') {
+      if (role !== 'OWNER' && role !== 'ADMIN' && role !== 'CENTRAL_ADMIN') {
         setError('Access denied. This portal is for Restaurant Owners only.')
         return
       }
       login(res.data.token, res.data.refreshToken, rememberMe)
       toast.success(`Welcome back, ${res.data.user.name}!`)
-      navigate('/owner', { replace: true })
+      if (role === 'CENTRAL_ADMIN') {
+        navigate('/central', { replace: true })
+      } else {
+        navigate('/owner', { replace: true })
+      }
     } catch (err) {
       setError(err.message)
     } finally {

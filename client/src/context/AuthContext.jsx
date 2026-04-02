@@ -16,6 +16,7 @@ const AuthContext = createContext(null)
 
 // ── Role-namespaced key helpers ────────────────────────────────────────────────
 const SA_KEYS      = { access: 'smart_order_sa_token',      refresh: 'smart_order_sa_refresh' }
+const CENTRAL_KEYS = { access: 'smart_order_central_token', refresh: 'smart_order_central_refresh' }
 const OWNER_KEYS   = { access: 'smart_order_owner_token',   refresh: 'smart_order_owner_refresh' }
 const KITCHEN_KEYS = { access: 'smart_order_kitchen_token', refresh: 'smart_order_kitchen_refresh' }
 const USER_KEYS    = { access: 'smart_order_token',         refresh: 'smart_order_refresh' }
@@ -28,9 +29,19 @@ const decodePayload = (token) => {
 
 /** Return the correct key pair for the current portal path */
 const keysForPath = (path) => {
-  if (path.startsWith('/super')) return SA_KEYS
-  if (path.startsWith('/owner')) return OWNER_KEYS
+  if (path.startsWith('/super'))   return SA_KEYS
+  if (path.startsWith('/central')) return CENTRAL_KEYS
+  if (path.startsWith('/owner'))   return OWNER_KEYS
   if (path.startsWith('/kitchen')) return KITCHEN_KEYS
+  return USER_KEYS
+}
+
+/** Return the correct key pair for a known role (role takes priority over path) */
+const keysForRole = (role) => {
+  if (role === 'SUPER_ADMIN')   return SA_KEYS
+  if (role === 'CENTRAL_ADMIN') return CENTRAL_KEYS
+  if (role === 'OWNER' || role === 'ADMIN') return OWNER_KEYS
+  if (role === 'KITCHEN') return KITCHEN_KEYS
   return USER_KEYS
 }
 
@@ -136,7 +147,11 @@ export const AuthProvider = ({ children }) => {
   // ── Login ───────────────────────────────────────────────────────────────────
   const login = (accessToken, refreshToken, rememberMe = false) => {
     const payload = decodePayload(accessToken)
-    const keys    = keysForPath(window.location.pathname)
+    // Use role-based key selection so CENTRAL_ADMIN logging in via /owner/login
+    // still gets their token stored in smart_order_central_token, not owner_token.
+    const keys = payload?.role
+      ? keysForRole(payload.role)
+      : keysForPath(window.location.pathname)
     keysRef.current = keys                      // switch active key pair
 
     localStorage.setItem(keys.access, accessToken)

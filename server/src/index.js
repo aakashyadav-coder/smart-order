@@ -31,6 +31,7 @@ const otpRoutes        = require("./routes/otp");
 const superAdminRoutes = require("./routes/superAdmin");
 const featuresRoutes   = require("./routes/features");
 const restaurantRoutes = require("./routes/restaurant");
+const centralRoutes    = require("./routes/central");
 const { errorHandler } = require("./middleware/errorHandler");
 
 const app    = express();
@@ -156,6 +157,7 @@ app.use("/api/otp",        otpRoutes);
 app.use("/api/super",      superAdminRoutes);
 app.use("/api/features",   featuresRoutes);
 app.use("/api/restaurant", restaurantRoutes);
+app.use("/api/central",    centralRoutes);
 
 // Public maintenance status
 app.get("/api/maintenance", getMaintenancePublic);
