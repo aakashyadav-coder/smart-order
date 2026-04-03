@@ -25,7 +25,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   FaBuilding, FaSignOutAlt, FaChartLine, FaClipboardList,
   FaUsers, FaStore, FaBars, FaTimes, FaLayerGroup,
-  FaChevronDown, FaEdit, FaTrash, FaCheckCircle, FaTimesCircle, FaCog
+  FaChevronDown, FaEdit, FaTrash, FaCheckCircle, FaTimesCircle, FaCog,
+  FaChartBar, FaFileAlt, FaHistory, FaLock, FaPlus, FaDownload, FaPrint,
+  FaToggleOn, FaToggleOff, FaFilter
 } from 'react-icons/fa'
 import { Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
@@ -45,6 +47,16 @@ const NAV_GROUPS_CENTRAL = [
       { id: 'orders',    label: 'Live Orders',  icon: FaClipboardList, shortcut: 'L' },
       { id: 'branches',  label: 'My Branches',  icon: FaStore,         shortcut: 'B' },
       { id: 'staff',     label: 'Staff',        icon: FaUsers,         shortcut: 'T' },
+    ],
+  },
+  {
+    label: 'Management',
+    items: [
+      { id: 'analytics_adv', label: 'Analytics+',   icon: FaChartBar,  shortcut: 'A' },
+      { id: 'manage_branches', label: 'Manage Branches', icon: FaStore, shortcut: 'M' },
+      { id: 'reports',       label: 'Reports',      icon: FaFileAlt,   shortcut: 'R' },
+      { id: 'audit',         label: 'Audit Log',    icon: FaHistory,   shortcut: 'U' },
+      { id: 'permissions',   label: 'Permissions',  icon: FaLock,      shortcut: 'P' },
     ],
   },
 ]
@@ -688,6 +700,684 @@ function StaffTab({ branches }) {
   )
 }
 
+// ── CSV export helper ──────────────────────────────────────────────────────────
+function exportCSV(rows, filename) {
+  if (!rows.length) return toast.error('No data to export')
+  const headers = Object.keys(rows[0])
+  const body = rows.map(r => headers.map(h => `"${String(r[h] ?? '').replace(/"/g, '""')}"`).join(','))
+  const csv = [headers.join(','), ...body].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
+
+// ── Advanced Analytics Tab ─────────────────────────────────────────────────────
+function AdvancedAnalyticsTab({ branches }) {
+  const [peakData, setPeakData] = useState([])
+  const [bestSellers, setBestSellers] = useState([])
+  const [staffPerf, setStaffPerf] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [branchFilter, setBranchFilter] = useState('all')
+
+  useEffect(() => {
+    setLoading(true)
+    const q = branchFilter !== 'all' ? `?branchId=${branchFilter}` : ''
+    Promise.all([
+      api.get(`/central/analytics/peak-hours${q}`),
+      api.get(`/central/analytics/best-sellers${q}`),
+      api.get(`/central/analytics/staff-performance`),
+    ]).then(([ph, bs, sp]) => {
+      setPeakData(ph.data.data || [])
+      setBestSellers(bs.data.data || [])
+      setStaffPerf(sp.data.data || [])
+    }).catch(() => toast.error('Failed to load analytics'))
+    .finally(() => setLoading(false))
+  }, [branchFilter])
+
+  const maxPeak = Math.max(...peakData.map(h => h.count), 1)
+  const maxSales = Math.max(...bestSellers.map(b => b.count), 1)
+
+  const ROLE_COLORS = { OWNER: 'bg-brand-50 text-brand-700', ADMIN: 'bg-blue-50 text-blue-700', KITCHEN: 'bg-amber-50 text-amber-700' }
+
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-brand-500 w-8 h-8" /></div>
+
+  return (
+    <div className="space-y-6">
+      {/* Filter */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <h2 className="font-extrabold text-gray-900 text-base flex items-center gap-2 flex-1">
+          <FaChartBar className="text-brand-500 w-4 h-4" /> Advanced Analytics
+          <span className="text-xs font-normal text-gray-400">(last 30 days)</span>
+        </h2>
+        <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)}
+          className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-brand-400">
+          <option value="all">All Branches</option>
+          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+      </div>
+
+      {/* Peak Hours Heatmap */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <p className="font-bold text-gray-900 text-sm mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 bg-brand-500 rounded-full" /> Peak Hours Heatmap
+          <span className="text-xs text-gray-400 font-normal">— Order activity by hour of day</span>
+        </p>
+        <div className="flex items-end gap-1 h-28">
+          {peakData.map(h => {
+            const pct = (h.count / maxPeak) * 100
+            const intensity = pct > 75 ? 'bg-brand-600' : pct > 50 ? 'bg-brand-400' : pct > 25 ? 'bg-brand-200' : 'bg-gray-100'
+            return (
+              <div key={h.hour} className="flex-1 flex flex-col items-center gap-1">
+                <div className={`w-full rounded-t-md transition-all ${intensity}`} style={{ height: `${Math.max(8, pct)}%` }} title={`${h.label}: ${h.count} orders`} />
+                {h.hour % 3 === 0 && <span className="text-[9px] text-gray-400 font-mono">{String(h.hour).padStart(2,'0')}</span>}
+              </div>
+            )
+          })}
+        </div>
+        <div className="flex items-center gap-3 mt-3 flex-wrap">
+          {[['bg-brand-600','High (75%+)'],['bg-brand-400','Medium'],['bg-brand-200','Low'],['bg-gray-100','Quiet']].map(([cls,lbl]) => (
+            <span key={lbl} className="flex items-center gap-1.5 text-[10px] text-gray-500 font-semibold">
+              <span className={`w-3 h-3 rounded-sm ${cls}`} />{lbl}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Best Sellers */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <p className="font-bold text-gray-900 text-sm mb-4 flex items-center gap-2">
+          <span className="w-2 h-2 bg-amber-500 rounded-full" /> Top 10 Best Sellers
+        </p>
+        {bestSellers.length === 0 ? (
+          <p className="text-gray-400 text-sm text-center py-8">No order data yet</p>
+        ) : (
+          <div className="space-y-2">
+            {bestSellers.map((b, i) => (
+              <div key={b.menuItemId} className="flex items-center gap-3">
+                <span className="text-[11px] font-black text-gray-400 w-5 flex-shrink-0">#{i+1}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-semibold text-gray-900 truncate">{b.item.name}</span>
+                    <span className="text-xs font-bold text-gray-500 flex-shrink-0 ml-2">{b.count} sold</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className="h-2 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all"
+                      style={{ width: `${(b.count / maxSales) * 100}%` }} />
+                  </div>
+                </div>
+                <span className="text-[10px] font-semibold text-gray-400 w-16 text-right flex-shrink-0">{b.item.category}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Staff Performance */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <p className="font-bold text-gray-900 text-sm flex items-center gap-2">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full" /> Staff Overview
+            <span className="text-xs text-gray-400 font-normal">— Branch throughput (last 30 days)</span>
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                {['Name', 'Branch', 'Role', 'Status', 'Last Login', 'Branch Orders (30d)'].map(h => (
+                  <th key={h} className="text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider px-4 py-3">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {staffPerf.map(s => (
+                <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-[10px] font-extrabold">{s.name[0]?.toUpperCase()}</span>
+                      </div>
+                      <span className="font-semibold text-gray-900 truncate max-w-[100px]">{s.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 font-medium truncate max-w-[120px]">{s.restaurant?.name || '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-[11px] font-extrabold px-2 py-1 rounded-full ${ROLE_COLORS[s.role] || 'bg-gray-50 text-gray-500'}`}>{s.role}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {s.active ? <span className="flex items-center gap-1 text-green-600 font-semibold text-[11px]"><FaCheckCircle className="w-3 h-3" />Active</span>
+                      : <span className="flex items-center gap-1 text-red-500 font-semibold text-[11px]"><FaTimesCircle className="w-3 h-3" />Inactive</span>}
+                  </td>
+                  <td className="px-4 py-3 text-gray-400 text-[11px] whitespace-nowrap">
+                    {s.lastLoginAt ? new Date(s.lastLoginAt).toLocaleDateString('en-IN') : 'Never'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 bg-gray-100 rounded-full h-1.5">
+                        <div className="h-1.5 rounded-full bg-emerald-500" style={{ width: `${Math.min(100, (s.branchOrders / 100) * 100)}%` }} />
+                      </div>
+                      <span className="text-xs font-bold text-gray-700">{s.branchOrders}</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {staffPerf.length === 0 && <div className="text-center py-10 text-gray-400 text-sm">No staff data found</div>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Add/Edit Branch Modal ──────────────────────────────────────────────────────
+function AddEditBranchModal({ branch, onClose, onSaved }) {
+  const isEdit = !!branch?.id
+  const [form, setForm] = useState({
+    name: branch?.name || '', address: branch?.address || '',
+    phone: branch?.phone || '', logoUrl: branch?.logoUrl || '',
+    cuisineType: branch?.cuisineType || '', tableCount: branch?.tableCount || '',
+  })
+  const [saving, setSaving] = useState(false)
+  const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); setSaving(true)
+    try {
+      const res = isEdit
+        ? await api.put(`/central/branches/${branch.id}`, form)
+        : await api.post('/central/branches', form)
+      onSaved(res.data, isEdit)
+      toast.success(isEdit ? 'Branch updated!' : 'Branch created!')
+      onClose()
+    } catch (err) { toast.error(err.message || 'Failed to save branch') }
+    finally { setSaving(false) }
+  }
+
+  return (
+    <Dialog open onOpenChange={v => { if (!v) onClose() }}>
+      <DialogContent className="max-w-md p-0 overflow-hidden rounded-3xl">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-5 text-white">
+          <DialogTitle className="font-extrabold text-base text-white">{isEdit ? 'Edit Branch' : 'Add New Branch'}</DialogTitle>
+          <p className="text-gray-400 text-sm mt-0.5">{isEdit ? 'Update branch information' : 'Create a new branch under your account'}</p>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 space-y-1.5">
+              <Label>Branch Name *</Label>
+              <Input required value={form.name} onChange={set('name')} placeholder="e.g. Kalimati Branch" className="rounded-xl" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Phone</Label>
+              <Input value={form.phone} onChange={set('phone')} placeholder="9800000000" className="rounded-xl" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Cuisine Type</Label>
+              <Input value={form.cuisineType} onChange={set('cuisineType')} placeholder="Nepali, Indian…" className="rounded-xl" />
+            </div>
+            <div className="col-span-2 space-y-1.5">
+              <Label>Address</Label>
+              <Input value={form.address} onChange={set('address')} placeholder="Street, City" className="rounded-xl" />
+            </div>
+            <div className="col-span-2 space-y-1.5">
+              <Label>Logo URL</Label>
+              <Input value={form.logoUrl} onChange={set('logoUrl')} placeholder="https://..." className="rounded-xl" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Table Count</Label>
+              <Input type="number" min="1" value={form.tableCount} onChange={set('tableCount')} placeholder="e.g. 20" className="rounded-xl" />
+            </div>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="outline" className="flex-1 rounded-xl" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={saving} className="flex-1 bg-brand-600 hover:bg-brand-700 text-white rounded-xl">
+              {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : isEdit ? 'Save Changes' : 'Create Branch'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Manage Branches Tab ────────────────────────────────────────────────────────
+function ManageBranchesTab({ branches: initialBranches, onBranchesChange }) {
+  const [branches, setBranches] = useState(initialBranches)
+  const [modalBranch, setModalBranch] = useState(null) // null=closed, {}=new, obj=edit
+  const [toggling, setToggling] = useState(null)
+
+  useEffect(() => { setBranches(initialBranches) }, [initialBranches])
+
+  const handleSaved = (saved, isEdit) => {
+    const updated = isEdit ? branches.map(b => b.id === saved.id ? { ...b, ...saved } : b) : [...branches, { ...saved, totalRevenue: 0, todayOrders: 0, _count: { users: 0, orders: 0, menuItems: 0 } }]
+    setBranches(updated); onBranchesChange?.(updated)
+  }
+
+  const handleToggle = async (branch) => {
+    setToggling(branch.id)
+    try {
+      const res = await api.patch(`/central/branches/${branch.id}/toggle`)
+      const updated = branches.map(b => b.id === branch.id ? { ...b, active: res.data.active } : b)
+      setBranches(updated); onBranchesChange?.(updated)
+      toast.success(`Branch ${res.data.active ? 'activated' : 'deactivated'}`)
+    } catch { toast.error('Failed to toggle branch') }
+    finally { setToggling(null) }
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="font-extrabold text-gray-900 text-base flex items-center gap-2">
+          <FaStore className="text-brand-500 w-4 h-4" /> Manage Branches ({branches.length})
+        </h2>
+        <Button onClick={() => setModalBranch({})} className="bg-brand-600 hover:bg-brand-700 text-white rounded-xl gap-2 text-sm h-9">
+          <FaPlus className="w-3 h-3" /> Add Branch
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        {branches.map((b, i) => (
+          <div key={b.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-all duration-200">
+            <div className="h-2" style={{ background: BRANCH_COLORS[i % BRANCH_COLORS.length] }} />
+            <div className="p-5">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: BRANCH_COLORS[i % BRANCH_COLORS.length] + '18' }}>
+                  {b.logoUrl ? <img src={b.logoUrl} alt="" className="w-full h-full rounded-xl object-cover" onError={e => e.target.style.display='none'} />
+                    : <FaBuilding style={{ color: BRANCH_COLORS[i % BRANCH_COLORS.length] }} className="w-5 h-5" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-extrabold text-gray-900 text-sm truncate">{b.name}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate">{b.address || 'No address set'}</p>
+                  {b.cuisineType && <p className="text-[10px] text-brand-600 font-bold mt-0.5">{b.cuisineType}</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center mb-4">
+                {[{ l: 'Revenue', v: `Rs.${((b.totalRevenue||0)/1000).toFixed(1)}K` }, { l: 'Orders', v: b._count?.orders||0 }, { l: 'Staff', v: b._count?.users||0 }].map(({ l, v }) => (
+                  <div key={l} className="bg-gray-50 rounded-xl py-2">
+                    <p className="font-extrabold text-gray-900 text-xs">{v}</p>
+                    <p className="text-[9px] text-gray-400 font-bold">{l}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setModalBranch(b)}
+                  className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors">
+                  <FaEdit className="w-3 h-3" /> Edit
+                </button>
+                <button onClick={() => handleToggle(b)} disabled={toggling === b.id}
+                  className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-xl text-xs font-bold transition-colors ${b.active ? 'bg-green-50 hover:bg-red-50 text-green-700 hover:text-red-600' : 'bg-red-50 hover:bg-green-50 text-red-600 hover:text-green-700'}`}>
+                  {toggling === b.id ? <Loader2 className="w-3 h-3 animate-spin" /> : b.active ? <><FaToggleOn className="w-3.5 h-3.5" />Active</> : <><FaToggleOff className="w-3.5 h-3.5" />Inactive</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {modalBranch !== null && (
+        <AddEditBranchModal branch={modalBranch?.id ? modalBranch : null} onClose={() => setModalBranch(null)} onSaved={handleSaved} />
+      )}
+    </div>
+  )
+}
+
+// ── Reports Tab ────────────────────────────────────────────────────────────────
+function ReportsTab({ branches }) {
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const thirtyAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
+  const [from, setFrom] = useState(thirtyAgo)
+  const [to, setTo] = useState(todayStr)
+  const [branchFilter, setBranchFilter] = useState('all')
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  const fetchReport = async () => {
+    setLoading(true)
+    try {
+      const q = new URLSearchParams({ from, to, ...(branchFilter !== 'all' && { branchId: branchFilter }) })
+      const res = await api.get(`/central/reports?${q}`)
+      setData(res.data)
+    } catch { toast.error('Failed to load report') }
+    finally { setLoading(false) }
+  }
+
+  useEffect(() => { fetchReport() }, []) // eslint-disable-line
+
+  const handleExportCSV = () => {
+    if (!data?.orders?.length) return toast.error('No data to export')
+    const rows = data.orders.map(o => ({
+      Date: new Date(o.createdAt).toLocaleDateString('en-IN'),
+      Branch: o.restaurant?.name || '—',
+      'Order#': o.id.slice(-8),
+      Customer: o.customerName,
+      Table: o.tableNumber,
+      Status: o.status,
+      'Total (Rs.)': o.discountedTotal ?? o.totalPrice,
+    }))
+    exportCSV(rows, `report_${from}_to_${to}.csv`)
+  }
+
+  const handlePrint = () => window.print()
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className="font-extrabold text-gray-900 text-base flex items-center gap-2">
+          <FaFileAlt className="text-brand-500 w-4 h-4" /> Revenue & Order Reports
+        </h2>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportCSV} className="gap-2 rounded-xl text-xs h-9 border-gray-200">
+            <FaDownload className="w-3 h-3" /> Export CSV
+          </Button>
+          <Button variant="outline" onClick={handlePrint} className="gap-2 rounded-xl text-xs h-9 border-gray-200">
+            <FaPrint className="w-3 h-3" /> Print PDF
+          </Button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+        <div className="flex items-end gap-3 flex-wrap">
+          <div className="space-y-1">
+            <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">From</Label>
+            <input type="date" value={from} onChange={e => setFrom(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-brand-400 bg-white" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">To</Label>
+            <input type="date" value={to} onChange={e => setTo(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-brand-400 bg-white" />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Branch</Label>
+            <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-brand-400 bg-white">
+              <option value="all">All Branches</option>
+              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
+          <Button onClick={fetchReport} disabled={loading} className="bg-brand-600 hover:bg-brand-700 text-white rounded-xl gap-2 h-10">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FaFilter className="w-3 h-3" />} Generate
+          </Button>
+        </div>
+      </div>
+
+      {/* Summary KPIs */}
+      {data && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Total Orders', value: data.summary.totalOrders, color: 'bg-blue-50 text-blue-700' },
+            { label: 'Paid Orders', value: data.summary.paidOrders, color: 'bg-green-50 text-green-700' },
+            { label: 'Total Revenue', value: `Rs. ${(data.summary.totalRevenue||0).toLocaleString()}`, color: 'bg-brand-50 text-brand-700' },
+            { label: 'GST (5%)', value: `Rs. ${(data.summary.gstAmount||0).toLocaleString()}`, color: 'bg-amber-50 text-amber-700' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className={`rounded-2xl p-4 font-bold ${color}`}>
+              <p className="text-2xl font-extrabold leading-none mb-1">{value}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider opacity-70">{label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Orders Table */}
+      {loading ? (
+        <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-brand-500 w-8 h-8" /></div>
+      ) : data?.orders?.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+          <FaFileAlt className="w-10 h-10 mb-3 opacity-20" />
+          <p className="font-semibold">No orders in this date range</p>
+        </div>
+      ) : (
+        <div id="printable-report" className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <p className="font-bold text-gray-900 text-sm">Orders — {from} to {to}</p>
+            <p className="text-xs text-gray-400">{data?.orders?.length} orders</p>
+          </div>
+          <div className="overflow-x-auto max-h-96 overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-gray-50 border-b border-gray-100 z-10">
+                <tr>
+                  {['Date', 'Branch', 'Customer', 'Table', 'Items', 'Status', 'Amount'].map(h => (
+                    <th key={h} className="text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider px-4 py-3">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {data?.orders?.map(o => (
+                  <tr key={o.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-4 py-3 text-[11px] text-gray-500 whitespace-nowrap">{new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-900 text-xs truncate max-w-[100px]">{o.restaurant?.name}</td>
+                    <td className="px-4 py-3 text-gray-700 text-xs truncate max-w-[100px]">{o.customerName}</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">#{o.tableNumber}</td>
+                    <td className="px-4 py-3 text-gray-500 text-[11px] truncate max-w-[140px]">{o.items?.map(i => i.menuItem?.name).join(', ')}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_STYLES[o.status] || 'bg-gray-50 text-gray-500'}`}>{o.status}</span>
+                    </td>
+                    <td className="px-4 py-3 font-extrabold text-brand-700 text-xs whitespace-nowrap">Rs. {(o.discountedTotal ?? o.totalPrice).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Audit Log Tab ──────────────────────────────────────────────────────────────
+const ACTION_STYLES = {
+  BRANCH_CREATED:    'bg-green-50 text-green-700 border-green-200',
+  BRANCH_UPDATED:    'bg-blue-50 text-blue-700 border-blue-200',
+  BRANCH_ACTIVATED:  'bg-emerald-50 text-emerald-700 border-emerald-200',
+  BRANCH_DEACTIVATED:'bg-red-50 text-red-600 border-red-200',
+  STAFF_UPDATED_BY_CENTRAL_ADMIN: 'bg-amber-50 text-amber-700 border-amber-200',
+  STAFF_DELETED_BY_CENTRAL_ADMIN: 'bg-red-50 text-red-600 border-red-200',
+}
+
+function AuditLogTab() {
+  const [logs, setLogs] = useState([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const [actionFilter, setActionFilter] = useState('')
+
+  const fetchLogs = useCallback(async (pg = 1) => {
+    setLoading(true)
+    try {
+      const q = new URLSearchParams({ page: pg, limit: 20, ...(actionFilter && { action: actionFilter }) })
+      const res = await api.get(`/central/audit-log?${q}`)
+      setLogs(res.data.data); setTotal(res.data.total)
+      setPage(res.data.page); setTotalPages(res.data.totalPages)
+    } catch { toast.error('Failed to load audit log') }
+    finally { setLoading(false) }
+  }, [actionFilter])
+
+  useEffect(() => { fetchLogs(1) }, [fetchLogs])
+
+  const ACTION_LABELS = ['', 'BRANCH_CREATED','BRANCH_UPDATED','BRANCH_ACTIVATED','BRANCH_DEACTIVATED','STAFF_UPDATED_BY_CENTRAL_ADMIN','STAFF_DELETED_BY_CENTRAL_ADMIN']
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3 flex-wrap">
+        <h2 className="font-extrabold text-gray-900 text-base flex items-center gap-2 flex-1">
+          <FaHistory className="text-brand-500 w-4 h-4" /> Audit Log
+          <span className="text-xs text-gray-400 font-normal">({total} entries)</span>
+        </h2>
+        <select value={actionFilter} onChange={e => setActionFilter(e.target.value)}
+          className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-brand-400">
+          {ACTION_LABELS.map(a => <option key={a} value={a}>{a || 'All Actions'}</option>)}
+        </select>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-brand-500 w-8 h-8" /></div>
+      ) : logs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+          <FaHistory className="w-10 h-10 mb-3 opacity-20" />
+          <p className="font-semibold">No activity recorded yet</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  {['Timestamp', 'Action', 'Entity', 'Details'].map(h => (
+                    <th key={h} className="text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider px-4 py-3">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {logs.map(log => (
+                  <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-4 py-3 text-[11px] text-gray-500 whitespace-nowrap">{fmtDate(log.createdAt)}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ACTION_STYLES[log.action] || 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                        {log.action.replace(/_/g, ' ')}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 text-xs font-medium">{log.entity || '—'}</td>
+                    <td className="px-4 py-3 text-gray-500 text-[11px] max-w-[200px] truncate">
+                      {log.metadata ? Object.entries(log.metadata).map(([k, v]) => `${k}: ${v}`).join(' · ') : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
+              <p className="text-xs text-gray-500">Page {page} of {totalPages}</p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => fetchLogs(page - 1)} className="h-7 px-3 rounded-lg text-xs">← Prev</Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => fetchLogs(page + 1)} className="h-7 px-3 rounded-lg text-xs">Next →</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Permissions Tab ────────────────────────────────────────────────────────────
+function PermissionsTab({ branches }) {
+  const [staff, setStaff] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(null)
+  const [branchFilter, setBranchFilter] = useState('all')
+
+  useEffect(() => {
+    setLoading(true)
+    const q = branchFilter !== 'all' ? `?branchId=${branchFilter}` : ''
+    api.get(`/central/staff${q}`)
+      .then(r => setStaff(r.data))
+      .catch(() => toast.error('Failed to load staff'))
+      .finally(() => setLoading(false))
+  }, [branchFilter])
+
+  const updateField = async (id, field, value) => {
+    setSaving(id)
+    try {
+      const res = await api.put(`/central/staff/${id}`, { [field]: value })
+      setStaff(p => p.map(s => s.id === id ? { ...s, ...res.data } : s))
+      toast.success('Updated!')
+    } catch (err) { toast.error(err.message) }
+    finally { setSaving(null) }
+  }
+
+  const ROLE_COLORS = { OWNER: 'bg-brand-50 text-brand-700', ADMIN: 'bg-blue-50 text-blue-700', KITCHEN: 'bg-amber-50 text-amber-700' }
+
+  const filtered = branchFilter === 'all' ? staff : staff.filter(s => s.restaurantId === branchFilter)
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3 flex-wrap">
+        <h2 className="font-extrabold text-gray-900 text-base flex items-center gap-2 flex-1">
+          <FaLock className="text-brand-500 w-4 h-4" /> Permissions &amp; Roles
+        </h2>
+        <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)}
+          className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-brand-400">
+          <option value="all">All Branches</option>
+          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+        </select>
+      </div>
+
+      {/* Role legend */}
+      <div className="flex gap-3 flex-wrap">
+        {[['OWNER', 'Full access — menu, orders, staff, profile', 'bg-brand-50 text-brand-700'],
+          ['ADMIN', 'Same as OWNER', 'bg-blue-50 text-blue-700'],
+          ['KITCHEN', 'View & update orders only', 'bg-amber-50 text-amber-700']].map(([role, desc, cls]) => (
+          <div key={role} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold ${cls}`}>
+            <FaLock className="w-3 h-3 opacity-60" />
+            <span className="font-extrabold">{role}</span>
+            <span className="opacity-70">— {desc}</span>
+          </div>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-brand-500 w-8 h-8" /></div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  {['Staff Member', 'Branch', 'Role', 'Active', 'Last Login'].map(h => (
+                    <th key={h} className="text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider px-4 py-3">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filtered.map(s => (
+                  <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center flex-shrink-0">
+                          <span className="text-white text-[10px] font-extrabold">{s.name[0]?.toUpperCase()}</span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-900 text-xs truncate max-w-[110px]">{s.name}</p>
+                          <p className="text-gray-400 text-[10px] truncate max-w-[110px]">{s.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 font-medium text-xs truncate max-w-[100px]">{s.restaurant?.name || '—'}</td>
+                    <td className="px-4 py-3">
+                      <select value={s.role} disabled={saving === s.id}
+                        onChange={e => updateField(s.id, 'role', e.target.value)}
+                        className={`text-[11px] font-extrabold px-2 py-1 rounded-full border-0 outline-none cursor-pointer ${ROLE_COLORS[s.role] || 'bg-gray-50 text-gray-500'}`}>
+                        <option value="OWNER">OWNER</option>
+                        <option value="ADMIN">ADMIN</option>
+                        <option value="KITCHEN">KITCHEN</option>
+                      </select>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => updateField(s.id, 'active', !s.active)} disabled={saving === s.id}
+                        className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 ${s.active ? 'bg-green-500' : 'bg-gray-300'}`}>
+                        <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform duration-200 mt-0.5 ${s.active ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-gray-400 text-[11px] whitespace-nowrap">
+                      {s.lastLoginAt ? new Date(s.lastLoginAt).toLocaleDateString('en-IN') : 'Never'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filtered.length === 0 && <div className="text-center py-10 text-gray-400 text-sm">No staff found</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
 export default function CentralDashboardPage() {
   const { user, logout, loading: authLoading } = useAuth()
@@ -765,11 +1455,16 @@ export default function CentralDashboardPage() {
   const activeNav = NAV_ITEMS.find(n => n.id === activeTab)
 
   const TABS = {
-    overview: <OverviewTab summary={summary} branches={branches} />,
-    sales:    <BranchSalesTab branches={branches} />,
-    orders:   <LiveOrdersTab orders={orders} loading={ordersLoading} branches={branches} />,
-    branches: <BranchesTab branches={branches} loading={!summary} />,
-    staff:    <StaffTab branches={branches} />,
+    overview:        <OverviewTab summary={summary} branches={branches} />,
+    sales:           <BranchSalesTab branches={branches} />,
+    orders:          <LiveOrdersTab orders={orders} loading={ordersLoading} branches={branches} />,
+    branches:        <BranchesTab branches={branches} loading={!summary} />,
+    staff:           <StaffTab branches={branches} />,
+    analytics_adv:   <AdvancedAnalyticsTab branches={branches} />,
+    manage_branches: <ManageBranchesTab branches={branches} onBranchesChange={b => setBranches(b)} />,
+    reports:         <ReportsTab branches={branches} />,
+    audit:           <AuditLogTab />,
+    permissions:     <PermissionsTab branches={branches} />,
   }
 
   const sidebarProps = { activeTab, onChange: changeTab, user, pendingCount, onLogout: handleLogout, onProfile: () => setShowProfile(true) }

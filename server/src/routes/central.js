@@ -5,13 +5,11 @@
 const { Router } = require("express");
 const { authenticate, requireRole } = require("../middleware/auth");
 const {
-  getBranches,
-  getSummary,
-  getAnalytics,
-  getOrders,
-  getStaff,
-  updateStaff,
-  deleteStaff,
+  getBranches, createBranch, updateBranch, toggleBranch,
+  getSummary, getAnalytics,
+  getPeakHours, getBestSellers, getStaffPerformance,
+  getOrders, getReportData, getAuditLog,
+  getStaff, updateStaff, deleteStaff,
 } = require("../controllers/centralAdminController");
 
 const router = Router();
@@ -19,12 +17,31 @@ const router = Router();
 // All central admin routes require auth + CENTRAL_ADMIN or SUPER_ADMIN role
 const guard = [authenticate, requireRole("CENTRAL_ADMIN", "SUPER_ADMIN")];
 
-router.get("/branches",  ...guard, getBranches);
+// ── Branches ──────────────────────────────────────────────────────────────────
+router.get("/branches",              ...guard, getBranches);
+router.post("/branches",             ...guard, createBranch);
+router.put("/branches/:id",          ...guard, updateBranch);
+router.patch("/branches/:id/toggle", ...guard, toggleBranch);
+
+// ── Summary & Core Analytics ─────────────────────────────────────────────────
 router.get("/summary",   ...guard, getSummary);
 router.get("/analytics", ...guard, getAnalytics);
-router.get("/orders",    ...guard, getOrders);
-router.get("/staff",     ...guard, getStaff);
-router.put("/staff/:id", ...guard, updateStaff);
+
+// ── Advanced Analytics ────────────────────────────────────────────────────────
+router.get("/analytics/peak-hours",      ...guard, getPeakHours);
+router.get("/analytics/best-sellers",    ...guard, getBestSellers);
+router.get("/analytics/staff-performance", ...guard, getStaffPerformance);
+
+// ── Orders & Reports ──────────────────────────────────────────────────────────
+router.get("/orders",  ...guard, getOrders);
+router.get("/reports", ...guard, getReportData);
+
+// ── Audit Log ─────────────────────────────────────────────────────────────────
+router.get("/audit-log", ...guard, getAuditLog);
+
+// ── Staff ─────────────────────────────────────────────────────────────────────
+router.get("/staff",        ...guard, getStaff);
+router.put("/staff/:id",    ...guard, updateStaff);
 router.delete("/staff/:id", ...guard, deleteStaff);
 
 module.exports = router;

@@ -1,7 +1,8 @@
 /**
  * centralAdminController.js
  * All /api/central/* routes for CENTRAL_ADMIN role.
- * Provides aggregated multi-branch analytics, live orders, staff management.
+ * Provides aggregated multi-branch analytics, live orders, staff management,
+ * branch CRUD, audit log, reports, and advanced analytics.
  */
 const prisma = require("../lib/prisma");
 const bcrypt = require("bcryptjs");
@@ -21,7 +22,6 @@ function roundMoney(v) {
 }
 
 // ── GET /api/central/branches ─────────────────────────────────────────────────
-// Returns all branches owned by the current user with basic stats.
 const getBranches = async (req, res, next) => {
   try {
     const branchIds = await getBranchIds(req.user.id);
@@ -72,21 +72,116 @@ const getBranches = async (req, res, next) => {
   }
 };
 
+// ── POST /api/central/branches ────────────────────────────────────────────────
+const createBranch = async (req, res, next) => {
+  try {
+    const { name, address, phone, logoUrl, cuisineType, tableCount } = req.body;
+    if (!name?.trim()) return res.status(400).json({ message: "Branch name is required." });
+
+    const restaurant = await prisma.restaurant.create({
+      data: {
+        name: name.trim(),
+        address: address?.trim() || null,
+        phone: phone?.trim() || null,
+        logoUrl: logoUrl?.trim() || null,
+        cuisineType: cuisineType?.trim() || null,
+        tableCount: tableCount ? parseInt(tableCount) : null,
+        ownerEmail: req.user.email,
+      },
+    });
+
+    // Link to this central admin
+    await prisma.restaurantOwner.create({
+      data: { userId: req.user.id, restaurantId: restaurant.id },
+    });
+
+    await logActivity({
+      userId: req.user.id,
+      action: "BRANCH_CREATED",
+      entity: "Restaurant",
+      entityId: restaurant.id,
+      metadata: { name: restaurant.name },
+    });
+
+    res.status(201).json(restaurant);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── PUT /api/central/branches/:id ─────────────────────────────────────────────
+const updateBranch = async (req, res, next) => {
+  try {
+    const branchIds = await getBranchIds(req.user.id);
+    const { id } = req.params;
+    if (!branchIds.includes(id)) return res.status(403).json({ message: "Access denied." });
+
+    const { name, address, phone, logoUrl, cuisineType, tableCount } = req.body;
+    if (!name?.trim()) return res.status(400).json({ message: "Branch name is required." });
+
+    const restaurant = await prisma.restaurant.update({
+      where: { id },
+      data: {
+        name: name.trim(),
+        address: address?.trim() || null,
+        phone: phone?.trim() || null,
+        logoUrl: logoUrl?.trim() || null,
+        cuisineType: cuisineType?.trim() || null,
+        tableCount: tableCount ? parseInt(tableCount) : null,
+      },
+    });
+
+    await logActivity({
+      userId: req.user.id,
+      action: "BRANCH_UPDATED",
+      entity: "Restaurant",
+      entityId: id,
+      metadata: { name: restaurant.name },
+    });
+
+    res.json(restaurant);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── PATCH /api/central/branches/:id/toggle ────────────────────────────────────
+const toggleBranch = async (req, res, next) => {
+  try {
+    const branchIds = await getBranchIds(req.user.id);
+    const { id } = req.params;
+    if (!branchIds.includes(id)) return res.status(403).json({ message: "Access denied." });
+
+    const current = await prisma.restaurant.findUnique({ where: { id }, select: { active: true } });
+    if (!current) return res.status(404).json({ message: "Branch not found." });
+
+    const restaurant = await prisma.restaurant.update({
+      where: { id },
+      data: { active: !current.active },
+    });
+
+    await logActivity({
+      userId: req.user.id,
+      action: restaurant.active ? "BRANCH_ACTIVATED" : "BRANCH_DEACTIVATED",
+      entity: "Restaurant",
+      entityId: id,
+      metadata: { active: restaurant.active },
+    });
+
+    res.json(restaurant);
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ── GET /api/central/summary ──────────────────────────────────────────────────
-// Aggregated KPIs across ALL branches owned by this user.
 const getSummary = async (req, res, next) => {
   try {
     const branchIds = await getBranchIds(req.user.id);
     if (branchIds.length === 0) {
       return res.json({
-        branchCount: 0,
-        activeBranches: 0,
-        totalRevenue: 0,
-        todayRevenue: 0,
-        totalOrders: 0,
-        todayOrders: 0,
-        pendingOrders: 0,
-        totalStaff: 0,
+        branchCount: 0, activeBranches: 0, totalRevenue: 0, todayRevenue: 0,
+        totalOrders: 0, todayOrders: 0, pendingOrders: 0, totalStaff: 0,
       });
     }
 
@@ -94,69 +189,23 @@ const getSummary = async (req, res, next) => {
     const todayStart = new Date(now);
     todayStart.setHours(0, 0, 0, 0);
 
-    const [
-      restaurants,
-      totalRevenueResult,
-      todayRevenueResult,
-      totalOrders,
-      todayOrders,
-      pendingOrders,
-      staffCount,
-    ] = await Promise.all([
-      prisma.restaurant.findMany({
-        where: { id: { in: branchIds } },
-        select: { id: true, active: true },
-      }),
-      prisma.order.aggregate({
-        where: {
-          restaurantId: { in: branchIds },
-          status: { in: ["PAID", "SERVED"] },
-        },
-        _sum: { totalPrice: true },
-      }),
-      prisma.order.aggregate({
-        where: {
-          restaurantId: { in: branchIds },
-          status: { in: ["PAID", "SERVED"] },
-          createdAt: { gte: todayStart },
-        },
-        _sum: { totalPrice: true },
-      }),
-      prisma.order.count({
-        where: {
-          restaurantId: { in: branchIds },
-          status: { notIn: ["CANCELLED"] },
-        },
-      }),
-      prisma.order.count({
-        where: {
-          restaurantId: { in: branchIds },
-          status: { notIn: ["CANCELLED"] },
-          createdAt: { gte: todayStart },
-        },
-      }),
-      prisma.order.count({
-        where: {
-          restaurantId: { in: branchIds },
-          status: "PENDING",
-        },
-      }),
-      prisma.user.count({
-        where: {
-          restaurantId: { in: branchIds },
-          role: { in: ["KITCHEN", "OWNER", "ADMIN"] },
-        },
-      }),
-    ]);
+    const [restaurants, totalRevenueResult, todayRevenueResult, totalOrders, todayOrders, pendingOrders, staffCount] =
+      await Promise.all([
+        prisma.restaurant.findMany({ where: { id: { in: branchIds } }, select: { id: true, active: true } }),
+        prisma.order.aggregate({ where: { restaurantId: { in: branchIds }, status: { in: ["PAID", "SERVED"] } }, _sum: { totalPrice: true } }),
+        prisma.order.aggregate({ where: { restaurantId: { in: branchIds }, status: { in: ["PAID", "SERVED"] }, createdAt: { gte: todayStart } }, _sum: { totalPrice: true } }),
+        prisma.order.count({ where: { restaurantId: { in: branchIds }, status: { notIn: ["CANCELLED"] } } }),
+        prisma.order.count({ where: { restaurantId: { in: branchIds }, status: { notIn: ["CANCELLED"] }, createdAt: { gte: todayStart } } }),
+        prisma.order.count({ where: { restaurantId: { in: branchIds }, status: "PENDING" } }),
+        prisma.user.count({ where: { restaurantId: { in: branchIds }, role: { in: ["KITCHEN", "OWNER", "ADMIN"] } } }),
+      ]);
 
     res.json({
       branchCount: branchIds.length,
       activeBranches: restaurants.filter((r) => r.active).length,
       totalRevenue: roundMoney(totalRevenueResult._sum.totalPrice || 0),
       todayRevenue: roundMoney(todayRevenueResult._sum.totalPrice || 0),
-      totalOrders,
-      todayOrders,
-      pendingOrders,
+      totalOrders, todayOrders, pendingOrders,
       totalStaff: staffCount,
     });
   } catch (err) {
@@ -165,7 +214,6 @@ const getSummary = async (req, res, next) => {
 };
 
 // ── GET /api/central/analytics?range=24h|30d|6m ──────────────────────────────
-// Branch-wise revenue series for Recharts multi-line chart.
 const getAnalytics = async (req, res, next) => {
   try {
     const branchIds = await getBranchIds(req.user.id);
@@ -178,69 +226,32 @@ const getAnalytics = async (req, res, next) => {
     if (range === "24h") {
       startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       buckets = 24;
-      labelFn = (i) =>
-        `${String((now.getHours() - (23 - i) + 24) % 24).padStart(2, "0")}:00`;
-      bucketFn = (d) => {
-        const diff = Math.floor((now - d) / (60 * 60 * 1000));
-        return 23 - diff;
-      };
+      labelFn = (i) => `${String((now.getHours() - (23 - i) + 24) % 24).padStart(2, "0")}:00`;
+      bucketFn = (d) => { const diff = Math.floor((now - d) / (60 * 60 * 1000)); return 23 - diff; };
     } else if (range === "30d") {
       startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       buckets = 30;
-      labelFn = (i) => {
-        const d = new Date(now.getTime() - (29 - i) * 24 * 60 * 60 * 1000);
-        return `${d.getDate()}/${d.getMonth() + 1}`;
-      };
-      bucketFn = (d) => {
-        const diff = Math.floor((now - d) / (24 * 60 * 60 * 1000));
-        return 29 - diff;
-      };
+      labelFn = (i) => { const d = new Date(now.getTime() - (29 - i) * 24 * 60 * 60 * 1000); return `${d.getDate()}/${d.getMonth() + 1}`; };
+      bucketFn = (d) => { const diff = Math.floor((now - d) / (24 * 60 * 60 * 1000)); return 29 - diff; };
     } else {
-      // 6m
       startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
       buckets = 6;
-      labelFn = (i) => {
-        const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-        return d.toLocaleString("en-US", { month: "short" });
-      };
-      bucketFn = (d) => {
-        const diff =
-          (now.getFullYear() - d.getFullYear()) * 12 +
-          (now.getMonth() - d.getMonth());
-        return 5 - diff;
-      };
+      labelFn = (i) => { const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1); return d.toLocaleString("en-US", { month: "short" }); };
+      bucketFn = (d) => { const diff = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth()); return 5 - diff; };
     }
 
     const orders = await prisma.order.findMany({
-      where: {
-        restaurantId: { in: branchIds },
-        createdAt: { gte: startDate },
-        status: { notIn: ["CANCELLED"] },
-      },
-      select: {
-        restaurantId: true,
-        totalPrice: true,
-        discountedTotal: true,
-        createdAt: true,
-        restaurant: { select: { name: true } },
-      },
+      where: { restaurantId: { in: branchIds }, createdAt: { gte: startDate }, status: { notIn: ["CANCELLED"] } },
+      select: { restaurantId: true, totalPrice: true, discountedTotal: true, createdAt: true, restaurant: { select: { name: true } } },
     });
 
     const labels = Array.from({ length: buckets }, (_, i) => labelFn(i));
-
-    // Build per-branch data
     const branchMap = new Map();
     for (const o of orders) {
       const idx = bucketFn(o.createdAt);
       if (idx < 0 || idx >= buckets) continue;
-
       if (!branchMap.has(o.restaurantId)) {
-        branchMap.set(o.restaurantId, {
-          id: o.restaurantId,
-          name: o.restaurant?.name || "Unknown",
-          revenue: Array(buckets).fill(0),
-          totalRevenue: 0,
-        });
+        branchMap.set(o.restaurantId, { id: o.restaurantId, name: o.restaurant?.name || "Unknown", revenue: Array(buckets).fill(0), totalRevenue: 0 });
       }
       const b = branchMap.get(o.restaurantId);
       const amount = o.discountedTotal ?? o.totalPrice;
@@ -248,21 +259,119 @@ const getAnalytics = async (req, res, next) => {
       b.totalRevenue += amount;
     }
 
-    const branches = Array.from(branchMap.values()).map((b) => ({
-      id: b.id,
-      name: b.name,
-      revenue: b.revenue.map(roundMoney),
-      totalRevenue: roundMoney(b.totalRevenue),
-    }));
-
+    const branches = Array.from(branchMap.values()).map((b) => ({ ...b, revenue: b.revenue.map(roundMoney), totalRevenue: roundMoney(b.totalRevenue) }));
     res.json({ range, labels, branches });
   } catch (err) {
     next(err);
   }
 };
 
-// ── GET /api/central/orders?branchId=&status=&page= ──────────────────────────
-// Live & recent orders across all owned branches (paginated).
+// ── GET /api/central/analytics/peak-hours ─────────────────────────────────────
+const getPeakHours = async (req, res, next) => {
+  try {
+    const branchIds = await getBranchIds(req.user.id);
+    if (branchIds.length === 0) return res.json({ data: [] });
+
+    const { branchId } = req.query;
+    const ids = branchId && branchIds.includes(branchId) ? [branchId] : branchIds;
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const orders = await prisma.order.findMany({
+      where: { restaurantId: { in: ids }, createdAt: { gte: since }, status: { notIn: ["CANCELLED"] } },
+      select: { createdAt: true },
+    });
+
+    const hourCounts = Array(24).fill(0);
+    for (const o of orders) hourCounts[new Date(o.createdAt).getHours()]++;
+
+    const data = hourCounts.map((count, hour) => ({
+      hour,
+      label: `${String(hour).padStart(2, "0")}:00`,
+      count,
+    }));
+
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── GET /api/central/analytics/best-sellers ────────────────────────────────────
+const getBestSellers = async (req, res, next) => {
+  try {
+    const branchIds = await getBranchIds(req.user.id);
+    if (branchIds.length === 0) return res.json({ data: [] });
+
+    const { branchId } = req.query;
+    const ids = branchId && branchIds.includes(branchId) ? [branchId] : branchIds;
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const result = await prisma.orderItem.groupBy({
+      by: ["menuItemId"],
+      where: {
+        order: { restaurantId: { in: ids }, createdAt: { gte: since }, status: { notIn: ["CANCELLED"] } },
+      },
+      _sum: { quantity: true },
+      _count: { menuItemId: true },
+      orderBy: { _sum: { quantity: "desc" } },
+      take: 10,
+    });
+
+    const itemIds = result.map((r) => r.menuItemId);
+    const items = await prisma.menuItem.findMany({
+      where: { id: { in: itemIds } },
+      select: { id: true, name: true, category: true, price: true, restaurant: { select: { name: true } } },
+    });
+    const itemMap = Object.fromEntries(items.map((i) => [i.id, i]));
+
+    const data = result.map((r) => ({
+      menuItemId: r.menuItemId,
+      count: r._sum.quantity || 0,
+      orders: r._count.menuItemId,
+      item: itemMap[r.menuItemId] || { name: "Unknown", category: "—", price: 0 },
+    }));
+
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── GET /api/central/analytics/staff-performance ──────────────────────────────
+const getStaffPerformance = async (req, res, next) => {
+  try {
+    const branchIds = await getBranchIds(req.user.id);
+    if (branchIds.length === 0) return res.json({ data: [] });
+
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [staff, branchOrders] = await Promise.all([
+      prisma.user.findMany({
+        where: { restaurantId: { in: branchIds }, role: { in: ["KITCHEN", "OWNER", "ADMIN"] } },
+        select: {
+          id: true, name: true, email: true, role: true, active: true,
+          lastLoginAt: true, createdAt: true,
+          restaurant: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "asc" },
+      }),
+      prisma.order.groupBy({
+        by: ["restaurantId"],
+        where: { restaurantId: { in: branchIds }, createdAt: { gte: since }, status: { notIn: ["CANCELLED"] } },
+        _count: true,
+      }),
+    ]);
+
+    const orderMap = Object.fromEntries(branchOrders.map((b) => [b.restaurantId, b._count]));
+    const data = staff.map((s) => ({ ...s, branchOrders: orderMap[s.restaurant?.id] || 0 }));
+
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── GET /api/central/orders ───────────────────────────────────────────────────
 const getOrders = async (req, res, next) => {
   try {
     const branchIds = await getBranchIds(req.user.id);
@@ -273,11 +382,7 @@ const getOrders = async (req, res, next) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || "50")));
     const skip = (page - 1) * limit;
 
-    const where = {
-      restaurantId: {
-        in: branchId && branchIds.includes(branchId) ? [branchId] : branchIds,
-      },
-    };
+    const where = { restaurantId: { in: branchId && branchIds.includes(branchId) ? [branchId] : branchIds } };
     if (status) where.status = status.toUpperCase();
 
     const [total, orders] = await Promise.all([
@@ -300,31 +405,95 @@ const getOrders = async (req, res, next) => {
   }
 };
 
-// ── GET /api/central/staff?branchId= ─────────────────────────────────────────
-// All staff across all owned branches.
+// ── GET /api/central/reports ──────────────────────────────────────────────────
+const getReportData = async (req, res, next) => {
+  try {
+    const branchIds = await getBranchIds(req.user.id);
+    if (branchIds.length === 0) return res.json({ orders: [], summary: {} });
+
+    const { from, to, branchId } = req.query;
+    const fromDate = from ? new Date(from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const toDate = to ? new Date(to) : new Date();
+    toDate.setHours(23, 59, 59, 999);
+
+    const ids = branchId && branchIds.includes(branchId) ? [branchId] : branchIds;
+
+    const orders = await prisma.order.findMany({
+      where: {
+        restaurantId: { in: ids },
+        createdAt: { gte: fromDate, lte: toDate },
+        status: { notIn: ["CANCELLED"] },
+      },
+      include: {
+        restaurant: { select: { name: true } },
+        items: { include: { menuItem: { select: { name: true } } } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const totalRevenue = orders
+      .filter((o) => o.status === "PAID")
+      .reduce((s, o) => s + (o.discountedTotal ?? o.totalPrice), 0);
+    const paidOrders = orders.filter((o) => o.status === "PAID").length;
+    const gstAmount = roundMoney(totalRevenue * 0.05);
+
+    res.json({
+      orders,
+      summary: {
+        totalRevenue: roundMoney(totalRevenue),
+        totalOrders: orders.length,
+        paidOrders,
+        gstAmount,
+        from: fromDate,
+        to: toDate,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── GET /api/central/audit-log ────────────────────────────────────────────────
+const getAuditLog = async (req, res, next) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || "20")));
+    const skip = (page - 1) * limit;
+
+    const where = { userId: req.user.id };
+    if (req.query.action) where.action = req.query.action;
+
+    const [total, logs] = await Promise.all([
+      prisma.activityLog.count({ where }),
+      prisma.activityLog.findMany({
+        where,
+        include: { user: { select: { id: true, name: true, email: true } } },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    res.json({ data: logs, total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── GET /api/central/staff ────────────────────────────────────────────────────
 const getStaff = async (req, res, next) => {
   try {
     const branchIds = await getBranchIds(req.user.id);
     if (branchIds.length === 0) return res.json([]);
 
     const { branchId } = req.query;
-    const ids =
-      branchId && branchIds.includes(branchId) ? [branchId] : branchIds;
+    const ids = branchId && branchIds.includes(branchId) ? [branchId] : branchIds;
 
     const staff = await prisma.user.findMany({
-      where: {
-        restaurantId: { in: ids },
-        role: { in: ["KITCHEN", "OWNER", "ADMIN"] },
-      },
+      where: { restaurantId: { in: ids }, role: { in: ["KITCHEN", "OWNER", "ADMIN"] } },
       select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        active: true,
-        lastLoginAt: true,
-        createdAt: true,
-        restaurantId: true,
+        id: true, name: true, email: true, role: true, active: true,
+        lastLoginAt: true, createdAt: true, restaurantId: true,
         restaurant: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: "asc" },
@@ -337,31 +506,24 @@ const getStaff = async (req, res, next) => {
 };
 
 // ── PUT /api/central/staff/:id ────────────────────────────────────────────────
-// Edit staff member role/active — scoped to owned branches only.
 const updateStaff = async (req, res, next) => {
   try {
     const branchIds = await getBranchIds(req.user.id);
     const { id } = req.params;
     const { role, active, name } = req.body;
 
-    // Verify target user belongs to an owned branch
-    const target = await prisma.user.findUnique({
-      where: { id },
-      select: { id: true, restaurantId: true, role: true },
-    });
+    const target = await prisma.user.findUnique({ where: { id }, select: { id: true, restaurantId: true, role: true } });
     if (!target || !branchIds.includes(target.restaurantId)) {
       return res.status(403).json({ message: "You do not have permission to edit this user." });
     }
 
     const ALLOWED_ROLES = ["OWNER", "ADMIN", "KITCHEN"];
-    if (role && !ALLOWED_ROLES.includes(role)) {
-      return res.status(400).json({ message: "Invalid role." });
-    }
+    if (role && !ALLOWED_ROLES.includes(role)) return res.status(400).json({ message: "Invalid role." });
 
     const data = {};
-    if (role   !== undefined) data.role   = role;
+    if (role !== undefined) data.role = role;
     if (active !== undefined) data.active = active;
-    if (name   !== undefined) data.name   = name;
+    if (name !== undefined) data.name = name;
 
     const updated = await prisma.user.update({
       where: { id },
@@ -369,14 +531,7 @@ const updateStaff = async (req, res, next) => {
       select: { id: true, name: true, email: true, role: true, active: true, lastLoginAt: true, restaurantId: true, restaurant: { select: { id: true, name: true } } },
     });
 
-    await logActivity({
-      userId: req.user.id,
-      action: "STAFF_UPDATED_BY_CENTRAL_ADMIN",
-      entity: "User",
-      entityId: id,
-      metadata: { role, active },
-    });
-
+    await logActivity({ userId: req.user.id, action: "STAFF_UPDATED_BY_CENTRAL_ADMIN", entity: "User", entityId: id, metadata: { role, active } });
     res.json(updated);
   } catch (err) {
     next(err);
@@ -384,27 +539,18 @@ const updateStaff = async (req, res, next) => {
 };
 
 // ── DELETE /api/central/staff/:id ─────────────────────────────────────────────
-// Delete a staff member — scoped to owned branches only.
 const deleteStaff = async (req, res, next) => {
   try {
     const branchIds = await getBranchIds(req.user.id);
     const { id } = req.params;
 
-    const target = await prisma.user.findUnique({
-      where: { id },
-      select: { id: true, restaurantId: true },
-    });
+    const target = await prisma.user.findUnique({ where: { id }, select: { id: true, restaurantId: true } });
     if (!target || !branchIds.includes(target.restaurantId)) {
       return res.status(403).json({ message: "You do not have permission to delete this user." });
     }
 
     await prisma.user.delete({ where: { id } });
-    await logActivity({
-      userId: req.user.id,
-      action: "STAFF_DELETED_BY_CENTRAL_ADMIN",
-      entity: "User",
-      entityId: id,
-    });
+    await logActivity({ userId: req.user.id, action: "STAFF_DELETED_BY_CENTRAL_ADMIN", entity: "User", entityId: id });
 
     res.json({ message: "Staff member deleted." });
   } catch (err) {
@@ -412,4 +558,10 @@ const deleteStaff = async (req, res, next) => {
   }
 };
 
-module.exports = { getBranches, getSummary, getAnalytics, getOrders, getStaff, updateStaff, deleteStaff };
+module.exports = {
+  getBranches, createBranch, updateBranch, toggleBranch,
+  getSummary, getAnalytics,
+  getPeakHours, getBestSellers, getStaffPerformance,
+  getOrders, getReportData, getAuditLog,
+  getStaff, updateStaff, deleteStaff,
+};
