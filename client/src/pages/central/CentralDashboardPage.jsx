@@ -25,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   FaBuilding, FaSignOutAlt, FaChartLine, FaClipboardList,
   FaUsers, FaStore, FaBars, FaTimes, FaLayerGroup,
-  FaChevronDown, FaEdit, FaTrash, FaCheckCircle, FaTimesCircle
+  FaChevronDown, FaEdit, FaTrash, FaCheckCircle, FaTimesCircle, FaCog
 } from 'react-icons/fa'
 import { Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
@@ -36,13 +36,21 @@ const BRANCH_COLORS = [
 ]
 
 // ── Nav config ─────────────────────────────────────────────────────────────────
-const NAV_ITEMS = [
-  { id: 'overview',  label: 'Overview',     icon: FaChartLine,     shortcut: 'O' },
-  { id: 'sales',     label: 'Branch Sales', icon: TrendingUp,      shortcut: 'S' },
-  { id: 'orders',    label: 'Live Orders',  icon: FaClipboardList, shortcut: 'L' },
-  { id: 'branches',  label: 'My Branches',  icon: FaStore,         shortcut: 'B' },
-  { id: 'staff',     label: 'Staff',        icon: FaUsers,         shortcut: 'T' },
+const NAV_GROUPS_CENTRAL = [
+  {
+    label: 'Navigation',
+    items: [
+      { id: 'overview',  label: 'Overview',     icon: FaChartLine,     shortcut: 'O' },
+      { id: 'sales',     label: 'Branch Sales', icon: TrendingUp,      shortcut: 'S' },
+      { id: 'orders',    label: 'Live Orders',  icon: FaClipboardList, shortcut: 'L' },
+      { id: 'branches',  label: 'My Branches',  icon: FaStore,         shortcut: 'B' },
+      { id: 'staff',     label: 'Staff',        icon: FaUsers,         shortcut: 'T' },
+    ],
+  },
 ]
+
+// Flat list for shortcut handler & active nav lookup
+const NAV_ITEMS = NAV_GROUPS_CENTRAL.flatMap(g => g.items)
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function fmtRs(v) {
@@ -91,18 +99,19 @@ const STATUS_STYLES = {
 }
 
 // ── Sidebar component ──────────────────────────────────────────────────────────
-function Sidebar({ activeTab, onChange, user, pendingCount, onLogout, onClose }) {
+function Sidebar({ activeTab, onChange, user, pendingCount, onLogout, onProfile, onClose }) {
   return (
-    <div className="flex flex-col h-full" style={{ background: 'linear-gradient(180deg, #0f0a1e 0%, #1a0f3e 50%, #0f0a1e 100%)' }}>
+    <div className="flex flex-col h-full" style={{ background: 'linear-gradient(180deg, #030712 0%, #0f172a 50%, #030712 100%)' }}>
+
       {/* Brand */}
       <div className="p-5 border-b border-white/[0.08] flex-shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-purple-700 rounded-xl flex items-center justify-center shadow-lg shadow-violet-600/30 flex-shrink-0">
+          <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-brand-700 rounded-xl flex items-center justify-center shadow-lg shadow-brand-600/25 flex-shrink-0">
             <FaLayerGroup className="w-4 h-4 text-white" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="font-extrabold text-white text-sm leading-none truncate">Central Admin</p>
-            <p className="text-violet-400 text-[11px] font-semibold mt-0.5 uppercase tracking-wider">Multi-Branch Dashboard</p>
+            <p className="text-brand-400 text-[11px] font-semibold mt-0.5 uppercase tracking-wider">Multi-Branch Dashboard</p>
           </div>
           {onClose && (
             <button onClick={onClose} className="w-7 h-7 bg-white/[0.07] hover:bg-white/[0.14] rounded-lg flex items-center justify-center transition-colors flex-shrink-0">
@@ -112,50 +121,57 @@ function Sidebar({ activeTab, onChange, user, pendingCount, onLogout, onClose })
         </div>
       </div>
 
-      {/* User info */}
-      <div className="px-4 py-3 border-b border-white/[0.06]">
-        <p className="text-xs text-gray-500 uppercase tracking-wider font-bold mb-1">Signed in as</p>
-        <p className="font-bold text-white text-sm truncate">{user?.name || user?.email}</p>
-        <Badge className="mt-1 bg-violet-500/20 text-violet-300 border-violet-500/30 text-[10px] font-bold">
-          Central Admin
-        </Badge>
-      </div>
-
       {/* Nav */}
       <nav className="flex-1 p-3 overflow-y-auto scrollbar-none mt-1">
-        <p className="text-[10px] font-bold text-gray-600 uppercase tracking-widest px-3 mb-2">Navigation</p>
-        <div className="space-y-0.5">
-          {NAV_ITEMS.map(({ id, label, icon: Icon, shortcut }) => {
-            const isActive = activeTab === id
-            const showBadge = id === 'orders' && pendingCount > 0
-            return (
-              <button key={id} onClick={() => { onChange(id); onClose?.() }}
-                className={`group relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${isActive
-                  ? 'bg-violet-500/20 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-white/[0.06]'
-                }`}>
-                {isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-violet-400 rounded-r-full" />}
-                <Icon className={`flex-shrink-0 transition-colors ${isActive ? 'text-violet-400' : 'text-gray-500 group-hover:text-gray-300'}`} style={{ width: 16, height: 16 }} />
-                <span className="flex-1 text-left">{label}</span>
-                {showBadge && (
-                  <span className="relative flex h-5 w-5 items-center justify-center flex-shrink-0">
-                    <span className="animate-ping absolute h-full w-full rounded-full bg-violet-400 opacity-40" />
-                    <span className="relative bg-violet-500 text-white text-[9px] font-black rounded-full h-5 w-5 flex items-center justify-center">{pendingCount}</span>
-                  </span>
-                )}
-                <kbd className="ml-auto text-[9px] bg-white/[0.07] text-gray-500 px-1.5 py-0.5 rounded font-mono opacity-0 group-hover:opacity-100 transition-opacity">{shortcut}</kbd>
-              </button>
-            )
-          })}
-        </div>
+        {NAV_GROUPS_CENTRAL.map(group => (
+          <div key={group.label}>
+            <p className="nav-section-label">{group.label}</p>
+            <div className="space-y-0.5 mb-1">
+              {group.items.map(({ id, label, icon: Icon, shortcut }) => {
+                const isActive = activeTab === id
+                const showBadge = id === 'orders' && pendingCount > 0
+                return (
+                  <button key={id} onClick={() => { onChange(id); onClose?.() }}
+                    className={`group relative w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-150 ${isActive
+                      ? 'bg-white/[0.10] text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-white/[0.06]'
+                    }`}>
+                    {isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-brand-400 rounded-r-full" />}
+                    <Icon className={`flex-shrink-0 transition-colors ${isActive ? 'text-brand-400' : 'text-gray-500 group-hover:text-gray-300'}`} style={{ width: 16, height: 16 }} />
+                    <span className="flex-1 text-left">{label}</span>
+                    {showBadge && (
+                      <span className="relative flex h-5 w-5 items-center justify-center flex-shrink-0">
+                        <span className="animate-ping absolute h-full w-full rounded-full bg-brand-400 opacity-40" />
+                        <span className="relative bg-brand-500 text-white text-[9px] font-black rounded-full h-5 w-5 flex items-center justify-center">{pendingCount}</span>
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       <Separator className="bg-white/[0.08] mx-3 w-auto" />
 
-      {/* Footer */}
-      <div className="p-3">
-        <Button variant="ghost" onClick={onLogout}
-          className="w-full justify-start gap-3 text-gray-400 hover:text-white hover:bg-white/[0.08] font-semibold text-sm h-9">
+      {/* Footer — matching owner: Edit Profile + Sign Out */}
+      <div className="p-3 space-y-1">
+        {onProfile && (
+          <Button
+            variant="ghost"
+            onClick={onProfile}
+            className="w-full justify-start gap-3 text-gray-400 hover:text-white hover:bg-white/[0.08] font-semibold text-sm h-9"
+          >
+            <FaCog className="w-4 h-4" />
+            Edit Profile
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          onClick={onLogout}
+          className="w-full justify-start gap-3 text-gray-400 hover:text-white hover:bg-white/[0.08] font-semibold text-sm h-9"
+        >
           <FaSignOutAlt className="w-4 h-4" />
           Sign Out
         </Button>
@@ -681,6 +697,7 @@ export default function CentralDashboardPage() {
   const changeTab = id => { setActiveTab(id); localStorage.setItem('central_tab', id) }
 
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
   const [summary, setSummary]   = useState(null)
   const [branches, setBranches] = useState([])
   const [orders, setOrders]     = useState([])
@@ -755,19 +772,22 @@ export default function CentralDashboardPage() {
     staff:    <StaffTab branches={branches} />,
   }
 
-  const sidebarProps = { activeTab, onChange: changeTab, user, pendingCount, onLogout: handleLogout }
+  const sidebarProps = { activeTab, onChange: changeTab, user, pendingCount, onLogout: handleLogout, onProfile: () => setShowProfile(true) }
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-64 flex-col flex-shrink-0 shadow-2xl" style={{ height: '100vh' }}>
+      <aside className="hidden lg:flex w-60 flex-col flex-shrink-0 shadow-xl" style={{ height: '100vh', overflow: 'hidden' }}>
         <Sidebar {...sidebarProps} />
       </aside>
 
       {/* Mobile sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="w-64 p-0 border-r border-white/[0.08] [&>button]:hidden"
-          style={{ background: 'linear-gradient(180deg, #0f0a1e 0%, #1a0f3e 50%, #0f0a1e 100%)' }}>
+        <SheetContent
+          side="left"
+          className="w-60 p-0 border-r border-white/[0.08] [&>button]:hidden"
+          style={{ background: 'linear-gradient(180deg, #030712 0%, #0f172a 50%, #030712 100%)' }}
+        >
           <Sidebar {...sidebarProps} onClose={() => setSidebarOpen(false)} />
         </SheetContent>
       </Sheet>
@@ -782,8 +802,8 @@ export default function CentralDashboardPage() {
             </Button>
             <div className="flex items-center gap-2.5 min-w-0">
               {activeNav && (
-                <div className="w-8 h-8 bg-violet-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <activeNav.icon className="w-4 h-4 text-violet-600" />
+                <div className="w-8 h-8 bg-brand-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <activeNav.icon className="w-4 h-4 text-brand-600" />
                 </div>
               )}
               <h1 className="font-extrabold text-gray-900 text-base truncate">{activeNav?.label}</h1>
@@ -796,7 +816,7 @@ export default function CentralDashboardPage() {
                   {pendingCount} Pending
                 </button>
               )}
-              <Badge variant="outline" className="bg-violet-50 border-violet-200 text-violet-700 font-bold text-[11px] rounded-xl">
+              <Badge variant="outline" className="bg-brand-50 border-brand-200 text-brand-700 font-bold text-[11px] rounded-xl">
                 {branches.length} Branches
               </Badge>
             </div>
@@ -815,6 +835,44 @@ export default function CentralDashboardPage() {
           </p>
         </footer>
       </div>
+
+      {/* Profile info dialog */}
+      <Dialog open={showProfile} onOpenChange={v => { if (!v) setShowProfile(false) }}>
+        <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden">
+          <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-5 text-white">
+            <DialogTitle className="font-extrabold text-base text-white">My Profile</DialogTitle>
+            <p className="text-gray-400 text-sm mt-0.5">Central Admin Account</p>
+          </div>
+          <div className="p-5 space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Full Name</Label>
+              <div className="flex h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 items-center">
+                {user?.name || '—'}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email Address</Label>
+              <div className="flex h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400 items-center gap-2">
+                <span className="flex-1 truncate">{user?.email || '—'}</span>
+                <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex-shrink-0">Read only</span>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Role</Label>
+              <div className="flex h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm items-center">
+                <span className="text-[11px] font-extrabold px-2 py-1 rounded-full bg-brand-50 text-brand-700">
+                  Central Admin
+                </span>
+              </div>
+            </div>
+            <div className="pt-2">
+              <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl" onClick={() => setShowProfile(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
