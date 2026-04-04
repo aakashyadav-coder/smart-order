@@ -67,7 +67,7 @@ export default function RestaurantDetailPage() {
         </button>
         <div className="flex-1">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-extrabold text-gray-900">{r.name}</h1>
+            <h1 className="text-2xl font-extrabold text-gray-900">{r.branchName && r.name ? `${r.name} - ${r.branchName}` : (r.branchName || r.name || '—')}</h1>
             <span className={`badge text-xs ${r.active ? 'badge-completed' : 'badge-cancelled'}`}>{r.active ? 'Active' : 'Inactive'}</span>
             {r.cuisineType && <span className="text-xs bg-brand-50 text-brand-600 border border-brand-200 px-2 py-0.5 rounded-full font-medium">{r.cuisineType}</span>}
           </div>
@@ -176,7 +176,7 @@ export default function RestaurantDetailPage() {
                     <img src={qrUrl} alt={`Table ${num}`} className="w-24 h-24 rounded-lg" />
                     <span className="text-xs font-bold text-gray-700">Table {num}</span>
                     <button
-                      onClick={() => downloadQR(num, r.id, r.name)}
+                      onClick={() => downloadQR(num, r.id, r.branchName && r.name ? `${r.name} - ${r.branchName}` : (r.branchName || r.name || '—'))}
                       className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 font-medium"
                     >
                       <FaDownload className="w-3 h-3" /> Download

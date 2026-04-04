@@ -23,11 +23,11 @@ import {
 
 const ROLES = ['CENTRAL_ADMIN', 'OWNER', 'KITCHEN', 'ADMIN']
 const ROLE_COLORS = {
-  SUPER_ADMIN:   'badge-cancelled',
+  SUPER_ADMIN: 'badge-cancelled',
   CENTRAL_ADMIN: 'badge-completed',   // purple-ish via badge-completed
-  OWNER:         'badge-accepted',
-  KITCHEN:       'badge-preparing',
-  ADMIN:         'badge-pending',
+  OWNER: 'badge-accepted',
+  KITCHEN: 'badge-preparing',
+  ADMIN: 'badge-pending',
 }
 const buildForm = (u) => ({
   name: u?.name || '',
@@ -82,7 +82,12 @@ export default function UsersPage() {
       let group = map.get(key)
       if (!group) {
         const r = u.restaurantId ? restaurantById.get(u.restaurantId) : null
-        const name = u.restaurant?.name || r?.name || 'No restaurant'
+        let name = 'No restaurant'
+        if (r) {
+          name = r.branchName ? `${r.name} - ${r.branchName}` : r.name
+        } else if (u.restaurant) {
+          name = u.restaurant.branchName ? `${u.restaurant.name} - ${u.restaurant.branchName}` : u.restaurant.name
+        }
         group = { key, name, users: [] }
         map.set(key, group)
       }
@@ -233,9 +238,19 @@ export default function UsersPage() {
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-600 text-xs">Restaurant</label>
               <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm focus:ring-brand-500 focus:border-brand-500"
-                value={form.restaurantId} onChange={e => setForm(p => ({ ...p, restaurantId: e.target.value }))}>
+                value={form.restaurantId} onChange={e => {
+                  const val = e.target.value;
+                  setForm(p => {
+                    let nextName = p.name;
+                    if (!p.name && val) {
+                      const r = restaurants.find(x => x.id === val);
+                      if (r) nextName = r.branchName ? `${r.name} - ${r.branchName}` : r.name;
+                    }
+                    return { ...p, restaurantId: val, name: nextName };
+                  })
+                }}>
                 <option value="">- No restaurant -</option>
-                {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                {restaurants.map(r => <option key={r.id} value={r.id}>{r.branchName ? `${r.name} - ${r.branchName}` : r.name}</option>)}
               </select>
             </div>
             <div className="flex items-center gap-2">
@@ -381,7 +396,7 @@ export default function UsersPage() {
                               <p className="text-gray-400 text-xs">{u.email}</p>
                             </td>
                             <td className="px-5 py-4"><span className={`badge text-xs ${ROLE_COLORS[u.role] || 'badge-pending'}`}>{u.role}</span></td>
-                            <td className="px-5 py-4 text-gray-400 text-xs">{u.restaurant?.name || group.name || '-'}</td>
+                            <td className="px-5 py-4 text-gray-400 text-xs">{group.name === 'No restaurant' ? '-' : group.name}</td>
                             <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">{fmtDate(u.lastLoginAt)}</td>
                             <td className="px-5 py-4">
                               <span className={`badge text-xs ${u.active ? 'badge-completed' : 'badge-cancelled'}`}>{u.active ? 'Active' : 'Inactive'}</span>

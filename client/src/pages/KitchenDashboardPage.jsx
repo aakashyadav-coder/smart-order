@@ -412,7 +412,7 @@ export default function KitchenDashboardPage() {
     if (authLoading) return
     fetchOrders()
     api.get('/restaurant/mine').then(r => {
-      const d = { name: r.data.name, logoUrl: r.data.logoUrl }
+      const d = { name: r.data.name, branchName: r.data.branchName || null, logoUrl: r.data.logoUrl }
       setRestaurant(d); setLogoError(false)
       localStorage.setItem('kitchen_restaurant', JSON.stringify(d))
     }).catch(() => { })
@@ -487,7 +487,7 @@ export default function KitchenDashboardPage() {
       newIds.current.add(order.id)
       setTimeout(() => newIds.current.delete(order.id), 1500)
       ding()
-      toast.success(`New order — Table ${order.tableNumber}`, { duration: 6000 })
+      toast(`New order! Table ${order.tableNumber}`, { icon: <FaBell className="text-amber-500 w-4 h-4" /> })
       notify('New Order', `Table ${order.tableNumber} — Rs.${order.totalPrice}`)
     }
     const onStatus = ({ orderId, status }) =>
@@ -613,7 +613,9 @@ export default function KitchenDashboardPage() {
             }
           </div>
           <div className="min-w-0">
-            <p className="font-display font-bold text-white text-base leading-none truncate">{restaurant.name}</p>
+            <p className="font-display font-bold text-white text-base leading-none truncate">
+              {restaurant?.branchName && restaurant?.name ? `${restaurant.name} - ${restaurant.branchName}` : (restaurant?.branchName || restaurant?.name)}
+            </p>
             <p className="text-brand-400 text-xs font-semibold mt-0.5 uppercase tracking-widest">Kitchen Display</p>
           </div>
         </div>

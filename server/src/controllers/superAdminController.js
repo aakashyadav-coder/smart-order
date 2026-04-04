@@ -17,11 +17,11 @@ let maintenanceState = {
   scheduledAt: null, // ISO string — future time for countdown
 };
 
-const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const RANGE_PRESETS = {
   "24h": { type: "hour", count: 24 },
   "30d": { type: "day", count: 30 },
-  "6m":  { type: "month", count: 6 },
+  "6m": { type: "month", count: 6 },
 };
 
 function getRangeBuckets(range) {
@@ -245,12 +245,13 @@ const getRestaurantDetail = async (req, res, next) => {
 
 const createRestaurant = async (req, res, next) => {
   try {
-    const { name, address, phone, logoUrl, tableCount, cuisineType, openingHours, ownerEmail } = req.body;
+    const { name, branchName, address, phone, logoUrl, tableCount, cuisineType, openingHours, ownerEmail } = req.body;
     if (!name) return res.status(400).json({ message: "Restaurant name is required." });
 
     const restaurant = await prisma.restaurant.create({
       data: {
         name: name.trim(),
+        branchName: branchName?.trim() || null,
         address: address?.trim(),
         phone: phone?.trim(),
         logoUrl,
@@ -315,18 +316,19 @@ const createRestaurant = async (req, res, next) => {
 const updateRestaurant = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, address, phone, logoUrl, active, tableCount, cuisineType, openingHours } = req.body;
+    const { name, branchName, address, phone, logoUrl, active, tableCount, cuisineType, openingHours } = req.body;
 
     const restaurant = await prisma.restaurant.update({
       where: { id },
       data: {
-        ...(name         !== undefined && { name: name.trim() }),
-        ...(address      !== undefined && { address: address.trim() }),
-        ...(phone        !== undefined && { phone: phone.trim() }),
-        ...(logoUrl      !== undefined && { logoUrl }),
-        ...(active       !== undefined && { active }),
-        ...(tableCount   !== undefined && { tableCount: tableCount ? parseInt(tableCount) : null }),
-        ...(cuisineType  !== undefined && { cuisineType: cuisineType?.trim() || null }),
+        ...(name !== undefined && { name: name.trim() }),
+        ...(branchName !== undefined && { branchName: branchName?.trim() || null }),
+        ...(address !== undefined && { address: address.trim() }),
+        ...(phone !== undefined && { phone: phone.trim() }),
+        ...(logoUrl !== undefined && { logoUrl }),
+        ...(active !== undefined && { active }),
+        ...(tableCount !== undefined && { tableCount: tableCount ? parseInt(tableCount) : null }),
+        ...(cuisineType !== undefined && { cuisineType: cuisineType?.trim() || null }),
         ...(openingHours !== undefined && { openingHours }),
       },
       include: { _count: { select: { users: true, orders: true, menuItems: true } }, features: true },
@@ -338,7 +340,7 @@ const updateRestaurant = async (req, res, next) => {
     try {
       const io = req.app.get("io");
       if (io) emitRestaurantUpdate(io, restaurant);
-    } catch (_) {}
+    } catch (_) { }
 
     res.json(restaurant);
   } catch (err) { next(err); }
@@ -424,12 +426,12 @@ const updateUser = async (req, res, next) => {
     }
 
     const data = {};
-    if (name         !== undefined) data.name = name;
-    if (email        !== undefined) data.email = email;
-    if (password     !== undefined) data.passwordHash = await bcrypt.hash(password, 10);
-    if (role         !== undefined) data.role = role;
+    if (name !== undefined) data.name = name;
+    if (email !== undefined) data.email = email;
+    if (password !== undefined) data.passwordHash = await bcrypt.hash(password, 10);
+    if (role !== undefined) data.role = role;
     if (restaurantId !== undefined) data.restaurantId = restaurantId || null;
-    if (active       !== undefined) data.active = active;
+    if (active !== undefined) data.active = active;
 
     const user = await prisma.user.update({
       where: { id },
@@ -465,9 +467,9 @@ const bulkUpdateUsers = async (req, res, next) => {
 const getAllOrders = async (req, res, next) => {
   try {
     const { restaurantId, status, search, dateFrom, dateTo } = req.query;
-    const page  = Math.max(1, parseInt(req.query.page  || '1'));
+    const page = Math.max(1, parseInt(req.query.page || '1'));
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit || '50')));
-    const skip  = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
     const where = {};
     if (restaurantId) where.restaurantId = restaurantId;
@@ -475,7 +477,7 @@ const getAllOrders = async (req, res, next) => {
     if (dateFrom || dateTo) {
       where.createdAt = {};
       if (dateFrom) where.createdAt.gte = new Date(dateFrom);
-      if (dateTo)   where.createdAt.lte = new Date(dateTo + 'T23:59:59Z');
+      if (dateTo) where.createdAt.lte = new Date(dateTo + 'T23:59:59Z');
     }
     if (search) {
       where.OR = [
@@ -623,7 +625,7 @@ const updateTicket = async (req, res, next) => {
       where: { id },
       data: {
         ...(status !== undefined && { status }),
-        ...(reply  !== undefined && { reply }),
+        ...(reply !== undefined && { reply }),
       },
       include: { restaurant: { select: { id: true, name: true } } },
     });
@@ -645,9 +647,9 @@ const getDashboardKPIs = async (req, res, next) => {
   try {
     const now = new Date();
     const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
-    const todayEnd   = new Date(now); todayEnd.setHours(23, 59, 59, 999);
-    const yestStart  = new Date(todayStart); yestStart.setDate(yestStart.getDate() - 1);
-    const yestEnd    = new Date(todayEnd);   yestEnd.setDate(yestEnd.getDate() - 1);
+    const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999);
+    const yestStart = new Date(todayStart); yestStart.setDate(yestStart.getDate() - 1);
+    const yestEnd = new Date(todayEnd); yestEnd.setDate(yestEnd.getDate() - 1);
 
     const [
       todayOrdersCount,
@@ -666,10 +668,10 @@ const getDashboardKPIs = async (req, res, next) => {
     ]);
 
     const todayRevenue = roundMoney(todayRevenueResult._sum.totalPrice || 0);
-    const yestRevenue  = roundMoney(yestRevenueResult._sum.totalPrice  || 0);
+    const yestRevenue = roundMoney(yestRevenueResult._sum.totalPrice || 0);
 
-    const orderDelta   = yestOrdersCount  > 0 ? Math.round(((todayOrdersCount - yestOrdersCount)  / yestOrdersCount)  * 100) : null;
-    const revenueDelta = yestRevenue  > 0      ? Math.round(((todayRevenue    - yestRevenue)       / yestRevenue)       * 100) : null;
+    const orderDelta = yestOrdersCount > 0 ? Math.round(((todayOrdersCount - yestOrdersCount) / yestOrdersCount) * 100) : null;
+    const revenueDelta = yestRevenue > 0 ? Math.round(((todayRevenue - yestRevenue) / yestRevenue) * 100) : null;
 
     res.json({
       todayOrders: todayOrdersCount,
@@ -686,8 +688,8 @@ const getDashboardKPIs = async (req, res, next) => {
 
 // ── Revenue BI ─────────────────────────────────────────────────────────────────
 const PERIOD_PRESETS = {
-  daily:   { type: 'day',   count: 14 },
-  weekly:  { type: 'week',  count: 8  },
+  daily: { type: 'day', count: 14 },
+  weekly: { type: 'week', count: 8 },
   monthly: { type: 'month', count: 12 },
 };
 
@@ -874,11 +876,11 @@ const getOnboardingPipeline = async (req, res, next) => {
     });
 
     const pipeline = restaurants.map(r => {
-      const hasMenu   = (r._count.menuItems || 0) > 0;
-      const hasStaff  = (r._count.users    || 0) > 0;
-      const hasOrders = (r._count.orders   || 0) > 0;
+      const hasMenu = (r._count.menuItems || 0) > 0;
+      const hasStaff = (r._count.users || 0) > 0;
+      const hasOrders = (r._count.orders || 0) > 0;
       const hasTables = !!r.tableCount;
-      const hasHours  = !!r.openingHours;
+      const hasHours = !!r.openingHours;
 
       let stage;
       if (!hasMenu && !hasStaff) stage = 'NOT_STARTED';       // 🔴
@@ -886,11 +888,11 @@ const getOnboardingPipeline = async (req, res, next) => {
       else stage = 'LIVE';                                              // 🟢
 
       const checks = [
-        { key: 'menu',   label: 'Menu items',     done: hasMenu },
-        { key: 'staff',  label: 'Staff accounts',  done: hasStaff },
-        { key: 'orders', label: 'First order',     done: hasOrders },
+        { key: 'menu', label: 'Menu items', done: hasMenu },
+        { key: 'staff', label: 'Staff accounts', done: hasStaff },
+        { key: 'orders', label: 'First order', done: hasOrders },
         { key: 'tables', label: 'Table count set', done: hasTables },
-        { key: 'hours',  label: 'Opening hours',   done: hasHours },
+        { key: 'hours', label: 'Opening hours', done: hasHours },
       ];
       const completedCount = checks.filter(c => c.done).length;
       const pct = Math.round((completedCount / checks.length) * 100);
@@ -909,8 +911,8 @@ const getOnboardingPipeline = async (req, res, next) => {
 
     const summary = {
       NOT_STARTED: pipeline.filter(r => r.stage === 'NOT_STARTED').length,
-      PARTIAL:     pipeline.filter(r => r.stage === 'PARTIAL').length,
-      LIVE:        pipeline.filter(r => r.stage === 'LIVE').length,
+      PARTIAL: pipeline.filter(r => r.stage === 'PARTIAL').length,
+      LIVE: pipeline.filter(r => r.stage === 'LIVE').length,
     };
 
     res.json({ pipeline, summary });
@@ -929,8 +931,8 @@ const nudgeRestaurants = async (req, res, next) => {
     });
 
     const targets = restaurants.filter(r => {
-      const hasMenu   = r._count.menuItems > 0;
-      const hasStaff  = r._count.users > 0;
+      const hasMenu = r._count.menuItems > 0;
+      const hasStaff = r._count.users > 0;
       const hasOrders = r._count.orders > 0;
       let s;
       if (!hasMenu && !hasStaff) s = 'NOT_STARTED';

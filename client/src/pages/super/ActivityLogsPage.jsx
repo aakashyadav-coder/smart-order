@@ -132,7 +132,7 @@ function PurgePanel({ restaurants, onPurged }) {
             <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
               value={orderRestId} onChange={e => { setOrderRestId(e.target.value); setConfirmOrders(false) }}>
               <option value="">Select restaurant...</option>
-              {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+              {restaurants.map(r => <option key={r.id} value={r.id}>{r.branchName && r.name ? `${r.name} - ${r.branchName}` : (r.branchName || r.name || '—')}</option>)}
             </select>
             <div className="flex items-center gap-2">
               <label className="text-xs text-gray-500 font-medium whitespace-nowrap">Older than</label>

@@ -248,7 +248,7 @@ export default function OnboardingPage() {
                 return (
                   <tr key={r.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-4">
-                      <p className="font-semibold text-gray-900">{r.name}</p>
+                      <p className="font-semibold text-gray-900">{r.branchName && r.name ? `${r.name} - ${r.branchName}` : (r.branchName || r.name || '—')}</p>
                       <p className="text-xs text-gray-400 mt-0.5 inline-flex items-center gap-1.5">
                         {r.active ? <FaCheckCircle className="w-3 h-3 text-green-500" /> : <FaTimesCircle className="w-3 h-3 text-red-500" />}
                         {r.active ? 'Active' : 'Inactive'} - ID: {r.id.slice(-6).toUpperCase()}

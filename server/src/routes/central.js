@@ -10,6 +10,7 @@ const {
   getPeakHours, getBestSellers, getStaffPerformance,
   getOrders, getReportData, getAuditLog,
   getStaff, updateStaff, deleteStaff,
+  updateProfile,
 } = require("../controllers/centralAdminController");
 
 const router = Router();
@@ -43,5 +44,8 @@ router.get("/audit-log", ...guard, getAuditLog);
 router.get("/staff",        ...guard, getStaff);
 router.put("/staff/:id",    ...guard, updateStaff);
 router.delete("/staff/:id", ...guard, deleteStaff);
+
+// ── Profile ───────────────────────────────────────────────────────────────────
+router.patch("/profile", ...guard, updateProfile);
 
 module.exports = router;

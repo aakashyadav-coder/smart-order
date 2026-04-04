@@ -12,8 +12,7 @@ import socket from '../lib/socket'
 import ConfirmModal from '../components/ConfirmModal'
 import {
   FaBuilding, FaSignOutAlt, FaChartLine, FaClipboardList,
-  FaUtensils, FaQrcode, FaUsers, FaTimesCircle, FaSyncAlt, FaBars, FaTimes,
-  FaCog, FaBell, FaInbox
+  FaUtensils, FaQrcode, FaUsers, FaPrint, FaDownload, FaCog, FaHistory, FaFileAlt, FaGlobe, FaChevronRight, FaFilter, FaToggleOn, FaToggleOff, FaBell, FaTimes, FaInbox, FaBars, FaTimesCircle, FaSyncAlt
 } from 'react-icons/fa'
 import { AnalyticsTab, OrderHistoryTab, MenuTab, QRTab, StaffTab, SupportTab } from './owner/OwnerTabComponents'
 import { Button } from '@/components/ui/button'
@@ -64,7 +63,7 @@ function requestPush() {
 
 // ── Profile Editor Modal ───────────────────────────────────────────────────────
 function ProfileModal({ open, restaurant, user, onClose, onSaved }) {
-  const [form, setForm] = useState({ name: restaurant?.name || '', logoUrl: restaurant?.logoUrl || '', address: restaurant?.address || '' })
+  const [form, setForm] = useState({ name: restaurant?.name || '', logoUrl: restaurant?.logoUrl || '', address: restaurant?.address || '', phone: restaurant?.phone || '' })
   const [saving, setSaving] = useState(false)
   const handleSubmit = async e => {
     e.preventDefault(); setSaving(true)
@@ -87,8 +86,13 @@ function ProfileModal({ open, restaurant, user, onClose, onSaved }) {
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="prof-name">Restaurant Name</Label>
-            <Input id="prof-name" required value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
+            <Label>Restaurant Name</Label>
+            <div className="flex h-10 w-full rounded-md border border-input bg-gray-50 px-3 py-2 text-sm text-gray-400 items-center gap-2 cursor-not-allowed">
+              <span className="flex-1 truncate">
+                {restaurant?.branchName && restaurant?.name ? `${restaurant.name} - ${restaurant.branchName}` : (restaurant?.branchName || restaurant?.name || '—')}
+              </span>
+              <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex-shrink-0">Read only</span>
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label>Email Address</Label>
@@ -98,8 +102,8 @@ function ProfileModal({ open, restaurant, user, onClose, onSaved }) {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="prof-logo">Logo URL</Label>
-            <Input id="prof-logo" placeholder="https://..." value={form.logoUrl} onChange={e => setForm(p => ({ ...p, logoUrl: e.target.value }))} />
+            <Label>Logo URL</Label>
+            <Input id="prof-logo" placeholder="https://..." value={form.logoUrl} readOnly className="bg-gray-50 text-gray-500 cursor-not-allowed" />
             {form.logoUrl && <img src={form.logoUrl} alt="" className="w-12 h-12 object-cover rounded-xl mt-2 border border-gray-100" onError={e => e.target.style.display = 'none'} />}
           </div>
           <div className="space-y-1.5">
@@ -107,11 +111,8 @@ function ProfileModal({ open, restaurant, user, onClose, onSaved }) {
             <Input id="prof-address" value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <Label>Phone Number</Label>
-            <div className="flex h-10 w-full rounded-md border border-input bg-gray-50 px-3 py-2 text-sm text-gray-400 items-center gap-2 cursor-not-allowed">
-              <span className="flex-1">{restaurant?.phone || '—'}</span>
-              <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex-shrink-0">Read only</span>
-            </div>
+            <Label htmlFor="prof-phone">Phone Number</Label>
+            <Input id="prof-phone" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
           </div>
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
@@ -159,7 +160,9 @@ function Sidebar({ activeTab, onChange, user, restaurant, logoError, onLogoError
               : <FaBuilding className="w-4 h-4 text-white" />}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-extrabold text-white text-sm leading-none truncate">{restaurant?.name || 'Restaurant'}</p>
+            <p className="font-extrabold text-white text-sm leading-none truncate">
+              {restaurant?.branchName && restaurant?.name ? `${restaurant.name} - ${restaurant.branchName}` : (restaurant?.branchName || restaurant?.name || 'Restaurant')}
+            </p>
             <p className="text-brand-400 text-[11px] font-semibold mt-0.5 uppercase tracking-wider">Owner Portal</p>
           </div>
           {onClose && (
@@ -294,7 +297,7 @@ export default function OwnerDashboardPage() {
     if (authLoading) return
     fetchOrders()
     api.get('/restaurant/mine').then(r => {
-      const d = { name: r.data.name, logoUrl: r.data.logoUrl, address: r.data.address, phone: r.data.phone }
+      const d = { name: r.data.name, branchName: r.data.branchName || null, logoUrl: r.data.logoUrl, address: r.data.address, phone: r.data.phone }
       setRestaurant(d); setLogoError(false)
       localStorage.setItem('owner_restaurant', JSON.stringify(d))
     }).catch(() => { })
@@ -355,7 +358,7 @@ export default function OwnerDashboardPage() {
         return next
       })
       sendPush('New Order!', `Table #${order.tableNumber} — Rs. ${order.totalPrice}`)
-      toast(`New Order — Table #${order.tableNumber}!`, {
+      toast(`New Order (Table ${order.tableNumber})!`, {
         icon: <FaBell className="w-4 h-4 text-brand-500" />,
         duration: 7000,
       })

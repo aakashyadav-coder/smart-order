@@ -22,12 +22,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import {
   FaBuilding, FaSignOutAlt, FaChartLine, FaClipboardList,
   FaUsers, FaStore, FaBars, FaTimes, FaLayerGroup,
   FaChevronDown, FaEdit, FaTrash, FaCheckCircle, FaTimesCircle, FaCog,
   FaChartBar, FaFileAlt, FaHistory, FaLock, FaPlus, FaDownload, FaPrint,
-  FaToggleOn, FaToggleOff, FaFilter
+  FaToggleOn, FaToggleOff, FaFilter, FaBell
 } from 'react-icons/fa'
 import { Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
@@ -37,26 +38,22 @@ const BRANCH_COLORS = [
   '#3b82f6', '#f59e0b', '#ec4899', '#10b981', '#6366f1'
 ]
 
-// ── Nav config ─────────────────────────────────────────────────────────────────
 const NAV_GROUPS_CENTRAL = [
   {
     label: 'Navigation',
     items: [
-      { id: 'overview',  label: 'Overview',     icon: FaChartLine,     shortcut: 'O' },
-      { id: 'sales',     label: 'Branch Sales', icon: TrendingUp,      shortcut: 'S' },
-      { id: 'orders',    label: 'Live Orders',  icon: FaClipboardList, shortcut: 'L' },
-      { id: 'branches',  label: 'My Branches',  icon: FaStore,         shortcut: 'B' },
-      { id: 'staff',     label: 'Staff',        icon: FaUsers,         shortcut: 'T' },
+      { id: 'overview', label: 'Overview', icon: FaChartLine, shortcut: 'O' },
+      { id: 'sales', label: 'Branch Sales', icon: TrendingUp, shortcut: 'S' },
+      { id: 'orders', label: 'Live Orders', icon: FaClipboardList, shortcut: 'L' },
+      { id: 'branches', label: 'My Branches', icon: FaStore, shortcut: 'B' },
+      { id: 'staff', label: 'Staff', icon: FaUsers, shortcut: 'T' },
     ],
   },
   {
     label: 'Management',
     items: [
-      { id: 'analytics_adv', label: 'Analytics+',   icon: FaChartBar,  shortcut: 'A' },
-      { id: 'manage_branches', label: 'Manage Branches', icon: FaStore, shortcut: 'M' },
-      { id: 'reports',       label: 'Reports',      icon: FaFileAlt,   shortcut: 'R' },
-      { id: 'audit',         label: 'Audit Log',    icon: FaHistory,   shortcut: 'U' },
-      { id: 'permissions',   label: 'Permissions',  icon: FaLock,      shortcut: 'P' },
+      { id: 'reports', label: 'Reports', icon: FaFileAlt, shortcut: 'R' },
+      { id: 'audit', label: 'Audit Log', icon: FaHistory, shortcut: 'U' },
     ],
   },
 ]
@@ -67,7 +64,7 @@ const NAV_ITEMS = NAV_GROUPS_CENTRAL.flatMap(g => g.items)
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function fmtRs(v) {
   if (v >= 100000) return `Rs. ${(v / 100000).toFixed(1)}L`
-  if (v >= 1000)   return `Rs. ${(v / 1000).toFixed(1)}K`
+  if (v >= 1000) return `Rs. ${(v / 1000).toFixed(1)}K`
   return `Rs. ${(v || 0).toLocaleString()}`
 }
 function fmtDate(d) {
@@ -83,11 +80,10 @@ function KpiCard({ label, value, sub, icon: Icon, iconBg, trend }) {
           <Icon className="w-5 h-5 text-white" />
         </div>
         {trend != null && (
-          <span className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 ${
-            trend > 0 ? 'bg-green-50 text-green-700' :
+          <span className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 ${trend > 0 ? 'bg-green-50 text-green-700' :
             trend < 0 ? 'bg-red-50 text-red-600' :
-            'bg-gray-50 text-gray-500'
-          }`}>
+              'bg-gray-50 text-gray-500'
+            }`}>
             {trend > 0 ? <TrendingUp className="w-3 h-3" /> : trend < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
             {Math.abs(trend)}%
           </span>
@@ -102,12 +98,12 @@ function KpiCard({ label, value, sub, icon: Icon, iconBg, trend }) {
 
 // ── Status badge helper ────────────────────────────────────────────────────────
 const STATUS_STYLES = {
-  PENDING:   'bg-amber-50 text-amber-700 border-amber-200',
-  ACCEPTED:  'bg-blue-50 text-blue-700 border-blue-200',
-  PREPARING: 'bg-purple-50 text-purple-700 border-purple-200',
-  SERVED:    'bg-green-50 text-green-700 border-green-200',
+  PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
+  ACCEPTED: 'bg-blue-50 text-blue-700 border-blue-200',
+  PREPARING: 'bg-brand-50 text-brand-700 border-brand-200',
+  SERVED: 'bg-green-50 text-green-700 border-green-200',
   CANCELLED: 'bg-red-50 text-red-600 border-red-200',
-  PAID:      'bg-emerald-50 text-emerald-700 border-emerald-200',
+  PAID: 'bg-green-50 text-green-700 border-green-200',
 }
 
 // ── Sidebar component ──────────────────────────────────────────────────────────
@@ -147,7 +143,7 @@ function Sidebar({ activeTab, onChange, user, pendingCount, onLogout, onProfile,
                     className={`group relative w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-150 ${isActive
                       ? 'bg-white/[0.10] text-white'
                       : 'text-gray-400 hover:text-white hover:bg-white/[0.06]'
-                    }`}>
+                      }`}>
                     {isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-brand-400 rounded-r-full" />}
                     <Icon className={`flex-shrink-0 transition-colors ${isActive ? 'text-brand-400' : 'text-gray-500 group-hover:text-gray-300'}`} style={{ width: 16, height: 16 }} />
                     <span className="flex-1 text-left">{label}</span>
@@ -194,52 +190,22 @@ function Sidebar({ activeTab, onChange, user, pendingCount, onLogout, onProfile,
 
 // ── Overview Tab ──────────────────────────────────────────────────────────────
 function OverviewTab({ summary, branches }) {
-  if (!summary) return <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-violet-500 w-8 h-8" /></div>
+  if (!summary) return <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-brand-500 w-8 h-8" /></div>
   return (
     <div className="space-y-6">
       {/* KPI grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Total Revenue" value={fmtRs(summary.totalRevenue)} sub={`Today: ${fmtRs(summary.todayRevenue)}`} icon={TrendingUp} iconBg="bg-gradient-to-br from-violet-500 to-purple-700" />
+        <KpiCard label="Total Revenue" value={fmtRs(summary.totalRevenue)} sub={`Today: ${fmtRs(summary.todayRevenue)}`} icon={TrendingUp} iconBg="bg-gradient-to-br from-brand-500 to-brand-700" />
         <KpiCard label="Live Orders" value={summary.pendingOrders} sub="Currently pending" icon={FaClipboardList} iconBg="bg-gradient-to-br from-amber-500 to-orange-600" />
-        <KpiCard label="Active Branches" value={`${summary.activeBranches} / ${summary.branchCount}`} sub="Online now" icon={FaStore} iconBg="bg-gradient-to-br from-emerald-500 to-teal-600" />
+        <KpiCard label="Active Branches" value={`${summary.activeBranches} / ${summary.branchCount}`} sub="Online now" icon={FaStore} iconBg="bg-gradient-to-br from-green-500 to-teal-600" />
         <KpiCard label="Total Staff" value={summary.totalStaff} sub="Kitchen + Owners" icon={FaUsers} iconBg="bg-gradient-to-br from-blue-500 to-indigo-600" />
       </div>
 
-      {/* Branch cards */}
-      <div>
-        <h2 className="font-extrabold text-gray-900 text-base mb-3 flex items-center gap-2">
-          <FaStore className="text-violet-500 w-4 h-4" /> My Branches
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {branches.map((b, i) => (
-            <div key={b.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: BRANCH_COLORS[i % BRANCH_COLORS.length] + '22' }}>
-                  <FaBuilding style={{ color: BRANCH_COLORS[i % BRANCH_COLORS.length] }} className="w-4 h-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-extrabold text-gray-900 text-sm truncate">{b.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{b.address || 'No address'}</p>
-                </div>
-                <span className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${b.active ? 'bg-green-400' : 'bg-gray-300'}`} />
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="bg-gray-50 rounded-xl p-2">
-                  <p className="font-extrabold text-gray-900 text-sm">{fmtRs(b.totalRevenue)}</p>
-                  <p className="text-[10px] text-gray-400 font-semibold">Revenue</p>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-2">
-                  <p className="font-extrabold text-gray-900 text-sm">{b.todayOrders}</p>
-                  <p className="text-[10px] text-gray-400 font-semibold">Today</p>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-2">
-                  <p className="font-extrabold text-gray-900 text-sm">{b._count?.users || 0}</p>
-                  <p className="text-[10px] text-gray-400 font-semibold">Staff</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+
+
+      {/* Analytics embedded */}
+      <div className="pt-6 border-t border-gray-100 mt-6">
+        <AdvancedAnalyticsTab branches={branches} />
       </div>
     </div>
   )
@@ -247,7 +213,7 @@ function OverviewTab({ summary, branches }) {
 
 // ── Branch Sales Tab ──────────────────────────────────────────────────────────
 function BranchSalesTab({ branches }) {
-  const [range, setRange] = useState('30d')
+  const [range, setRange] = useState('24h')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
 
@@ -265,22 +231,29 @@ function BranchSalesTab({ branches }) {
   const chartData = useMemo(() => {
     if (!data) return []
     return data.labels.map((label, i) => {
-      const point = { label }
+      let formattedLabel = label;
+      if (range === '24h' && typeof label === 'string' && label.includes(':00')) {
+        const hr = parseInt(label.split(':')[0], 10);
+        const ampm = hr >= 12 ? 'PM' : 'AM';
+        const h12 = hr % 12 || 12;
+        formattedLabel = `${h12} ${ampm}`;
+      }
+      const point = { label: formattedLabel }
       data.branches.forEach(b => { point[b.name] = b.revenue[i] })
       return point
     })
-  }, [data])
+  }, [data, range])
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="font-extrabold text-gray-900 text-base flex items-center gap-2">
-          <TrendingUp className="text-violet-500 w-4 h-4" /> Branch-wise Revenue
+          <TrendingUp className="text-brand-500 w-4 h-4" /> Branch-wise Revenue
         </h2>
         <div className="flex gap-2">
           {['24h', '30d', '6m'].map(r => (
             <button key={r} onClick={() => setRange(r)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${range === r ? 'bg-violet-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${range === r ? 'bg-brand-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
               {r === '24h' ? '24 Hours' : r === '30d' ? '30 Days' : '6 Months'}
             </button>
           ))}
@@ -289,7 +262,7 @@ function BranchSalesTab({ branches }) {
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="animate-spin text-violet-500 w-8 h-8" />
+          <Loader2 className="animate-spin text-brand-500 w-8 h-8" />
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
@@ -339,8 +312,10 @@ function BranchSalesTab({ branches }) {
             {data.branches.map((b, i) => (
               <div key={b.id} className="flex items-center gap-4 px-5 py-3">
                 <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: BRANCH_COLORS[i % BRANCH_COLORS.length] }} />
-                <span className="font-semibold text-gray-900 text-sm flex-1 truncate">{b.name}</span>
-                <span className="font-extrabold text-violet-600 text-sm">{fmtRs(b.totalRevenue)}</span>
+                <span className="font-semibold text-gray-900 text-sm flex-1 truncate">
+                  {b.branchName ? `${b.name} - ${b.branchName}` : b.name}
+                </span>
+                <span className="font-extrabold text-brand-600 text-sm">{fmtRs(b.totalRevenue)}</span>
               </div>
             ))}
           </div>
@@ -367,7 +342,7 @@ function LiveOrdersTab({ orders, loading, branches }) {
     <div className="space-y-5">
       <div className="flex items-center gap-3 flex-wrap">
         <h2 className="font-extrabold text-gray-900 text-base flex items-center gap-2 flex-1">
-          <FaClipboardList className="text-violet-500 w-4 h-4" /> Live Orders
+          <FaClipboardList className="text-brand-500 w-4 h-4" /> Live Orders
           {orders.filter(o => o.status === 'PENDING').length > 0 && (
             <span className="relative flex h-5 w-auto px-2 items-center justify-center">
               <span className="animate-ping absolute inset-0 rounded-full bg-amber-400 opacity-40" />
@@ -378,23 +353,31 @@ function LiveOrdersTab({ orders, loading, branches }) {
           )}
         </h2>
         {/* Branch filter */}
-        <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)}
-          className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-violet-400">
-          <option value="all">All Branches</option>
-          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
+        <Select value={branchFilter} onValueChange={setBranchFilter}>
+          <SelectTrigger className="w-[180px] bg-white rounded-xl border-gray-200 h-9 font-semibold text-gray-700 text-sm">
+            <SelectValue placeholder="All Branches" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Branches</SelectItem>
+            {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
         {/* Status filter */}
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-violet-400">
-          <option value="all">All Statuses</option>
-          {['PENDING','ACCEPTED','PREPARING','SERVED','PAID','CANCELLED'].map(s => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[150px] bg-white rounded-xl border-gray-200 h-9 font-semibold text-gray-700 text-sm">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {['PENDING', 'ACCEPTED', 'PREPARING', 'SERVED', 'PAID', 'CANCELLED'].map(s => (
+              <SelectItem key={s} value={s}>{s}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-violet-500 w-8 h-8" /></div>
+        <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-brand-500 w-8 h-8" /></div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-48 text-gray-400">
           <FaClipboardList className="w-12 h-12 mb-3 opacity-20" />
@@ -411,7 +394,7 @@ function LiveOrdersTab({ orders, loading, branches }) {
                     {order.status}
                   </span>
                   <span className="text-[11px] text-gray-400 font-semibold">
-                    {order.restaurant?.name}
+                    {order.restaurant?.branchName ? `${order.restaurant.name} - ${order.restaurant.branchName}` : (order.restaurant?.name || 'Unknown')}
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 truncate">
@@ -420,7 +403,7 @@ function LiveOrdersTab({ orders, loading, branches }) {
                 <p className="text-[11px] text-gray-400 mt-1">{fmtDate(order.createdAt)}</p>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="font-extrabold text-violet-700 text-sm">{fmtRs(order.discountedTotal ?? order.totalPrice)}</p>
+                <p className="font-extrabold text-brand-700 text-sm">{fmtRs(order.discountedTotal ?? order.totalPrice)}</p>
                 <p className="text-[11px] text-gray-400">{order.phone}</p>
               </div>
             </div>
@@ -436,10 +419,10 @@ function BranchesTab({ branches, loading }) {
   return (
     <div className="space-y-5">
       <h2 className="font-extrabold text-gray-900 text-base flex items-center gap-2">
-        <FaStore className="text-violet-500 w-4 h-4" /> My Branches ({branches.length})
+        <FaStore className="text-brand-500 w-4 h-4" /> My Branches ({branches.length})
       </h2>
       {loading ? (
-        <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-violet-500 w-8 h-8" /></div>
+        <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-brand-500 w-8 h-8" /></div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {branches.map((b, i) => (
@@ -450,12 +433,12 @@ function BranchesTab({ branches, loading }) {
                 <div className="flex items-start gap-3 mb-4">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: BRANCH_COLORS[i % BRANCH_COLORS.length] + '18' }}>
                     {b.logoUrl
-                      ? <img src={b.logoUrl} alt="" className="w-full h-full rounded-xl object-cover" onError={e => e.target.style.display='none'} />
+                      ? <img src={b.logoUrl} alt="" className="w-full h-full rounded-xl object-cover" onError={e => e.target.style.display = 'none'} />
                       : <FaBuilding style={{ color: BRANCH_COLORS[i % BRANCH_COLORS.length] }} className="w-5 h-5" />
                     }
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-extrabold text-gray-900 text-sm truncate">{b.name}</p>
+                    <p className="font-extrabold text-gray-900 text-sm truncate">{b.branchName ? `${b.name} - ${b.branchName}` : b.name}</p>
                     <p className="text-xs text-gray-400 mt-0.5 truncate">{b.address || 'No address set'}</p>
                     <p className="text-xs text-gray-400">{b.phone || ''}</p>
                   </div>
@@ -477,7 +460,7 @@ function BranchesTab({ branches, loading }) {
                   ))}
                 </div>
                 {b.cuisineType && (
-                  <p className="text-[11px] text-violet-600 font-semibold mt-3 bg-violet-50 rounded-lg px-2 py-1 inline-block">
+                  <p className="text-[11px] text-brand-600 font-semibold mt-3 bg-brand-50 rounded-lg px-2 py-1 inline-block">
                     {b.cuisineType}
                   </p>
                 )}
@@ -542,7 +525,7 @@ function EditStaffModal({ member, onClose, onSaved }) {
           </div>
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={saving} className="flex-1 bg-violet-600 hover:bg-violet-700">
+            <Button type="submit" disabled={saving} className="flex-1 bg-brand-600 hover:bg-brand-700">
               {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : 'Save Changes'}
             </Button>
           </div>
@@ -573,7 +556,7 @@ function StaffTab({ branches }) {
 
   const filtered = useMemo(() =>
     branchFilter === 'all' ? staff : staff.filter(s => s.restaurantId === branchFilter)
-  , [staff, branchFilter])
+    , [staff, branchFilter])
 
   const handleDelete = async id => {
     try {
@@ -585,7 +568,7 @@ function StaffTab({ branches }) {
   }
 
   const ROLE_COLORS = {
-    OWNER: 'bg-violet-50 text-violet-700',
+    OWNER: 'bg-brand-50 text-brand-700',
     ADMIN: 'bg-blue-50 text-blue-700',
     KITCHEN: 'bg-amber-50 text-amber-700',
   }
@@ -594,17 +577,21 @@ function StaffTab({ branches }) {
     <div className="space-y-5">
       <div className="flex items-center gap-3 flex-wrap">
         <h2 className="font-extrabold text-gray-900 text-base flex items-center gap-2 flex-1">
-          <FaUsers className="text-violet-500 w-4 h-4" /> All Staff ({filtered.length})
+          <FaUsers className="text-brand-500 w-4 h-4" /> All Staff ({filtered.length})
         </h2>
-        <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)}
-          className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-violet-400">
-          <option value="all">All Branches</option>
-          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
+        <Select value={branchFilter} onValueChange={setBranchFilter}>
+          <SelectTrigger className="w-[180px] bg-white rounded-xl border-gray-200 h-9 font-semibold text-gray-700 text-sm">
+            <SelectValue placeholder="All Branches" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Branches</SelectItem>
+            {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-violet-500 w-8 h-8" /></div>
+        <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-brand-500 w-8 h-8" /></div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-48 text-gray-400">
           <FaUsers className="w-12 h-12 mb-3 opacity-20" />
@@ -626,7 +613,7 @@ function StaffTab({ branches }) {
                   <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-400 to-purple-600 flex items-center justify-center flex-shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center flex-shrink-0">
                           <span className="text-white text-[10px] font-extrabold">{s.name[0]?.toUpperCase()}</span>
                         </div>
                         <span className="font-semibold text-gray-900 truncate max-w-[100px]">{s.name}</span>
@@ -651,8 +638,8 @@ function StaffTab({ branches }) {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <button onClick={() => setEditing(s)}
-                          className="w-7 h-7 rounded-lg bg-violet-50 hover:bg-violet-100 flex items-center justify-center transition-colors">
-                          <FaEdit className="w-3 h-3 text-violet-600" />
+                          className="w-7 h-7 rounded-lg bg-brand-50 hover:bg-brand-100 flex items-center justify-center transition-colors">
+                          <FaEdit className="w-3 h-3 text-brand-600" />
                         </button>
                         <button onClick={() => setDeleting(s)}
                           className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors">
@@ -728,11 +715,16 @@ function AdvancedAnalyticsTab({ branches }) {
       api.get(`/central/analytics/best-sellers${q}`),
       api.get(`/central/analytics/staff-performance`),
     ]).then(([ph, bs, sp]) => {
-      setPeakData(ph.data.data || [])
+      setPeakData((ph.data.data || []).map(d => {
+        const hr = d.hour;
+        const ampm = hr >= 12 ? 'PM' : 'AM';
+        const h12 = hr % 12 || 12;
+        return { ...d, label: `${h12} ${ampm}` };
+      }))
       setBestSellers(bs.data.data || [])
       setStaffPerf(sp.data.data || [])
     }).catch(() => toast.error('Failed to load analytics'))
-    .finally(() => setLoading(false))
+      .finally(() => setLoading(false))
   }, [branchFilter])
 
   const maxPeak = Math.max(...peakData.map(h => h.count), 1)
@@ -750,11 +742,15 @@ function AdvancedAnalyticsTab({ branches }) {
           <FaChartBar className="text-brand-500 w-4 h-4" /> Advanced Analytics
           <span className="text-xs font-normal text-gray-400">(last 30 days)</span>
         </h2>
-        <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)}
-          className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-brand-400">
-          <option value="all">All Branches</option>
-          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
+        <Select value={branchFilter} onValueChange={setBranchFilter}>
+          <SelectTrigger className="w-[180px] bg-white rounded-xl border-gray-200 h-9 font-semibold text-gray-700 text-sm">
+            <SelectValue placeholder="All Branches" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Branches</SelectItem>
+            {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Peak Hours Heatmap */}
@@ -763,25 +759,15 @@ function AdvancedAnalyticsTab({ branches }) {
           <span className="w-2 h-2 bg-brand-500 rounded-full" /> Peak Hours Heatmap
           <span className="text-xs text-gray-400 font-normal">— Order activity by hour of day</span>
         </p>
-        <div className="flex items-end gap-1 h-28">
-          {peakData.map(h => {
-            const pct = (h.count / maxPeak) * 100
-            const intensity = pct > 75 ? 'bg-brand-600' : pct > 50 ? 'bg-brand-400' : pct > 25 ? 'bg-brand-200' : 'bg-gray-100'
-            return (
-              <div key={h.hour} className="flex-1 flex flex-col items-center gap-1">
-                <div className={`w-full rounded-t-md transition-all ${intensity}`} style={{ height: `${Math.max(8, pct)}%` }} title={`${h.label}: ${h.count} orders`} />
-                {h.hour % 3 === 0 && <span className="text-[9px] text-gray-400 font-mono">{String(h.hour).padStart(2,'0')}</span>}
-              </div>
-            )
-          })}
-        </div>
-        <div className="flex items-center gap-3 mt-3 flex-wrap">
-          {[['bg-brand-600','High (75%+)'],['bg-brand-400','Medium'],['bg-brand-200','Low'],['bg-gray-100','Quiet']].map(([cls,lbl]) => (
-            <span key={lbl} className="flex items-center gap-1.5 text-[10px] text-gray-500 font-semibold">
-              <span className={`w-3 h-3 rounded-sm ${cls}`} />{lbl}
-            </span>
-          ))}
-        </div>
+        <ChartContainer config={{ count: { label: "Orders", color: "#e11d48" } }} className="h-64 w-full mt-4">
+          <BarChart data={peakData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+            <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca3af' }} />
+            <ChartTooltip cursor={{ fill: 'rgba(0,0,0,0.04)' }} content={<ChartTooltipContent />} />
+            <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ChartContainer>
       </div>
 
       {/* Best Sellers */}
@@ -795,7 +781,7 @@ function AdvancedAnalyticsTab({ branches }) {
           <div className="space-y-2">
             {bestSellers.map((b, i) => (
               <div key={b.menuItemId} className="flex items-center gap-3">
-                <span className="text-[11px] font-black text-gray-400 w-5 flex-shrink-0">#{i+1}</span>
+                <span className="text-[11px] font-black text-gray-400 w-5 flex-shrink-0">#{i + 1}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-semibold text-gray-900 truncate">{b.item.name}</span>
@@ -817,7 +803,7 @@ function AdvancedAnalyticsTab({ branches }) {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
           <p className="font-bold text-gray-900 text-sm flex items-center gap-2">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full" /> Staff Overview
+            <span className="w-2 h-2 bg-green-500 rounded-full" /> Staff Overview
             <span className="text-xs text-gray-400 font-normal">— Branch throughput (last 30 days)</span>
           </p>
         </div>
@@ -855,7 +841,7 @@ function AdvancedAnalyticsTab({ branches }) {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="w-20 bg-gray-100 rounded-full h-1.5">
-                        <div className="h-1.5 rounded-full bg-emerald-500" style={{ width: `${Math.min(100, (s.branchOrders / 100) * 100)}%` }} />
+                        <div className="h-1.5 rounded-full bg-green-500" style={{ width: `${Math.min(100, (s.branchOrders / 100) * 100)}%` }} />
                       </div>
                       <span className="text-xs font-bold text-gray-700">{s.branchOrders}</span>
                     </div>
@@ -871,158 +857,7 @@ function AdvancedAnalyticsTab({ branches }) {
   )
 }
 
-// ── Add/Edit Branch Modal ──────────────────────────────────────────────────────
-function AddEditBranchModal({ branch, onClose, onSaved }) {
-  const isEdit = !!branch?.id
-  const [form, setForm] = useState({
-    name: branch?.name || '', address: branch?.address || '',
-    phone: branch?.phone || '', logoUrl: branch?.logoUrl || '',
-    cuisineType: branch?.cuisineType || '', tableCount: branch?.tableCount || '',
-  })
-  const [saving, setSaving] = useState(false)
-  const set = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }))
 
-  const handleSubmit = async (e) => {
-    e.preventDefault(); setSaving(true)
-    try {
-      const res = isEdit
-        ? await api.put(`/central/branches/${branch.id}`, form)
-        : await api.post('/central/branches', form)
-      onSaved(res.data, isEdit)
-      toast.success(isEdit ? 'Branch updated!' : 'Branch created!')
-      onClose()
-    } catch (err) { toast.error(err.message || 'Failed to save branch') }
-    finally { setSaving(false) }
-  }
-
-  return (
-    <Dialog open onOpenChange={v => { if (!v) onClose() }}>
-      <DialogContent className="max-w-md p-0 overflow-hidden rounded-3xl">
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-5 text-white">
-          <DialogTitle className="font-extrabold text-base text-white">{isEdit ? 'Edit Branch' : 'Add New Branch'}</DialogTitle>
-          <p className="text-gray-400 text-sm mt-0.5">{isEdit ? 'Update branch information' : 'Create a new branch under your account'}</p>
-        </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 space-y-1.5">
-              <Label>Branch Name *</Label>
-              <Input required value={form.name} onChange={set('name')} placeholder="e.g. Kalimati Branch" className="rounded-xl" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Phone</Label>
-              <Input value={form.phone} onChange={set('phone')} placeholder="9800000000" className="rounded-xl" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Cuisine Type</Label>
-              <Input value={form.cuisineType} onChange={set('cuisineType')} placeholder="Nepali, Indian…" className="rounded-xl" />
-            </div>
-            <div className="col-span-2 space-y-1.5">
-              <Label>Address</Label>
-              <Input value={form.address} onChange={set('address')} placeholder="Street, City" className="rounded-xl" />
-            </div>
-            <div className="col-span-2 space-y-1.5">
-              <Label>Logo URL</Label>
-              <Input value={form.logoUrl} onChange={set('logoUrl')} placeholder="https://..." className="rounded-xl" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Table Count</Label>
-              <Input type="number" min="1" value={form.tableCount} onChange={set('tableCount')} placeholder="e.g. 20" className="rounded-xl" />
-            </div>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" className="flex-1 rounded-xl" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={saving} className="flex-1 bg-brand-600 hover:bg-brand-700 text-white rounded-xl">
-              {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : isEdit ? 'Save Changes' : 'Create Branch'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// ── Manage Branches Tab ────────────────────────────────────────────────────────
-function ManageBranchesTab({ branches: initialBranches, onBranchesChange }) {
-  const [branches, setBranches] = useState(initialBranches)
-  const [modalBranch, setModalBranch] = useState(null) // null=closed, {}=new, obj=edit
-  const [toggling, setToggling] = useState(null)
-
-  useEffect(() => { setBranches(initialBranches) }, [initialBranches])
-
-  const handleSaved = (saved, isEdit) => {
-    const updated = isEdit ? branches.map(b => b.id === saved.id ? { ...b, ...saved } : b) : [...branches, { ...saved, totalRevenue: 0, todayOrders: 0, _count: { users: 0, orders: 0, menuItems: 0 } }]
-    setBranches(updated); onBranchesChange?.(updated)
-  }
-
-  const handleToggle = async (branch) => {
-    setToggling(branch.id)
-    try {
-      const res = await api.patch(`/central/branches/${branch.id}/toggle`)
-      const updated = branches.map(b => b.id === branch.id ? { ...b, active: res.data.active } : b)
-      setBranches(updated); onBranchesChange?.(updated)
-      toast.success(`Branch ${res.data.active ? 'activated' : 'deactivated'}`)
-    } catch { toast.error('Failed to toggle branch') }
-    finally { setToggling(null) }
-  }
-
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="font-extrabold text-gray-900 text-base flex items-center gap-2">
-          <FaStore className="text-brand-500 w-4 h-4" /> Manage Branches ({branches.length})
-        </h2>
-        <Button onClick={() => setModalBranch({})} className="bg-brand-600 hover:bg-brand-700 text-white rounded-xl gap-2 text-sm h-9">
-          <FaPlus className="w-3 h-3" /> Add Branch
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        {branches.map((b, i) => (
-          <div key={b.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-all duration-200">
-            <div className="h-2" style={{ background: BRANCH_COLORS[i % BRANCH_COLORS.length] }} />
-            <div className="p-5">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: BRANCH_COLORS[i % BRANCH_COLORS.length] + '18' }}>
-                  {b.logoUrl ? <img src={b.logoUrl} alt="" className="w-full h-full rounded-xl object-cover" onError={e => e.target.style.display='none'} />
-                    : <FaBuilding style={{ color: BRANCH_COLORS[i % BRANCH_COLORS.length] }} className="w-5 h-5" />}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-extrabold text-gray-900 text-sm truncate">{b.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5 truncate">{b.address || 'No address set'}</p>
-                  {b.cuisineType && <p className="text-[10px] text-brand-600 font-bold mt-0.5">{b.cuisineType}</p>}
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-center mb-4">
-                {[{ l: 'Revenue', v: `Rs.${((b.totalRevenue||0)/1000).toFixed(1)}K` }, { l: 'Orders', v: b._count?.orders||0 }, { l: 'Staff', v: b._count?.users||0 }].map(({ l, v }) => (
-                  <div key={l} className="bg-gray-50 rounded-xl py-2">
-                    <p className="font-extrabold text-gray-900 text-xs">{v}</p>
-                    <p className="text-[9px] text-gray-400 font-bold">{l}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setModalBranch(b)}
-                  className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors">
-                  <FaEdit className="w-3 h-3" /> Edit
-                </button>
-                <button onClick={() => handleToggle(b)} disabled={toggling === b.id}
-                  className={`flex-1 flex items-center justify-center gap-1.5 h-8 rounded-xl text-xs font-bold transition-colors ${b.active ? 'bg-green-50 hover:bg-red-50 text-green-700 hover:text-red-600' : 'bg-red-50 hover:bg-green-50 text-red-600 hover:text-green-700'}`}>
-                  {toggling === b.id ? <Loader2 className="w-3 h-3 animate-spin" /> : b.active ? <><FaToggleOn className="w-3.5 h-3.5" />Active</> : <><FaToggleOff className="w-3.5 h-3.5" />Inactive</>}
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {modalBranch !== null && (
-        <AddEditBranchModal branch={modalBranch?.id ? modalBranch : null} onClose={() => setModalBranch(null)} onSaved={handleSaved} />
-      )}
-    </div>
-  )
-}
-
-// ── Reports Tab ────────────────────────────────────────────────────────────────
 function ReportsTab({ branches }) {
   const todayStr = new Date().toISOString().slice(0, 10)
   const thirtyAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
@@ -1091,11 +926,15 @@ function ReportsTab({ branches }) {
           </div>
           <div className="space-y-1">
             <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Branch</Label>
-            <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-brand-400 bg-white">
-              <option value="all">All Branches</option>
-              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
+            <Select value={branchFilter} onValueChange={setBranchFilter}>
+              <SelectTrigger className="w-[180px] bg-white rounded-xl border-gray-200 h-10 font-semibold text-gray-700 text-sm">
+                <SelectValue placeholder="All Branches" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Branches</SelectItem>
+                {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <Button onClick={fetchReport} disabled={loading} className="bg-brand-600 hover:bg-brand-700 text-white rounded-xl gap-2 h-10">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FaFilter className="w-3 h-3" />} Generate
@@ -1109,8 +948,8 @@ function ReportsTab({ branches }) {
           {[
             { label: 'Total Orders', value: data.summary.totalOrders, color: 'bg-blue-50 text-blue-700' },
             { label: 'Paid Orders', value: data.summary.paidOrders, color: 'bg-green-50 text-green-700' },
-            { label: 'Total Revenue', value: `Rs. ${(data.summary.totalRevenue||0).toLocaleString()}`, color: 'bg-brand-50 text-brand-700' },
-            { label: 'GST (5%)', value: `Rs. ${(data.summary.gstAmount||0).toLocaleString()}`, color: 'bg-amber-50 text-amber-700' },
+            { label: 'Total Revenue', value: `Rs. ${(data.summary.totalRevenue || 0).toLocaleString()}`, color: 'bg-brand-50 text-brand-700' },
+            { label: 'GST (5%)', value: `Rs. ${(data.summary.gstAmount || 0).toLocaleString()}`, color: 'bg-amber-50 text-amber-700' },
           ].map(({ label, value, color }) => (
             <div key={label} className={`rounded-2xl p-4 font-bold ${color}`}>
               <p className="text-2xl font-extrabold leading-none mb-1">{value}</p>
@@ -1168,10 +1007,10 @@ function ReportsTab({ branches }) {
 
 // ── Audit Log Tab ──────────────────────────────────────────────────────────────
 const ACTION_STYLES = {
-  BRANCH_CREATED:    'bg-green-50 text-green-700 border-green-200',
-  BRANCH_UPDATED:    'bg-blue-50 text-blue-700 border-blue-200',
-  BRANCH_ACTIVATED:  'bg-emerald-50 text-emerald-700 border-emerald-200',
-  BRANCH_DEACTIVATED:'bg-red-50 text-red-600 border-red-200',
+  BRANCH_CREATED: 'bg-green-50 text-green-700 border-green-200',
+  BRANCH_UPDATED: 'bg-blue-50 text-blue-700 border-blue-200',
+  BRANCH_ACTIVATED: 'bg-green-50 text-green-700 border-green-200',
+  BRANCH_DEACTIVATED: 'bg-red-50 text-red-600 border-red-200',
   STAFF_UPDATED_BY_CENTRAL_ADMIN: 'bg-amber-50 text-amber-700 border-amber-200',
   STAFF_DELETED_BY_CENTRAL_ADMIN: 'bg-red-50 text-red-600 border-red-200',
 }
@@ -1182,12 +1021,12 @@ function AuditLogTab() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
-  const [actionFilter, setActionFilter] = useState('')
+  const [actionFilter, setActionFilter] = useState('all')
 
   const fetchLogs = useCallback(async (pg = 1) => {
     setLoading(true)
     try {
-      const q = new URLSearchParams({ page: pg, limit: 20, ...(actionFilter && { action: actionFilter }) })
+      const q = new URLSearchParams({ page: pg, limit: 20, ...(actionFilter && actionFilter !== 'all' && { action: actionFilter }) })
       const res = await api.get(`/central/audit-log?${q}`)
       setLogs(res.data.data); setTotal(res.data.total)
       setPage(res.data.page); setTotalPages(res.data.totalPages)
@@ -1197,7 +1036,7 @@ function AuditLogTab() {
 
   useEffect(() => { fetchLogs(1) }, [fetchLogs])
 
-  const ACTION_LABELS = ['', 'BRANCH_CREATED','BRANCH_UPDATED','BRANCH_ACTIVATED','BRANCH_DEACTIVATED','STAFF_UPDATED_BY_CENTRAL_ADMIN','STAFF_DELETED_BY_CENTRAL_ADMIN']
+  const ACTION_LABELS = ['all', 'BRANCH_CREATED', 'BRANCH_UPDATED', 'BRANCH_ACTIVATED', 'BRANCH_DEACTIVATED', 'STAFF_UPDATED_BY_CENTRAL_ADMIN', 'STAFF_DELETED_BY_CENTRAL_ADMIN']
 
   return (
     <div className="space-y-5">
@@ -1206,10 +1045,14 @@ function AuditLogTab() {
           <FaHistory className="text-brand-500 w-4 h-4" /> Audit Log
           <span className="text-xs text-gray-400 font-normal">({total} entries)</span>
         </h2>
-        <select value={actionFilter} onChange={e => setActionFilter(e.target.value)}
-          className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-brand-400">
-          {ACTION_LABELS.map(a => <option key={a} value={a}>{a || 'All Actions'}</option>)}
-        </select>
+        <Select value={actionFilter} onValueChange={setActionFilter}>
+          <SelectTrigger className="w-[180px] bg-white rounded-xl border-gray-200 h-9 font-semibold text-gray-700 text-sm">
+            <SelectValue placeholder="All Actions" />
+          </SelectTrigger>
+          <SelectContent>
+            {ACTION_LABELS.map(a => <SelectItem key={a} value={a}>{a === 'all' ? 'All Actions' : a}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       {loading ? (
@@ -1264,123 +1107,74 @@ function AuditLogTab() {
   )
 }
 
-// ── Permissions Tab ────────────────────────────────────────────────────────────
-function PermissionsTab({ branches }) {
-  const [staff, setStaff] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(null)
-  const [branchFilter, setBranchFilter] = useState('all')
 
-  useEffect(() => {
-    setLoading(true)
-    const q = branchFilter !== 'all' ? `?branchId=${branchFilter}` : ''
-    api.get(`/central/staff${q}`)
-      .then(r => setStaff(r.data))
-      .catch(() => toast.error('Failed to load staff'))
-      .finally(() => setLoading(false))
-  }, [branchFilter])
+// ── Profile Edit Form ──────────────────────────────────────────────────────────
+function ProfileEditForm({ user, onSaved, onClose }) {
+  const [name, setName] = useState(user?.name || '')
+  const [saving, setSaving] = useState(false)
 
-  const updateField = async (id, field, value) => {
-    setSaving(id)
+  const handleSubmit = async e => {
+    e.preventDefault()
+    if (!name.trim()) return toast.error('Full name cannot be empty')
+    setSaving(true)
     try {
-      const res = await api.put(`/central/staff/${id}`, { [field]: value })
-      setStaff(p => p.map(s => s.id === id ? { ...s, ...res.data } : s))
-      toast.success('Updated!')
-    } catch (err) { toast.error(err.message) }
-    finally { setSaving(null) }
+      const res = await api.patch('/central/profile', { name: name.trim() })
+      onSaved({ name: res.data.name })
+      toast.success('Profile updated!')
+      onClose()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to update profile')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const ROLE_COLORS = { OWNER: 'bg-brand-50 text-brand-700', ADMIN: 'bg-blue-50 text-blue-700', KITCHEN: 'bg-amber-50 text-amber-700' }
-
-  const filtered = branchFilter === 'all' ? staff : staff.filter(s => s.restaurantId === branchFilter)
-
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-3 flex-wrap">
-        <h2 className="font-extrabold text-gray-900 text-base flex items-center gap-2 flex-1">
-          <FaLock className="text-brand-500 w-4 h-4" /> Permissions &amp; Roles
-        </h2>
-        <select value={branchFilter} onChange={e => setBranchFilter(e.target.value)}
-          className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-brand-400">
-          <option value="all">All Branches</option>
-          {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
+    <form onSubmit={handleSubmit} className="p-5 space-y-4">
+      {/* Full Name — editable */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Full Name</Label>
+        <Input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="Your full name"
+          className="rounded-xl border-gray-200 focus-visible:ring-brand-500"
+          required
+        />
       </div>
 
-      {/* Role legend */}
-      <div className="flex gap-3 flex-wrap">
-        {[['OWNER', 'Full access — menu, orders, staff, profile', 'bg-brand-50 text-brand-700'],
-          ['ADMIN', 'Same as OWNER', 'bg-blue-50 text-blue-700'],
-          ['KITCHEN', 'View & update orders only', 'bg-amber-50 text-amber-700']].map(([role, desc, cls]) => (
-          <div key={role} className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold ${cls}`}>
-            <FaLock className="w-3 h-3 opacity-60" />
-            <span className="font-extrabold">{role}</span>
-            <span className="opacity-70">— {desc}</span>
-          </div>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="flex items-center justify-center h-48"><Loader2 className="animate-spin text-brand-500 w-8 h-8" /></div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  {['Staff Member', 'Branch', 'Role', 'Active', 'Last Login'].map(h => (
-                    <th key={h} className="text-left text-[11px] font-extrabold text-gray-500 uppercase tracking-wider px-4 py-3">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filtered.map(s => (
-                  <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-[10px] font-extrabold">{s.name[0]?.toUpperCase()}</span>
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-semibold text-gray-900 text-xs truncate max-w-[110px]">{s.name}</p>
-                          <p className="text-gray-400 text-[10px] truncate max-w-[110px]">{s.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 font-medium text-xs truncate max-w-[100px]">{s.restaurant?.name || '—'}</td>
-                    <td className="px-4 py-3">
-                      <select value={s.role} disabled={saving === s.id}
-                        onChange={e => updateField(s.id, 'role', e.target.value)}
-                        className={`text-[11px] font-extrabold px-2 py-1 rounded-full border-0 outline-none cursor-pointer ${ROLE_COLORS[s.role] || 'bg-gray-50 text-gray-500'}`}>
-                        <option value="OWNER">OWNER</option>
-                        <option value="ADMIN">ADMIN</option>
-                        <option value="KITCHEN">KITCHEN</option>
-                      </select>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button onClick={() => updateField(s.id, 'active', !s.active)} disabled={saving === s.id}
-                        className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 ${s.active ? 'bg-green-500' : 'bg-gray-300'}`}>
-                        <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform duration-200 mt-0.5 ${s.active ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-gray-400 text-[11px] whitespace-nowrap">
-                      {s.lastLoginAt ? new Date(s.lastLoginAt).toLocaleDateString('en-IN') : 'Never'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filtered.length === 0 && <div className="text-center py-10 text-gray-400 text-sm">No staff found</div>}
-          </div>
+      {/* Email — read-only */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email Address</Label>
+        <div className="flex h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400 items-center gap-2">
+          <span className="flex-1 truncate">{user?.email || '—'}</span>
+          <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex-shrink-0">Read only</span>
         </div>
-      )}
-    </div>
+      </div>
+
+      {/* Role — read-only */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Role</Label>
+        <div className="flex h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm items-center">
+          <span className="text-[11px] font-extrabold px-2 py-1 rounded-full bg-brand-50 text-brand-700">
+            Central Admin
+          </span>
+        </div>
+      </div>
+
+      <div className="flex gap-3 pt-1">
+        <Button type="button" variant="outline" className="flex-1 rounded-xl" onClick={onClose}>Cancel</Button>
+        <Button type="submit" disabled={saving} className="flex-1 bg-brand-600 hover:bg-brand-700 text-white rounded-xl">
+          {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-1.5" />Saving…</> : 'Save Changes'}
+        </Button>
+      </div>
+    </form>
   )
 }
 
 // ── Main Dashboard ─────────────────────────────────────────────────────────────
 export default function CentralDashboardPage() {
-  const { user, logout, loading: authLoading } = useAuth()
+  const { user, logout, loading: authLoading, updateUser } = useAuth()
   const navigate = useNavigate()
 
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('central_tab') || 'overview')
@@ -1388,9 +1182,9 @@ export default function CentralDashboardPage() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
-  const [summary, setSummary]   = useState(null)
+  const [summary, setSummary] = useState(null)
   const [branches, setBranches] = useState([])
-  const [orders, setOrders]     = useState([])
+  const [orders, setOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(true)
 
   const pendingCount = useMemo(() => orders.filter(o => o.status === 'PENDING').length, [orders])
@@ -1437,7 +1231,7 @@ export default function CentralDashboardPage() {
     const onNew = order => {
       setOrders(p => p.find(o => o.id === order.id) ? p : [order, ...p])
       setSummary(prev => prev ? { ...prev, pendingOrders: prev.pendingOrders + 1, todayOrders: prev.todayOrders + 1 } : prev)
-      toast(`New Order — ${order.restaurant?.name || ''} Table #${order.tableNumber}!`, { icon: '🔔', duration: 7000 })
+      toast(`New Order — ${order.restaurant?.name || ''} Table #${order.tableNumber}!`, { icon: <FaBell className="text-amber-500" />, duration: 7000 })
     }
     const onStatus = ({ orderId, status }) => {
       setOrders(p => p.map(o => o.id === orderId ? { ...o, status } : o))
@@ -1455,16 +1249,13 @@ export default function CentralDashboardPage() {
   const activeNav = NAV_ITEMS.find(n => n.id === activeTab)
 
   const TABS = {
-    overview:        <OverviewTab summary={summary} branches={branches} />,
-    sales:           <BranchSalesTab branches={branches} />,
-    orders:          <LiveOrdersTab orders={orders} loading={ordersLoading} branches={branches} />,
-    branches:        <BranchesTab branches={branches} loading={!summary} />,
-    staff:           <StaffTab branches={branches} />,
-    analytics_adv:   <AdvancedAnalyticsTab branches={branches} />,
-    manage_branches: <ManageBranchesTab branches={branches} onBranchesChange={b => setBranches(b)} />,
-    reports:         <ReportsTab branches={branches} />,
-    audit:           <AuditLogTab />,
-    permissions:     <PermissionsTab branches={branches} />,
+    overview: <OverviewTab summary={summary} branches={branches} />,
+    sales: <BranchSalesTab branches={branches} />,
+    orders: <LiveOrdersTab orders={orders} loading={ordersLoading} branches={branches} />,
+    branches: <BranchesTab branches={branches} loading={!summary} />,
+    staff: <StaffTab branches={branches} />,
+    reports: <ReportsTab branches={branches} />,
+    audit: <AuditLogTab />,
   }
 
   const sidebarProps = { activeTab, onChange: changeTab, user, pendingCount, onLogout: handleLogout, onProfile: () => setShowProfile(true) }
@@ -1526,46 +1317,19 @@ export default function CentralDashboardPage() {
         {/* Footer */}
         <footer className="flex-shrink-0 border-t border-gray-100 bg-white/80 py-3 px-6 text-center">
           <p className="text-[11px] text-gray-400 font-medium">
-            © 2026 CodeYatra PVT.LTD. All Rights Reserved — Central Admin Portal
+            © 2026 CodeYatra PVT.LTD. All Rights Reserved
           </p>
         </footer>
       </div>
 
-      {/* Profile info dialog */}
+      {/* Profile edit dialog */}
       <Dialog open={showProfile} onOpenChange={v => { if (!v) setShowProfile(false) }}>
         <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden">
           <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-5 text-white">
-            <DialogTitle className="font-extrabold text-base text-white">My Profile</DialogTitle>
+            <DialogTitle className="font-extrabold text-base text-white">Edit Profile</DialogTitle>
             <p className="text-gray-400 text-sm mt-0.5">Central Admin Account</p>
           </div>
-          <div className="p-5 space-y-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Full Name</Label>
-              <div className="flex h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 items-center">
-                {user?.name || '—'}
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email Address</Label>
-              <div className="flex h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400 items-center gap-2">
-                <span className="flex-1 truncate">{user?.email || '—'}</span>
-                <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider flex-shrink-0">Read only</span>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Role</Label>
-              <div className="flex h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm items-center">
-                <span className="text-[11px] font-extrabold px-2 py-1 rounded-full bg-brand-50 text-brand-700">
-                  Central Admin
-                </span>
-              </div>
-            </div>
-            <div className="pt-2">
-              <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white rounded-xl" onClick={() => setShowProfile(false)}>
-                Close
-              </Button>
-            </div>
-          </div>
+          <ProfileEditForm user={user} onSaved={updateUser} onClose={() => setShowProfile(false)} />
         </DialogContent>
       </Dialog>
     </div>

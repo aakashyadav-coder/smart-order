@@ -169,7 +169,9 @@ export default function MenuPage() {
                 <FaUtensils className="w-12 h-12 text-white" />
               </div>
             )}
-            <h1 className="text-3xl font-black tracking-tight">{restaurant.name}</h1>
+            <h1 className="text-3xl font-black tracking-tight">
+              {restaurant.branchName && restaurant.name ? `${restaurant.name} - ${restaurant.branchName}` : (restaurant.branchName || restaurant.name || '—')}
+            </h1>
             {restaurant.address && (
               <p className="text-gray-400 text-sm mt-2 flex items-center justify-center gap-1.5">
                 <FaMapMarkerAlt className="w-3.5 h-3.5" />
@@ -202,7 +204,9 @@ export default function MenuPage() {
                   {restaurant.logoUrl && (
                     <img src={restaurant.logoUrl} alt="" className="w-7 h-7 rounded-lg object-cover" />
                   )}
-                  <span className="font-bold text-gray-800 text-sm">{restaurant.name}</span>
+                  <span className="font-bold text-gray-800 text-sm">
+                    {restaurant.branchName && restaurant.name ? `${restaurant.name} - ${restaurant.branchName}` : (restaurant.branchName || restaurant.name || '—')}
+                  </span>
                 </div>
               )}
               <p className="text-xs text-brand-600 font-semibold mt-0.5">Table #{tableNumber}</p>

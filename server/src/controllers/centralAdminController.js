@@ -558,10 +558,30 @@ const deleteStaff = async (req, res, next) => {
   }
 };
 
+// ── PATCH /api/central/profile ────────────────────────────────────────────────
+const updateProfile = async (req, res, next) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "Name is required." });
+    }
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { name: name.trim() },
+      select: { id: true, name: true, email: true, role: true, restaurantId: true },
+    });
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getBranches, createBranch, updateBranch, toggleBranch,
   getSummary, getAnalytics,
   getPeakHours, getBestSellers, getStaffPerformance,
   getOrders, getReportData, getAuditLog,
   getStaff, updateStaff, deleteStaff,
+  updateProfile,
 };
+

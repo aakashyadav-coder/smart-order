@@ -29,7 +29,7 @@ const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
 const DAY_LABELS = { mon:'Mon', tue:'Tue', wed:'Wed', thu:'Thu', fri:'Fri', sat:'Sat', sun:'Sun' }
 
 const DEFAULT_HOURS = DAYS.reduce((acc, d) => ({ ...acc, [d]: { open: '09:00', close: '22:00', closed: false } }), {})
-const EMPTY = { name: '', address: '', phone: '', logoUrl: '', cuisineType: '', tableCount: '', ownerEmail: '', openingHours: DEFAULT_HOURS }
+const EMPTY = { name: '', branchName: '', address: '', phone: '', logoUrl: '', cuisineType: '', tableCount: '', ownerEmail: '', openingHours: DEFAULT_HOURS }
 
 function OnboardingBadge({ r }) {
   const checks = [
@@ -73,6 +73,7 @@ const Modal = ({ title, form, setForm, onSave, onClose, saving, isCreate }) => (
       <div className="p-5 space-y-3">
         {[
           { key: 'name',        label: 'Restaurant Name *', placeholder: 'The Grand Kitchen' },
+          { key: 'branchName',  label: 'Branch Name', placeholder: 'Main Branch, Thamel Outlet…' },
           { key: 'address',     label: 'Address',            placeholder: 'Kathmandu, Nepal' },
           { key: 'phone',       label: 'Phone',              placeholder: '9800000000' },
           { key: 'logoUrl',     label: 'Logo URL',           placeholder: 'https://...' },
@@ -176,7 +177,7 @@ export default function RestaurantsPage() {
   const openCreate = () => { setForm(EMPTY); setModal('create') }
   const openEdit = (r) => {
     setForm({
-      name: r.name, address: r.address || '', phone: r.phone || '', logoUrl: r.logoUrl || '',
+      name: r.name, branchName: r.branchName || '', address: r.address || '', phone: r.phone || '', logoUrl: r.logoUrl || '',
       tableCount: r.tableCount || '', cuisineType: r.cuisineType || '',
       openingHours: r.openingHours || DEFAULT_HOURS,
     })
@@ -291,13 +292,20 @@ export default function RestaurantsPage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSelect(r.id)} className="mt-1 accent-brand-600" />
-                  <div className="w-11 h-11 rounded-2xl bg-gray-100 text-gray-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
-                    {r.name?.slice(0, 2).toUpperCase()}
-                  </div>
+              <input type="checkbox" checked={selected.has(r.id)} onChange={() => toggleSelect(r.id)} className="mt-1 accent-brand-600" />
+                  {r.logoUrl ? (
+                    <img src={r.logoUrl} alt={r.name} className="w-11 h-11 rounded-2xl object-cover flex-shrink-0 shadow-sm shadow-gray-200/50 border border-gray-100" />
+                  ) : (
+                    <div className="w-11 h-11 rounded-2xl bg-gray-100 text-gray-700 flex items-center justify-center font-bold text-sm flex-shrink-0 border border-gray-200">
+                      {(r.branchName && r.name ? `${r.name} - ${r.branchName}` : (r.branchName || r.name || '—')).slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
                   <div>
-                    <h3 className="font-bold text-gray-900">{r.name}</h3>
-                    {r.cuisineType && <p className="text-brand-600 text-xs font-medium">{r.cuisineType}</p>}
+                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                       {r.branchName && r.name ? `${r.name} - ${r.branchName}` : (r.branchName || r.name || '—')}
+                    </h3>
+                    {r.cuisineType && <p className="text-brand-600 text-xs font-medium mt-0.5">{r.cuisineType}</p>}
+                    <p className="text-xs text-gray-400 mt-0.5">{r.ownerEmail || 'No owner assigned'}</p>
                     {r.address && (
                       <p className="text-gray-400 text-xs mt-1 flex items-center gap-1.5">
                         <FaMapMarkerAlt className="w-3 h-3 flex-shrink-0" /> {r.address}
@@ -348,7 +356,7 @@ export default function RestaurantsPage() {
                 <button onClick={() => handleToggleActive(r)} className={`flex-1 text-xs py-2 rounded-lg transition-colors border inline-flex items-center justify-center gap-1.5 ${r.active ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200' : 'bg-green-50 hover:bg-green-100 text-green-700 border-green-200'}`}>
                   {r.active ? <FaTimesCircle className="w-3 h-3" /> : <FaCheckCircle className="w-3 h-3" />}
                 </button>
-                <button onClick={() => handleDelete(r.id, r.name)} className="text-xs bg-red-50 hover:bg-red-100 text-red-500 border border-red-100 py-2 px-3 rounded-lg transition-colors">
+                <button onClick={() => handleDelete(r.id, r.branchName && r.name ? `${r.name} - ${r.branchName}` : (r.branchName || r.name || '—'))} className="text-xs bg-red-50 hover:bg-red-100 text-red-500 border border-red-100 py-2 px-3 rounded-lg transition-colors">
                   <FaTrash className="w-3 h-3" />
                 </button>
               </div>

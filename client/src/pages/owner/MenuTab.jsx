@@ -5,12 +5,13 @@ import toast from 'react-hot-toast'
 import api from '../../lib/api'
 
 import {
-  FaChartLine, FaClipboardList, FaUtensils, FaUsers,
+  FaChartLine, FaClipboardList, FaUtensils, FaUsers, FaToggleOn, FaToggleOff, FaEdit,
   FaTimesCircle, FaCheckCircle, FaPrint, FaPlus, FaTrash, FaInbox, FaPaperPlane
 } from 'react-icons/fa'
 import {
   StatCardSkeleton, ChartSkeleton, OrderRowSkeleton, MenuSkeleton
 } from '../../components/Skeleton'
+import { Switch } from '@/components/ui/switch'
 
 
 // ── Menu Tab ───────────────────────────────────────────────────────────────────
@@ -98,9 +99,15 @@ export function MenuTab({ restaurantId, onDeleteItem }) {
                     {item.description && <p className="text-gray-400 text-xs truncate mt-0.5">{item.description}</p>}
                     <p className="text-brand-600 text-xs font-bold mt-0.5">Rs. {item.price}</p>
                   </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button onClick={() => toggleAvailable(item)} className={`text-[10px] px-2.5 py-1 rounded-lg font-bold border transition-colors ${item.available ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-400 border-gray-200'}`}>{item.available ? 'ON' : 'OFF'}</button>
-                    <button onClick={() => { setForm({ ...item, price: item.price.toString() }); setEditId(item.id) }} className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors text-xs font-bold">✏</button>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex items-center gap-2 mr-1">
+                      <Switch
+                        checked={item.available}
+                        onCheckedChange={() => toggleAvailable(item)}
+                        className="scale-[0.85] data-[state=checked]:bg-green-500"
+                      />
+                    </div>
+                    <button onClick={() => { setForm({ ...item, price: item.price.toString() }); setEditId(item.id) }} className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors"><FaEdit className="w-3.5 h-3.5" /></button>
                     <button onClick={() => onDeleteItem(item, id => setItems(p => p.filter(i => i.id !== id)))} className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 border border-red-100 transition-colors"><FaTrash className="w-3.5 h-3.5 text-red-500" /></button>
                   </div>
                 </div>

@@ -109,7 +109,7 @@ function RevenueBarChart({ labels, restaurants, colors }) {
   // Build data: [{ label, "Rest A": 1200, "Rest B": 800, ... }, ...]
   const chartData = labels.map((label, i) => {
     const point = { label }
-    top5.forEach(r => { point[r.name] = r.revenueSeries[i] || 0 })
+    top5.forEach(r => { point[r.branchName && r.name ? `${r.name} - ${r.branchName}` : r.name] = r.revenueSeries[i] || 0 })
     return point
   })
 
@@ -208,7 +208,7 @@ function RevenueBarChart({ labels, restaurants, colors }) {
           {top5.map((r, i) => (
             <Bar
               key={r.id}
-              dataKey={r.name}
+              dataKey={r.branchName && r.name ? `${r.name} - ${r.branchName}` : r.name}
               fill={`url(#bar-grad-${i})`}
               radius={[4, 4, 0, 0]}
               animationDuration={700}
@@ -260,7 +260,7 @@ function Leaderboard({ restaurants, colors }) {
                     onClick={() => navigate('/super/restaurants')}
                     className="font-semibold text-gray-900 hover:text-brand-600 transition-colors text-sm truncate max-w-[160px]"
                   >
-                    {r.name}
+                    {r.branchName && r.name ? `${r.name} - ${r.branchName}` : r.name}
                   </button>
                 </div>
               </td>
@@ -366,7 +366,7 @@ function exportCSV(data) {
   if (!data?.restaurants?.length) return
   const headers = ['Rank', 'Restaurant', 'Total Revenue (Rs.)', 'Orders', 'AOV (Rs.)', 'Cancelled', 'Cancel Rate %', 'Growth %']
   const rows = data.restaurants.map((r, i) => [
-    i + 1, r.name, r.totalRevenue, r.orderCount, r.aov, r.cancelledCount, r.cancelRate, r.growth ?? ''
+    i + 1, r.branchName && r.name ? `${r.name} - ${r.branchName}` : r.name, r.totalRevenue, r.orderCount, r.aov, r.cancelledCount, r.cancelRate, r.growth ?? ''
   ])
   const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
   const blob = new Blob([csv], { type: 'text/csv' })

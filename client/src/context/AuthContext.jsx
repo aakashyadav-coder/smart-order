@@ -165,6 +165,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => clearAuth()
 
+  // Allow individual fields of the user object to be patched in-place
+  // (e.g. after a name change) without requiring a full re-login.
+  const updateUser = (patch) => setUser(prev => prev ? { ...prev, ...patch } : prev)
+
   // ── Socket auth sync ───────────────────────────────────────────────────────
   // Force a reconnect whenever the auth token changes so the socket handshake
   // always carries the latest JWT (or no JWT after logout).
@@ -177,7 +181,7 @@ export const AuthProvider = ({ children }) => {
   }, [token])
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser, loading, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   )

@@ -410,7 +410,7 @@ export default function SuperDashboardPage() {
       let detail = ''
       if (type === 'new_order')           detail = `Order #${String(data.id || '').slice(-6).toUpperCase()} – Rs. ${(data.totalPrice || 0).toFixed(0)}`
       else if (type === 'order_status_update') detail = `Order #${String(data.orderId || '').slice(-6).toUpperCase()} → ${data.status}`
-      else if (type === 'support_ticket_new')  detail = `"${data.title || 'New ticket'}"${data.restaurant?.name ? ` from ${data.restaurant.name}` : ''}`
+      else if (type === 'support_ticket_new')  detail = `"${data.title || 'New ticket'}"${data.restaurant?.name ? ` from ${(data.restaurant.branchName && data.restaurant.name ? `${data.restaurant.name} - ${data.restaurant.branchName}` : data.restaurant.name)}` : ''}`
       else if (type === 'user_last_login')     detail = `${data.name || 'User'} (${data.role || ''})`
       const entry = { id: `${type}-${Date.now()}-${Math.random()}`, type, ...cfg, detail, ts: Date.now() }
       setFeed(prev => [entry, ...prev].slice(0, FEED_MAX))

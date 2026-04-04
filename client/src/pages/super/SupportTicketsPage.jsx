@@ -42,7 +42,7 @@ function TicketModal({ ticket, onClose, onSave }) {
         </div>
         <div className="p-5 space-y-4">
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 mb-1">FROM: {ticket.restaurant?.name}</p>
+            <p className="text-xs font-semibold text-gray-500 mb-1">FROM: {ticket.restaurant?.branchName && ticket.restaurant?.name ? `${ticket.restaurant.name} - ${ticket.restaurant.branchName}` : (ticket.restaurant?.branchName || ticket.restaurant?.name || '—')}</p>
             <p className="text-sm text-gray-800 leading-relaxed">{ticket.message}</p>
           </div>
           <div>
@@ -181,7 +181,7 @@ export default function SupportTicketsPage() {
                   <div>
                     <p className="font-bold text-gray-900 text-sm">{t.subject}</p>
                     <p className="text-gray-400 text-xs mt-0.5 inline-flex items-center gap-1.5">
-                      <FaBuilding className="w-3 h-3" /> {t.restaurant?.name} - {fmt(t.createdAt)}
+                      <FaBuilding className="w-3 h-3" /> {(t.restaurant?.branchName && t.restaurant?.name ? `${t.restaurant.name} - ${t.restaurant.branchName}` : (t.restaurant?.branchName || t.restaurant?.name || '—'))} - {fmt(t.createdAt)}
                     </p>
                     <p className="text-gray-600 text-sm mt-1.5 line-clamp-2">{t.message}</p>
                     {t.reply && (

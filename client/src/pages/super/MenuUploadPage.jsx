@@ -11,7 +11,7 @@ import api from '../../lib/api'
 import {
   FaUpload, FaDownload, FaExclamationTriangle, FaCheckCircle,
   FaTimesCircle, FaFileExcel, FaFileCsv, FaRedo, FaUtensils,
-  FaChevronDown, FaInfoCircle, FaEye,
+  FaChevronDown, FaInfoCircle, FaEye, FaPlus, FaSyncAlt, FaStepForward, FaClipboardList,
 } from 'react-icons/fa'
 
 // ── CSV template (pure JS, no xlsx needed on client) ─────────────────────────
@@ -259,10 +259,10 @@ function ResultCard({ result, onReset }) {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Created', value: summary.created,  emoji: '✅' },
-          { label: 'Updated', value: summary.updated,  emoji: '🔄' },
-          { label: 'Skipped', value: summary.skipped,  emoji: '⏭️' },
-          { label: 'Total',   value: summary.totalRows, emoji: '📋' },
+          { label: 'Created', value: summary.created,  emoji: <FaPlus className="text-green-500 w-6 h-6 mx-auto" /> },
+          { label: 'Updated', value: summary.updated,  emoji: <FaSyncAlt className="text-blue-500 w-6 h-6 mx-auto" /> },
+          { label: 'Skipped', value: summary.skipped,  emoji: <FaStepForward className="text-gray-400 w-6 h-6 mx-auto" /> },
+          { label: 'Total',   value: summary.totalRows, emoji: <FaClipboardList className="text-indigo-500 w-6 h-6 mx-auto" /> },
         ].map(s => (
           <div key={s.label} className="super-card p-4 text-center">
             <div className="text-2xl mb-1">{s.emoji}</div>
@@ -403,7 +403,7 @@ export default function MenuUploadPage() {
                 <select id="restaurant-select" value={restaurantId} onChange={e => setRestaurantId(e.target.value)}
                   className="w-full appearance-none px-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-white text-gray-800 outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 pr-10">
                   <option value="">— Choose a restaurant —</option>
-                  {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  {restaurants.map(r => <option key={r.id} value={r.id}>{r.branchName && r.name ? `${r.name} - ${r.branchName}` : (r.branchName || r.name || '—')}</option>)}
                 </select>
                 <FaChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5 pointer-events-none" />
               </div>
@@ -420,8 +420,8 @@ export default function MenuUploadPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Mode</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
-                  { value: 'add',     emoji: '➕', label: 'Add Only',    desc: 'Creates new items. Updates existing ones matched by name + category. Safe — no data loss.' },
-                  { value: 'replace', emoji: '🔄', label: 'Replace All', desc: 'Deletes ALL existing items first, then inserts from the file. Use carefully.', danger: true },
+                    { value: 'add',     emoji: <FaPlus className="w-5 h-5 text-brand-500" />, label: 'Add Only',    desc: 'Creates new items. Updates existing ones matched by name + category. Safe — no data loss.' },
+                    { value: 'replace', emoji: <FaSyncAlt className="w-5 h-5 text-red-500" />, label: 'Replace All', desc: 'Deletes ALL existing items first, then inserts from the file. Use carefully.', danger: true },
                 ].map(m => (
                   <label key={m.value} id={`mode-${m.value}`}
                     className={`cursor-pointer rounded-xl border-2 p-4 flex gap-3 transition-all ${
@@ -515,7 +515,7 @@ export default function MenuUploadPage() {
                       <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       Uploading…
                     </span>
-                  : `✅ Confirm & Upload ${validRows.length} item${validRows.length !== 1 ? 's' : ''}`
+                  : <span className="flex items-center gap-1.5 justify-center"><FaCheckCircle className="w-4 h-4" /> Confirm & Upload {validRows.length} item{validRows.length !== 1 ? 's' : ''}</span>
                 }
               </button>
             </div>
@@ -541,12 +541,12 @@ export default function MenuUploadPage() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {[
-                  ['name',        '✅ Yes', 'Butter Chicken', 'Unique key with category'],
-                  ['price',       '✅ Yes', '350',            'Positive number, no currency symbol'],
-                  ['category',    '✅ Yes', 'Main Course',    'Groups items on the menu'],
-                  ['description', '❌ No',  'Creamy curry',   'Short description for customers'],
-                  ['imageUrl',    '❌ No',  'https://…',     'Must start with http or https'],
-                  ['available',   '❌ No',  'true',           'true / false (default: true)'],
+                  ['name',        <span className="flex items-center gap-1"><FaCheckCircle className="text-green-500 w-3.5 h-3.5"/> Yes</span>, 'Butter Chicken', 'Unique key with category'],
+                  ['price',       <span className="flex items-center gap-1"><FaCheckCircle className="text-green-500 w-3.5 h-3.5"/> Yes</span>, '350',            'Positive number, no currency symbol'],
+                  ['category',    <span className="flex items-center gap-1"><FaCheckCircle className="text-green-500 w-3.5 h-3.5"/> Yes</span>, 'Main Course',    'Groups items on the menu'],
+                  ['description', <span className="flex items-center gap-1 text-gray-400"><FaTimesCircle className="w-3.5 h-3.5"/> No</span>,  'Creamy curry',   'Short description for customers'],
+                  ['imageUrl',    <span className="flex items-center gap-1 text-gray-400"><FaTimesCircle className="w-3.5 h-3.5"/> No</span>,  'https://…',     'Must start with http or https'],
+                  ['available',   <span className="flex items-center gap-1 text-gray-400"><FaTimesCircle className="w-3.5 h-3.5"/> No</span>,  'true',           'true / false (default: true)'],
                 ].map(([col, req, ex, note]) => (
                   <tr key={col}>
                     <td className="py-2 pr-4 font-mono font-bold text-gray-700">{col}</td>

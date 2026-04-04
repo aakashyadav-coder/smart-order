@@ -85,7 +85,7 @@ export default function AnnouncementsPage() {
             <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
               value={form.restaurantId} onChange={e => setForm(p => ({ ...p, restaurantId: e.target.value }))}>
               <option value="">Broadcast to all restaurants</option>
-              {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+              {restaurants.map(r => <option key={r.id} value={r.id}>{r.branchName && r.name ? `${r.name} - ${r.branchName}` : (r.branchName || r.name || '—')}</option>)}
             </select>
           </div>
           <div className="flex justify-end">
@@ -126,7 +126,7 @@ export default function AnnouncementsPage() {
                 <div className="flex items-center gap-3 mt-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1.5 ${a.restaurantId ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-700'}`}>
                     <FaBuilding className="w-3 h-3" />
-                    {a.restaurant ? a.restaurant.name : 'All Restaurants'}
+                    {a.restaurant ? (a.restaurant.branchName && a.restaurant.name ? `${a.restaurant.name} - ${a.restaurant.branchName}` : (a.restaurant.branchName || a.restaurant.name || '—')) : 'All Restaurants'}
                   </span>
                   <span className="text-gray-400 text-xs">{fmt(a.createdAt)}</span>
                 </div>

@@ -131,7 +131,7 @@ export default function FeaturesPage() {
           onChange={e => setSelected(e.target.value)}
         >
           {restaurants.map(r => (
-            <option key={r.id} value={r.id}>{r.name}{!r.active ? ' (Inactive)' : ''}</option>
+            <option key={r.id} value={r.id}>{(r.branchName && r.name ? `${r.name} - ${r.branchName}` : (r.branchName || r.name || '—'))}{!r.active ? ' (Inactive)' : ''}</option>
           ))}
         </select>
         {restaurantName && (

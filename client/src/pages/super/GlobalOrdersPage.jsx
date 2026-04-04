@@ -96,7 +96,7 @@ export default function GlobalOrdersPage() {
         <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
           value={filter.restaurantId} onChange={e => setFilter(p => ({ ...p, restaurantId: e.target.value }))}>
           <option value="">All Restaurants</option>
-          {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+          {restaurants.map(r => <option key={r.id} value={r.id}>{r.branchName && r.name ? `${r.name} - ${r.branchName}` : (r.branchName || r.name || '—')}</option>)}
         </select>
         <select className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 bg-white border-gray-200 text-gray-900 text-sm"
           value={filter.status} onChange={e => setFilter(p => ({ ...p, status: e.target.value }))}>
@@ -138,7 +138,7 @@ export default function GlobalOrdersPage() {
                       <p className="text-gray-900 font-medium">{o.customerName}</p>
                       <p className="text-gray-400 text-xs">{o.phone}</p>
                     </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">{o.restaurant?.name}</td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">{o.restaurant?.branchName && o.restaurant?.name ? `${o.restaurant.name} - ${o.restaurant.branchName}` : (o.restaurant?.branchName || o.restaurant?.name || '—')}</td>
                     <td className="px-4 py-3 text-gray-700">#{o.tableNumber}</td>
                     <td className="px-4 py-3 text-gray-400">{o.items?.length} item(s)</td>
                     <td className="px-4 py-3 text-gray-900 font-semibold">Rs. {(o.totalPrice || 0).toLocaleString()}</td>
