@@ -98,7 +98,7 @@ const getStats = async (req, res, next) => {
       prisma.order.findMany({
         take: 5,
         orderBy: { createdAt: "desc" },
-        include: { restaurant: { select: { name: true } } },
+        include: { restaurant: { select: { name: true, branchName: true } } },
       }),
     ]);
 
@@ -127,7 +127,7 @@ const getAnalytics = async (req, res, next) => {
         createdAt: true,
         phone: true,
         restaurantId: true,
-        restaurant: { select: { name: true } },
+        restaurant: { select: { name: true, branchName: true } },
       },
     });
 
@@ -142,6 +142,7 @@ const getAnalytics = async (req, res, next) => {
         map.set(order.restaurantId, {
           id: order.restaurantId,
           name: order.restaurant?.name || "Unknown",
+          branchName: order.restaurant?.branchName || null,
           revenue: Array(bucketCount).fill(0),
           customerBuckets: Array.from({ length: bucketCount }, () => new Set()),
           customerAll: new Set(),
@@ -385,7 +386,7 @@ const getUsers = async (req, res, next) => {
       select: {
         id: true, name: true, email: true, role: true, active: true,
         restaurantId: true, createdAt: true, lastLoginAt: true,
-        restaurant: { select: { name: true } },
+        restaurant: { select: { name: true, branchName: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -436,7 +437,7 @@ const updateUser = async (req, res, next) => {
     const user = await prisma.user.update({
       where: { id },
       data,
-      select: { id: true, name: true, email: true, role: true, active: true, restaurantId: true, createdAt: true, lastLoginAt: true, restaurant: { select: { name: true } } },
+      select: { id: true, name: true, email: true, role: true, active: true, restaurantId: true, createdAt: true, lastLoginAt: true, restaurant: { select: { name: true, branchName: true } } },
     });
     await logActivity({ userId: req.user.id, action: "USER_UPDATED", entity: "User", entityId: id, metadata: { role, active } });
     res.json(user);
@@ -492,7 +493,7 @@ const getAllOrders = async (req, res, next) => {
         where,
         include: {
           items: { include: { menuItem: { select: { name: true } } } },
-          restaurant: { select: { name: true } },
+          restaurant: { select: { name: true, branchName: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -570,7 +571,7 @@ const getHealth = async (req, res, next) => {
 const getAnnouncements = async (req, res, next) => {
   try {
     const announcements = await prisma.announcement.findMany({
-      include: { restaurant: { select: { id: true, name: true } } },
+      include: { restaurant: { select: { id: true, name: true, branchName: true } } },
       orderBy: { createdAt: "desc" },
       take: 100,
     });
@@ -585,7 +586,7 @@ const createAnnouncement = async (req, res, next) => {
 
     const ann = await prisma.announcement.create({
       data: { title, message, restaurantId: restaurantId || null },
-      include: { restaurant: { select: { id: true, name: true } } },
+      include: { restaurant: { select: { id: true, name: true, branchName: true } } },
     });
     await logActivity({ userId: req.user.id, action: "ANNOUNCEMENT_CREATED", entity: "Announcement", entityId: ann.id, metadata: { title, restaurantId } });
     const io = req.app.get("io");
@@ -610,7 +611,7 @@ const getTickets = async (req, res, next) => {
     const where = status ? { status } : {};
     const tickets = await prisma.supportTicket.findMany({
       where,
-      include: { restaurant: { select: { id: true, name: true } } },
+      include: { restaurant: { select: { id: true, name: true, branchName: true } } },
       orderBy: { createdAt: "desc" },
     });
     res.json(tickets);
@@ -627,7 +628,7 @@ const updateTicket = async (req, res, next) => {
         ...(status !== undefined && { status }),
         ...(reply !== undefined && { reply }),
       },
-      include: { restaurant: { select: { id: true, name: true } } },
+      include: { restaurant: { select: { id: true, name: true, branchName: true } } },
     });
     await logActivity({ userId: req.user.id, action: "TICKET_UPDATED", entity: "SupportTicket", entityId: id, metadata: { status, reply } });
     res.json(ticket);
@@ -749,7 +750,7 @@ const getRevenueBI = async (req, res, next) => {
     const [currentOrders, prevOrders] = await Promise.all([
       prisma.order.findMany({
         where: { createdAt: { gte: start, lte: end } },
-        select: { totalPrice: true, status: true, createdAt: true, restaurantId: true, restaurant: { select: { name: true } } },
+        select: { totalPrice: true, status: true, createdAt: true, restaurantId: true, restaurant: { select: { name: true, branchName: true } } },
       }),
       prisma.order.findMany({
         where: { createdAt: { gte: prevStart, lte: prevEnd } },
@@ -779,6 +780,7 @@ const getRevenueBI = async (req, res, next) => {
         restMap.set(order.restaurantId, {
           id: order.restaurantId,
           name: order.restaurant?.name || 'Unknown',
+          branchName: order.restaurant?.branchName || null,
           revenueSeries: Array(bucketCount).fill(0),
           totalRevenue: 0,
           orderCount: 0,
@@ -802,6 +804,7 @@ const getRevenueBI = async (req, res, next) => {
       return {
         id: r.id,
         name: r.name,
+        branchName: r.branchName || null,
         revenueSeries: r.revenueSeries.map(v => roundMoney(v)),
         totalRevenue: roundMoney(r.totalRevenue),
         previousRevenue: prevRev,
@@ -900,6 +903,7 @@ const getOnboardingPipeline = async (req, res, next) => {
       return {
         id: r.id,
         name: r.name,
+        branchName: r.branchName || null,
         active: r.active,
         stage,
         pct,

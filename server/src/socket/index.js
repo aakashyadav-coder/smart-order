@@ -143,7 +143,7 @@ const emitOrderStatusUpdate = (io, orderId, status, restaurantId) => {
  * emit to 'kitchen' room separately.
  */
 const emitRestaurantUpdate = (io, restaurant) => {
-  const payload = { id: restaurant.id, name: restaurant.name, logoUrl: restaurant.logoUrl };
+  const payload = { id: restaurant.id, name: restaurant.name, branchName: restaurant.branchName || null, logoUrl: restaurant.logoUrl };
   io.to(`restaurant_${restaurant.id}`).emit("restaurant_updated", payload);
   console.log(`[Socket] restaurant_updated → restaurant_${restaurant.id}: "${restaurant.name}"`);
 };

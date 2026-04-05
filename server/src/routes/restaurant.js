@@ -44,7 +44,7 @@ router.put("/mine", authenticate, requireOwnerOrAbove, async (req, res, next) =>
     });
     // Emit real-time brand update so Kitchen + Menu pages refresh instantly
     const io = req.app.get("io");
-    if (io) io.emit("restaurant_updated", { id: restaurant.id, name: restaurant.name, logoUrl: restaurant.logoUrl });
+    if (io) io.emit("restaurant_updated", { id: restaurant.id, name: restaurant.name, branchName: restaurant.branchName || null, logoUrl: restaurant.logoUrl });
     res.json(restaurant);
   } catch (err) { next(err); }
 });
@@ -146,7 +146,7 @@ router.get("/announcements", authenticate, requireOwnerOrAbove, async (req, res,
     if (!restaurantId) return res.status(404).json({ message: "No restaurant linked." });
     const announcements = await prisma.announcement.findMany({
       where: { OR: [{ restaurantId }, { restaurantId: null }] },
-      include: { restaurant: { select: { id: true, name: true } } },
+      include: { restaurant: { select: { id: true, name: true, branchName: true } } },
       orderBy: { createdAt: "desc" },
       take: 100,
     });
@@ -175,7 +175,7 @@ router.post("/tickets", authenticate, requireOwnerOrAbove, async (req, res, next
     if (!subject || !message) return res.status(400).json({ message: "subject and message are required." });
     const ticket = await prisma.supportTicket.create({
       data: { subject, message, restaurantId },
-      include: { restaurant: { select: { id: true, name: true } } },
+      include: { restaurant: { select: { id: true, name: true, branchName: true } } },
     });
     const io = req.app.get("io");
     if (io) emitSupportTicket(io, ticket);

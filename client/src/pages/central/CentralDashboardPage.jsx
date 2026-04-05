@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import {
   FaBuilding, FaSignOutAlt, FaChartLine, FaClipboardList,
   FaUsers, FaStore, FaBars, FaTimes, FaLayerGroup,
@@ -72,27 +73,34 @@ function fmtDate(d) {
 }
 
 // ── KPI Card ──────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, icon: Icon, iconBg, trend }) {
+function KpiCard({ label, value, sub, icon: Icon, accent = '#7c3aed', trend }) {
   return (
-    <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
-          <Icon className="w-5 h-5 text-white" />
-        </div>
-        {trend != null && (
-          <span className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 ${trend > 0 ? 'bg-green-50 text-green-700' :
-            trend < 0 ? 'bg-red-50 text-red-600' :
-              'bg-gray-50 text-gray-500'
+    <Card className="relative overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 bg-white">
+      {/* Vertical accent bar */}
+      <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: accent }} />
+      <CardContent className="pl-6 pr-5 pt-5 pb-5">
+        <div className="flex items-center justify-between mb-4">
+          {/* Icon chip */}
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: accent + '18' }}>
+            <Icon style={{ color: accent }} className="w-[17px] h-[17px]" />
+          </div>
+          {/* Trend badge */}
+          {trend != null && (
+            <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+              trend > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+              : trend < 0 ? 'bg-red-50 text-red-600 border-red-100'
+              : 'bg-gray-50 text-gray-500 border-gray-100'
             }`}>
-            {trend > 0 ? <TrendingUp className="w-3 h-3" /> : trend < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-            {Math.abs(trend)}%
-          </span>
-        )}
-      </div>
-      <p className="text-2xl font-extrabold text-gray-900 leading-none mb-1">{value}</p>
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
-    </div>
+              {trend > 0 ? <TrendingUp className="w-3 h-3" /> : trend < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+              {Math.abs(trend)}%
+            </span>
+          )}
+        </div>
+        <p className="text-[26px] font-black text-gray-900 leading-none tracking-tight mb-1">{value}</p>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em] mt-1">{label}</p>
+        {sub && <p className="text-[11px] text-gray-400 mt-2 font-medium">{sub}</p>}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -108,6 +116,8 @@ const STATUS_STYLES = {
 
 // ── Sidebar component ──────────────────────────────────────────────────────────
 function Sidebar({ activeTab, onChange, user, pendingCount, onLogout, onProfile, onClose }) {
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+
   return (
     <div className="flex flex-col h-full" style={{ background: 'linear-gradient(180deg, #030712 0%, #0f172a 50%, #030712 100%)' }}>
 
@@ -163,7 +173,7 @@ function Sidebar({ activeTab, onChange, user, pendingCount, onLogout, onProfile,
 
       <Separator className="bg-white/[0.08] mx-3 w-auto" />
 
-      {/* Footer — matching owner: Edit Profile + Sign Out */}
+      {/* Footer — Edit Profile + Sign Out */}
       <div className="p-3 space-y-1">
         {onProfile && (
           <Button
@@ -177,13 +187,47 @@ function Sidebar({ activeTab, onChange, user, pendingCount, onLogout, onProfile,
         )}
         <Button
           variant="ghost"
-          onClick={onLogout}
-          className="w-full justify-start gap-3 text-gray-400 hover:text-white hover:bg-white/[0.08] font-semibold text-sm h-9"
+          onClick={() => setShowLogoutModal(true)}
+          className="w-full justify-start gap-3 text-gray-400 hover:text-red-400 hover:bg-red-500/[0.10] font-semibold text-sm h-9"
         >
           <FaSignOutAlt className="w-4 h-4" />
           Sign Out
         </Button>
       </div>
+
+      {/* Sign-out confirmation modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)' }}>
+          <div className="bg-gray-900 border border-white/[0.12] rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="px-6 pt-6 pb-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <FaSignOutAlt className="w-4 h-4 text-red-400" />
+              </div>
+              <div>
+                <p className="font-extrabold text-white text-base leading-tight">Sign out?</p>
+                <p className="text-gray-400 text-xs mt-0.5">You'll need to log in again to access the dashboard.</p>
+              </div>
+            </div>
+            <div className="h-px bg-white/[0.08] mx-6" />
+            {/* Actions */}
+            <div className="px-6 py-4 flex gap-3">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 h-9 rounded-xl border border-white/[0.12] text-gray-300 text-sm font-semibold hover:bg-white/[0.06] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowLogoutModal(false); onLogout() }}
+                className="flex-1 h-9 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2"
+              >
+                <FaSignOutAlt className="w-3.5 h-3.5" /> Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -195,10 +239,10 @@ function OverviewTab({ summary, branches }) {
     <div className="space-y-6">
       {/* KPI grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Total Revenue" value={fmtRs(summary.totalRevenue)} sub={`Today: ${fmtRs(summary.todayRevenue)}`} icon={TrendingUp} iconBg="bg-gradient-to-br from-brand-500 to-brand-700" />
-        <KpiCard label="Live Orders" value={summary.pendingOrders} sub="Currently pending" icon={FaClipboardList} iconBg="bg-gradient-to-br from-amber-500 to-orange-600" />
-        <KpiCard label="Active Branches" value={`${summary.activeBranches} / ${summary.branchCount}`} sub="Online now" icon={FaStore} iconBg="bg-gradient-to-br from-green-500 to-teal-600" />
-        <KpiCard label="Total Staff" value={summary.totalStaff} sub="Kitchen + Owners" icon={FaUsers} iconBg="bg-gradient-to-br from-blue-500 to-indigo-600" />
+        <KpiCard label="Total Revenue" value={fmtRs(summary.totalRevenue)} sub={`Today: ${fmtRs(summary.todayRevenue)}`} icon={TrendingUp} accent="#7c3aed" />
+        <KpiCard label="Live Orders" value={summary.pendingOrders} sub="Currently pending" icon={FaClipboardList} accent="#f97316" />
+        <KpiCard label="Active Branches" value={`${summary.activeBranches} / ${summary.branchCount}`} sub="Online now" icon={FaStore} accent="#10b981" />
+        <KpiCard label="Total Staff" value={summary.totalStaff} sub="Kitchen + Owners" icon={FaUsers} accent="#3b82f6" />
       </div>
 
 
@@ -359,7 +403,7 @@ function LiveOrdersTab({ orders, loading, branches }) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Branches</SelectItem>
-            {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+            {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.branchName ? `${b.name} - ${b.branchName}` : b.name}</SelectItem>)}
           </SelectContent>
         </Select>
         {/* Status filter */}
@@ -585,7 +629,7 @@ function StaffTab({ branches }) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Branches</SelectItem>
-            {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+            {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.branchName ? `${b.name} - ${b.branchName}` : b.name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -613,8 +657,12 @@ function StaffTab({ branches }) {
                   <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center flex-shrink-0">
-                          <span className="text-white text-[10px] font-extrabold">{s.name[0]?.toUpperCase()}</span>
+                        <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center">
+                          {s.restaurant?.logoUrl
+                            ? <img src={s.restaurant.logoUrl} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }} />
+                            : null
+                          }
+                          <span className="text-white text-[10px] font-extrabold" style={{ display: s.restaurant?.logoUrl ? 'none' : 'flex' }}>{s.name[0]?.toUpperCase()}</span>
                         </div>
                         <span className="font-semibold text-gray-900 truncate max-w-[100px]">{s.name}</span>
                       </div>
@@ -625,7 +673,7 @@ function StaffTab({ branches }) {
                         {s.role}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 font-medium truncate max-w-[120px]">{s.restaurant?.name || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600 font-medium truncate max-w-[160px]">{s.restaurant ? (s.restaurant.branchName ? `${s.restaurant.name} · ${s.restaurant.branchName}` : s.restaurant.name) : '—'}</td>
                     <td className="px-4 py-3">
                       {s.active
                         ? <span className="flex items-center gap-1 text-green-600 font-semibold text-[11px]"><FaCheckCircle className="w-3 h-3" /> Active</span>
@@ -748,7 +796,7 @@ function AdvancedAnalyticsTab({ branches }) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Branches</SelectItem>
-            {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+            {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.branchName ? `${b.name} - ${b.branchName}` : b.name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -771,33 +819,81 @@ function AdvancedAnalyticsTab({ branches }) {
       </div>
 
       {/* Best Sellers */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <p className="font-bold text-gray-900 text-sm mb-4 flex items-center gap-2">
-          <span className="w-2 h-2 bg-amber-500 rounded-full" /> Top 10 Best Sellers
-        </p>
-        {bestSellers.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-8">No order data yet</p>
-        ) : (
-          <div className="space-y-2">
-            {bestSellers.map((b, i) => (
-              <div key={b.menuItemId} className="flex items-center gap-3">
-                <span className="text-[11px] font-black text-gray-400 w-5 flex-shrink-0">#{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-semibold text-gray-900 truncate">{b.item.name}</span>
-                    <span className="text-xs font-bold text-gray-500 flex-shrink-0 ml-2">{b.count} sold</span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div className="h-2 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all"
-                      style={{ width: `${(b.count / maxSales) * 100}%` }} />
-                  </div>
-                </div>
-                <span className="text-[10px] font-semibold text-gray-400 w-16 text-right flex-shrink-0">{b.item.category}</span>
-              </div>
-            ))}
+      <Card className="border border-gray-100 shadow-sm bg-white overflow-hidden">
+        <CardHeader className="px-6 py-5 border-b border-gray-100 flex flex-row items-center justify-between space-y-0">
+          <div>
+            <p className="text-sm font-bold text-gray-900 flex items-center gap-2">
+              <span className="inline-flex w-5 h-5 rounded-md bg-amber-50 items-center justify-center">
+                <FaChartBar className="w-3 h-3 text-amber-500" />
+              </span>
+              Top 10 Best Sellers
+            </p>
+            <p className="text-[11px] text-gray-400 font-medium mt-0.5">Last 30 days · ranked by units sold</p>
           </div>
-        )}
-      </div>
+          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-100">
+            {bestSellers.length} items
+          </span>
+        </CardHeader>
+        <CardContent className="p-0">
+          {bestSellers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-14 text-gray-300">
+              <FaChartBar className="w-10 h-10 mb-3 opacity-30" />
+              <p className="text-sm font-semibold text-gray-400">No order data yet</p>
+              <p className="text-xs text-gray-400 mt-1">Orders will appear here once placed</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {bestSellers.map((b, i) => {
+                const pct = Math.round((b.count / maxSales) * 100)
+                const isTop3 = i < 3
+                const medalBg = i === 0 ? '#f59e0b' : i === 1 ? '#94a3b8' : '#b45309'
+                const barClass = i === 0
+                  ? 'from-amber-400 to-yellow-500'
+                  : i === 1 ? 'from-slate-400 to-slate-500'
+                  : i === 2 ? 'from-orange-400 to-amber-600'
+                  : 'from-brand-400 to-brand-600'
+                return (
+                  <div key={b.menuItemId}
+                    className={`flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-gray-50/60 ${i === 0 ? 'bg-amber-50/30' : ''}`}>
+                    {/* Rank badge */}
+                    <div
+                      className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 font-black text-xs"
+                      style={isTop3 ? { background: medalBg, color: '#fff' } : { background: '#f3f4f6', color: '#9ca3af' }}
+                    >
+                      {i + 1}
+                    </div>
+                    {/* Name + bar */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className={`text-sm font-semibold truncate ${i === 0 ? 'text-amber-900' : 'text-gray-800'}`}>
+                          {b.item.name}
+                        </span>
+                        <span className="text-[11px] font-bold text-gray-500 flex-shrink-0 tabular-nums">
+                          {b.count} sold
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                        <div className={`h-1.5 rounded-full bg-gradient-to-r ${barClass} transition-all duration-700`}
+                          style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                    {/* Category badge */}
+                    {b.item.category && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 flex-shrink-0 hidden sm:block">
+                        {b.item.category}
+                      </span>
+                    )}
+                    {/* Pct */}
+                    <span className="text-[11px] font-bold text-gray-400 w-8 text-right flex-shrink-0 tabular-nums">
+                      {pct}%
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Staff Performance */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -821,13 +917,17 @@ function AdvancedAnalyticsTab({ branches }) {
                 <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-[10px] font-extrabold">{s.name[0]?.toUpperCase()}</span>
+                      <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center">
+                        {s.restaurant?.logoUrl
+                          ? <img src={s.restaurant.logoUrl} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }} />
+                          : null
+                        }
+                        <span className="text-white text-[10px] font-extrabold" style={{ display: s.restaurant?.logoUrl ? 'none' : 'flex' }}>{s.name[0]?.toUpperCase()}</span>
                       </div>
                       <span className="font-semibold text-gray-900 truncate max-w-[100px]">{s.name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-600 font-medium truncate max-w-[120px]">{s.restaurant?.name || '—'}</td>
+                  <td className="px-4 py-3 text-gray-600 font-medium truncate max-w-[160px]">{s.restaurant ? (s.restaurant.branchName ? `${s.restaurant.name} · ${s.restaurant.branchName}` : s.restaurant.name) : '—'}</td>
                   <td className="px-4 py-3">
                     <span className={`text-[11px] font-extrabold px-2 py-1 rounded-full ${ROLE_COLORS[s.role] || 'bg-gray-50 text-gray-500'}`}>{s.role}</span>
                   </td>
@@ -932,7 +1032,7 @@ function ReportsTab({ branches }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Branches</SelectItem>
-                {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                {branches.map(b => <SelectItem key={b.id} value={b.id}>{b.branchName ? `${b.name} - ${b.branchName}` : b.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -946,15 +1046,26 @@ function ReportsTab({ branches }) {
       {data && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: 'Total Orders', value: data.summary.totalOrders, color: 'bg-blue-50 text-blue-700' },
-            { label: 'Paid Orders', value: data.summary.paidOrders, color: 'bg-green-50 text-green-700' },
-            { label: 'Total Revenue', value: `Rs. ${(data.summary.totalRevenue || 0).toLocaleString()}`, color: 'bg-brand-50 text-brand-700' },
-            { label: 'GST (5%)', value: `Rs. ${(data.summary.gstAmount || 0).toLocaleString()}`, color: 'bg-amber-50 text-amber-700' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className={`rounded-2xl p-4 font-bold ${color}`}>
-              <p className="text-2xl font-extrabold leading-none mb-1">{value}</p>
-              <p className="text-xs font-semibold uppercase tracking-wider opacity-70">{label}</p>
-            </div>
+            { label: 'Total Orders',  value: data.summary.totalOrders,
+              sub: 'All non-cancelled', accent: '#3b82f6', icon: FaClipboardList },
+            { label: 'Paid Orders',   value: data.summary.paidOrders,
+              sub: 'Completed orders', accent: '#10b981', icon: FaCheckCircle },
+            { label: 'Total Revenue', value: `Rs. ${(data.summary.totalRevenue || 0).toLocaleString()}`,
+              sub: 'From paid orders', accent: '#7c3aed', icon: TrendingUp },
+            { label: 'GST (5%)',      value: `Rs. ${(data.summary.gstAmount || 0).toLocaleString()}`,
+              sub: 'Tax collected',   accent: '#f59e0b', icon: FaFileAlt },
+          ].map(({ label, value, sub, accent, icon: Icon }) => (
+            <Card key={label} className="relative overflow-hidden border-0 shadow-sm bg-white">
+              <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl" style={{ background: accent }} />
+              <CardContent className="pl-6 pr-5 pt-5 pb-4">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3" style={{ background: accent + '18' }}>
+                  <Icon style={{ color: accent }} className="w-4 h-4" />
+                </div>
+                <p className="text-[22px] font-black text-gray-900 leading-none tracking-tight mb-1">{value}</p>
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{label}</p>
+                <p className="text-[11px] text-gray-400 mt-1.5 font-medium">{sub}</p>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
@@ -986,7 +1097,7 @@ function ReportsTab({ branches }) {
                 {data?.orders?.map(o => (
                   <tr key={o.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-4 py-3 text-[11px] text-gray-500 whitespace-nowrap">{new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
-                    <td className="px-4 py-3 font-semibold text-gray-900 text-xs truncate max-w-[100px]">{o.restaurant?.name}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-900 text-xs truncate max-w-[140px]">{o.restaurant ? (o.restaurant.branchName ? `${o.restaurant.name} · ${o.restaurant.branchName}` : o.restaurant.name) : '—'}</td>
                     <td className="px-4 py-3 text-gray-700 text-xs truncate max-w-[100px]">{o.customerName}</td>
                     <td className="px-4 py-3 text-gray-600 text-xs">#{o.tableNumber}</td>
                     <td className="px-4 py-3 text-gray-500 text-[11px] truncate max-w-[140px]">{o.items?.map(i => i.menuItem?.name).join(', ')}</td>

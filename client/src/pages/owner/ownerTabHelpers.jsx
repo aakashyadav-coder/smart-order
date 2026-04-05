@@ -251,13 +251,13 @@ function DonutChart({ slices }) {
 // Stat card with animated counter + trend arrow
 // accent colour map: bg-X-50 → border-X-400 for the top bar
 const ACCENT_BAR = {
-  'bg-blue-50':   'bg-blue-400',
-  'bg-brand-50':  'bg-brand-400',
-  'bg-green-50':  'bg-green-400',
+  'bg-blue-50': 'bg-blue-400',
+  'bg-brand-50': 'bg-brand-400',
+  'bg-green-50': 'bg-green-400',
   'bg-purple-50': 'bg-purple-400',
   'bg-orange-50': 'bg-orange-400',
-  'bg-amber-50':  'bg-amber-400',
-  'bg-red-50':    'bg-red-400',
+  'bg-amber-50': 'bg-amber-400',
+  'bg-red-50': 'bg-red-400',
 }
 
 function StatCard({ icon: Icon, label, value, rawValue, trend, prefix = '', iconBg, iconColor }) {
@@ -280,9 +280,8 @@ function StatCard({ icon: Icon, label, value, rawValue, trend, prefix = '', icon
           </div>
 
           {showTrend && (
-            <span className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-1 rounded-full ${
-              up ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
-            }`}>
+            <span className={`inline-flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-1 rounded-full ${up ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
+              }`}>
               {up ? '▲' : '▼'} {Math.abs(trend)}%
             </span>
           )}
@@ -347,9 +346,8 @@ function TopItems({ orders }) {
             <div key={name} className="flex items-center gap-3">
               <Badge
                 variant="outline"
-                className={`w-5 h-5 p-0 flex items-center justify-center text-[10px] font-black flex-shrink-0 rounded-full border-0 ${
-                  i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-gray-300 text-white' : i === 2 ? 'bg-amber-700 text-white' : 'bg-gray-100 text-gray-500'
-                }`}
+                className={`w-5 h-5 p-0 flex items-center justify-center text-[10px] font-black flex-shrink-0 rounded-full border-0 ${i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-gray-300 text-white' : i === 2 ? 'bg-amber-700 text-white' : 'bg-gray-100 text-gray-500'
+                  }`}
               >
                 {i + 1}
               </Badge>

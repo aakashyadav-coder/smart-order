@@ -75,12 +75,13 @@ const getBranches = async (req, res, next) => {
 // ── POST /api/central/branches ────────────────────────────────────────────────
 const createBranch = async (req, res, next) => {
   try {
-    const { name, address, phone, logoUrl, cuisineType, tableCount } = req.body;
+    const { name, branchName, address, phone, logoUrl, cuisineType, tableCount } = req.body;
     if (!name?.trim()) return res.status(400).json({ message: "Branch name is required." });
 
     const restaurant = await prisma.restaurant.create({
       data: {
         name: name.trim(),
+        branchName: branchName?.trim() || null,
         address: address?.trim() || null,
         phone: phone?.trim() || null,
         logoUrl: logoUrl?.trim() || null,
@@ -116,13 +117,14 @@ const updateBranch = async (req, res, next) => {
     const { id } = req.params;
     if (!branchIds.includes(id)) return res.status(403).json({ message: "Access denied." });
 
-    const { name, address, phone, logoUrl, cuisineType, tableCount } = req.body;
+    const { name, branchName, address, phone, logoUrl, cuisineType, tableCount } = req.body;
     if (!name?.trim()) return res.status(400).json({ message: "Branch name is required." });
 
     const restaurant = await prisma.restaurant.update({
       where: { id },
       data: {
         name: name.trim(),
+        branchName: branchName?.trim() || null,
         address: address?.trim() || null,
         phone: phone?.trim() || null,
         logoUrl: logoUrl?.trim() || null,
@@ -242,7 +244,7 @@ const getAnalytics = async (req, res, next) => {
 
     const orders = await prisma.order.findMany({
       where: { restaurantId: { in: branchIds }, createdAt: { gte: startDate }, status: { notIn: ["CANCELLED"] } },
-      select: { restaurantId: true, totalPrice: true, discountedTotal: true, createdAt: true, restaurant: { select: { name: true } } },
+      select: { restaurantId: true, totalPrice: true, discountedTotal: true, createdAt: true, restaurant: { select: { name: true, branchName: true } } },
     });
 
     const labels = Array.from({ length: buckets }, (_, i) => labelFn(i));
@@ -251,7 +253,7 @@ const getAnalytics = async (req, res, next) => {
       const idx = bucketFn(o.createdAt);
       if (idx < 0 || idx >= buckets) continue;
       if (!branchMap.has(o.restaurantId)) {
-        branchMap.set(o.restaurantId, { id: o.restaurantId, name: o.restaurant?.name || "Unknown", revenue: Array(buckets).fill(0), totalRevenue: 0 });
+        branchMap.set(o.restaurantId, { id: o.restaurantId, name: o.restaurant?.name || "Unknown", branchName: o.restaurant?.branchName || null, revenue: Array(buckets).fill(0), totalRevenue: 0 });
       }
       const b = branchMap.get(o.restaurantId);
       const amount = o.discountedTotal ?? o.totalPrice;
@@ -351,7 +353,7 @@ const getStaffPerformance = async (req, res, next) => {
         select: {
           id: true, name: true, email: true, role: true, active: true,
           lastLoginAt: true, createdAt: true,
-          restaurant: { select: { id: true, name: true } },
+          restaurant: { select: { id: true, name: true, branchName: true, logoUrl: true } },
         },
         orderBy: { createdAt: "asc" },
       }),
@@ -391,7 +393,7 @@ const getOrders = async (req, res, next) => {
         where,
         include: {
           items: { include: { menuItem: { select: { name: true } } } },
-          restaurant: { select: { id: true, name: true } },
+          restaurant: { select: { id: true, name: true, branchName: true } },
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -425,7 +427,7 @@ const getReportData = async (req, res, next) => {
         status: { notIn: ["CANCELLED"] },
       },
       include: {
-        restaurant: { select: { name: true } },
+        restaurant: { select: { name: true, branchName: true } },
         items: { include: { menuItem: { select: { name: true } } } },
       },
       orderBy: { createdAt: "desc" },
@@ -494,7 +496,7 @@ const getStaff = async (req, res, next) => {
       select: {
         id: true, name: true, email: true, role: true, active: true,
         lastLoginAt: true, createdAt: true, restaurantId: true,
-        restaurant: { select: { id: true, name: true } },
+        restaurant: { select: { id: true, name: true, branchName: true, logoUrl: true } },
       },
       orderBy: { createdAt: "asc" },
     });
@@ -528,7 +530,7 @@ const updateStaff = async (req, res, next) => {
     const updated = await prisma.user.update({
       where: { id },
       data,
-      select: { id: true, name: true, email: true, role: true, active: true, lastLoginAt: true, restaurantId: true, restaurant: { select: { id: true, name: true } } },
+      select: { id: true, name: true, email: true, role: true, active: true, lastLoginAt: true, restaurantId: true, restaurant: { select: { id: true, name: true, branchName: true, logoUrl: true } } },
     });
 
     await logActivity({ userId: req.user.id, action: "STAFF_UPDATED_BY_CENTRAL_ADMIN", entity: "User", entityId: id, metadata: { role, active } });
