@@ -6,46 +6,89 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Menu, X, ChevronDown, LayoutDashboard, UtensilsCrossed, QrCode, LineChart, ChevronRight, ChefHat, Coffee, Smartphone, Flame, Globe, MessageCircle, Mail, ArrowRight } from 'lucide-react'
 
-const KitchenParticles = () => {
-  const icons = [UtensilsCrossed, ChefHat, QrCode, LayoutDashboard, LineChart, Coffee, Smartphone, Flame];
-
-  const particleConfigs = React.useMemo(() => {
-    return Array.from({ length: 45 }).map((_, i) => ({
-      Icon: icons[i % icons.length],
-      left: `${(Math.random() * 120) - 10}%`,
-      size: 20 + Math.random() * 60,
-      duration: 25 + Math.random() * 40,
-      delay: -(Math.random() * 40),
-      opacity: 0.04 + Math.random() * 0.06,
-      drift: (Math.random() - 0.5) * 30
-    }));
-  }, []);
-
+const SmartKitchenBackground = () => {
+  const nodes = [
+    { Icon: QrCode, top: '15%', left: '10%', delay: 0, duration: 4, glow: 'border-slate-200/50 bg-white/40 shadow-sm', color: 'text-slate-400/60' },
+    { Icon: LayoutDashboard, top: '35%', left: '85%', delay: 1.5, duration: 3.5, glow: 'border-orange-500/20 bg-orange-50/30 shadow-none', color: 'text-orange-500/50', ping: true },
+    { Icon: UtensilsCrossed, top: '75%', left: '15%', delay: 2.5, duration: 5, glow: 'border-slate-200/50 bg-slate-50/40 shadow-sm', color: 'text-slate-400/60' },
+    { Icon: LineChart, top: '60%', left: '70%', delay: 1, duration: 4.5, glow: 'border-emerald-500/20 bg-emerald-50/30 shadow-none', color: 'text-emerald-500/50', ping: true },
+    { Icon: Flame, top: '85%', left: '55%', delay: 3, duration: 3.8, glow: 'border-slate-200/50 bg-slate-50/40 shadow-sm', color: 'text-slate-400/60' },
+    { Icon: Smartphone, top: '25%', left: '45%', delay: 0.5, duration: 4.2, glow: 'border-blue-500/20 bg-blue-50/30 shadow-none', color: 'text-blue-500/50' }
+  ];
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10" style={{ background: '#fafafa' }}>
-      {/* Soft gradient Orbs */}
-      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-orange-400/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3"></div>
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-rose-400/10 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/3"></div>
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-slate-50">
+      {/* Ambient Glows */}
+      <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-orange-400/20 blur-[120px] rounded-full animate-pulse" style={{ animationDuration: '8s' }}></div>
+      <div className="absolute bottom-[-10%] left-[-5%] w-[600px] h-[600px] bg-emerald-400/15 blur-[120px] rounded-full animate-pulse" style={{ animationDuration: '10s' }}></div>
+      <div className="absolute top-[40%] left-[40%] w-[500px] h-[500px] bg-blue-400/10 blur-[100px] rounded-full animate-pulse" style={{ animationDuration: '12s' }}></div>
 
-      {particleConfigs.map((config, i) => (
+      {/* Tech Grid */}
+      <div className="absolute inset-0" style={{
+        backgroundImage: `
+          linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px)
+        `,
+        backgroundSize: '4rem 4rem',
+        maskImage: 'radial-gradient(circle at center, black 30%, transparent 85%)',
+        WebkitMaskImage: 'radial-gradient(circle at center, black 30%, transparent 85%)'
+      }}></div>
+
+      {/* Flowing Data Lines (representing orders moving through the system) */}
+      <svg className="absolute inset-0 w-full h-full opacity-60">
+        <defs>
+          <linearGradient id="dataFlow1" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="transparent" />
+            <stop offset="50%" stopColor="#f97316" />
+            <stop offset="100%" stopColor="transparent" />
+          </linearGradient>
+          <linearGradient id="dataFlow2" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="transparent" />
+            <stop offset="50%" stopColor="#10b981" />
+            <stop offset="100%" stopColor="transparent" />
+          </linearGradient>
+          <linearGradient id="dataFlow3" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="transparent" />
+            <stop offset="50%" stopColor="#3b82f6" />
+            <stop offset="100%" stopColor="transparent" />
+          </linearGradient>
+        </defs>
+
+        {/* Horizontal Paths */}
+        <path d="M 0 128 L 3000 128" stroke="url(#dataFlow1)" strokeWidth="1.5" className="animate-data-flow-x" strokeDasharray="150 1500" />
+        <path d="M 0 384 L 3000 384" stroke="url(#dataFlow3)" strokeWidth="1.5" className="animate-data-flow-x" strokeDasharray="200 1200" style={{ animationDelay: '2s', animationDuration: '15s' }} />
+        <path d="M 0 768 L 3000 768" stroke="url(#dataFlow1)" strokeWidth="1.5" className="animate-data-flow-x" strokeDasharray="100 1800" style={{ animationDelay: '4s', animationDuration: '12s' }} />
+        <path d="M 0 1024 L 3000 1024" stroke="url(#dataFlow3)" strokeWidth="1.5" className="animate-data-flow-x" strokeDasharray="250 2000" style={{ animationDelay: '1s', animationDuration: '20s' }} />
+
+        {/* Vertical Paths */}
+        <path d="M 192 0 L 192 3000" stroke="url(#dataFlow2)" strokeWidth="1.5" className="animate-data-flow-y" strokeDasharray="150 1500" />
+        <path d="M 512 0 L 512 3000" stroke="url(#dataFlow2)" strokeWidth="1.5" className="animate-data-flow-y" strokeDasharray="250 1800" style={{ animationDelay: '3s', animationDuration: '18s' }} />
+        <path d="M 1024 0 L 1024 3000" stroke="url(#dataFlow2)" strokeWidth="1.5" className="animate-data-flow-y" strokeDasharray="100 2000" style={{ animationDelay: '5s', animationDuration: '14s' }} />
+        <path d="M 1408 0 L 1408 3000" stroke="url(#dataFlow2)" strokeWidth="1.5" className="animate-data-flow-y" strokeDasharray="300 2500" style={{ animationDelay: '2s', animationDuration: '16s' }} />
+      </svg>
+
+      {/* Subtle Floating Smart Nodes Constellation */}
+      {nodes.map((node, i) => (
         <div
           key={i}
-          className="absolute"
+          className={`absolute flex items-center justify-center rounded-[1rem] backdrop-blur-md border ${node.glow}`}
           style={{
-            left: config.left,
-            bottom: '-20%',
-            opacity: config.opacity,
-            animation: `floatDrift ${config.duration}s linear infinite`,
-            animationDelay: `${config.delay}s`,
-            ['--drift']: `${config.drift}vw`,
+            top: node.top,
+            left: node.left,
+            width: '40px',
+            height: '40px',
+            animation: `floatNode ${node.duration}s ease-in-out infinite alternate`,
+            animationDelay: `${node.delay}s`,
           }}
         >
-          <config.Icon size={config.size} color="#f97316" strokeWidth={1.5} />
+          <node.Icon size={18} className={node.color} />
+          {node.ping && (
+            <div className="absolute inset-0 rounded-[1rem] border border-orange-400/20 animate-ping" style={{ animationDuration: '4s', animationDelay: `${node.delay}s` }}></div>
+          )}
         </div>
       ))}
     </div>
-  )
-}
+  );
+};
 
 const AnimatedCounter = ({ end, duration = 2500, suffix = '', prefix = '', decimals = 0 }) => {
   const [count, setCount] = useState(0);
@@ -58,7 +101,7 @@ const AnimatedCounter = ({ end, duration = 2500, suffix = '', prefix = '', decim
         setHasTriggered(true);
       }
     }, { threshold: 0.1 });
-    
+
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, [hasTriggered]);
@@ -123,17 +166,38 @@ export default function LandingPage() {
   }, [])
 
   const faqs = [
-    { question: 'Can I integrate Khaja X with my existing POS?', answer: 'Yes, Khaja X features a robust API that integrates seamlessly with major POS systems including Square, Clover, Toast, and Lightspeed to keep your accounting synchronized.' },
-    { question: 'What happens if my restaurant loses internet connection?', answer: 'Khaja X features an advanced offline-first architecture. Your Kitchen displays (KDS) and POS terminals will continue communicating over your local network, automatically syncing with the cloud the second internet is restored.' },
-    { question: 'Are there hidden transaction fees for QR table ordering?', answer: 'No. While your payment gateway carries standard rates, Khaja X does not charge any additional commission or transactional fees on your orders. You keep your entire margin.' },
-    { question: 'Do I need to buy special proprietary hardware?', answer: 'Absolutely not. Khaja X is completely hardware-agnostic. It runs flawlessly on standard iPads, Android tablets, or any touch-enabled screens you already have in your kitchen.' },
-    { question: 'How quickly can I update my menu or pricing?', answer: 'Instantly. Any changes made in your Central Admin dashboard are pushed live to all your KDS screens, QR menus, and POS terminals globally within milliseconds. Perfect for impromptu daily specials or 86-ing sold-out items.' },
-    { question: 'Can I manage multiple restaurant locations from one account?', answer: 'Yes! Our Growth and Enterprise plans include a unified Central Admin dashboard, allowing you to standardize menus, compare revenue analytics, and manage staff permissions across dozens of locations simultaneously.' },
-    { question: 'What is the learning curve for my kitchen staff?', answer: 'We engineered the KDS interface working directly alongside line cooks. It uses high-contrast, color-coded ticketing to eliminate screen fatigue. Most kitchen staff master the swipe-and-tap system within their first 15 minutes of use.' },
+    {
+      question: 'How does QR table ordering work for my customers?',
+      answer: 'Each table gets a unique QR code generated from your Owner Dashboard. Customers scan it with their phone — no app download needed — and instantly see your live digital menu. They browse, add items to their cart, and place the order directly. The order appears on your Kitchen Display System within seconds.'
+    },
+    {
+      question: 'How do orders reach my kitchen staff?',
+      answer: 'The moment a customer places an order via QR, it appears instantly on your Kitchen Display System (KDS) — a dedicated screen your chefs use. Orders are color-coded by status: New, Preparing, and Ready. Kitchen staff can update each order\'s status with a tap, and the system tracks timing automatically.'
+    },
+    {
+      question: 'What does the Owner Dashboard show me?',
+      answer: 'Your Owner Dashboard gives you real-time visibility into everything: live order feed, revenue stats, average ticket times, and dish performance. You can also manage your menu items, update prices, toggle item availability, and generate new table QR codes — all from one place.'
+    },
+    {
+      question: 'How do I update my menu or mark items as sold out?',
+      answer: 'Log into your Owner Dashboard and go to Menu Management. You can add, edit, or remove items instantly. Toggling an item off marks it as unavailable on the live QR menu — customers won\'t be able to order it. Changes go live immediately, no page reload required for diners.'
+    },
+    {
+      question: 'Can I manage multiple restaurant branches from one account?',
+      answer: 'Yes. The Central Admin dashboard is built for multi-branch owners. From a single login, you can view orders, revenue, and menu data across all your locations side-by-side — perfect for franchise owners or restaurant groups expanding to new branches.'
+    },
+    {
+      question: 'How do my kitchen staff log into the KDS?',
+      answer: 'Kitchen staff use a dedicated Kitchen Login page (/kitchen/login) with their own access credentials — completely separate from the Owner Dashboard. This keeps your financial data and settings secure while giving chefs exactly what they need: a clean, distraction-free order display.'
+    },
+    {
+      question: 'What happens after a customer places an order?',
+      answer: 'Customers receive an Order Confirmation screen immediately after submitting their order, showing a summary of what they ordered and the table number. Meanwhile, the order routes to your KDS so the kitchen can start preparing. The entire flow is seamless and requires zero staff involvement at the front-of-house.'
+    },
   ]
 
   return (
-    <div style={{ background: '#fafafa', color: '#0f172a', fontFamily: 'Manrope, system-ui, sans-serif' }} className="min-h-screen overflow-x-hidden selection:bg-orange-200 selection:text-orange-900">
+    <div style={{ color: '#0f172a', fontFamily: 'Manrope, system-ui, sans-serif' }} className="min-h-screen bg-transparent overflow-x-hidden selection:bg-orange-200 selection:text-orange-900">
 
       {/* Google Fonts & Animations */}
       <style>{`
@@ -145,10 +209,28 @@ export default function LandingPage() {
           50% { transform: translateY(-60vh) translateX(var(--drift)) rotate(180deg); }
           100% { transform: translateY(-130vh) translateX(calc(var(--drift) * -0.5)) rotate(360deg); }
         }
+        @keyframes floatNode {
+          from { transform: translateY(0px) scale(1); }
+          to { transform: translateY(-15px) scale(1.05); }
+        }
+        @keyframes dataFlowX {
+          from { stroke-dashoffset: 1500; }
+          to { stroke-dashoffset: -1500; }
+        }
+        @keyframes dataFlowY {
+          from { stroke-dashoffset: 2000; }
+          to { stroke-dashoffset: -2000; }
+        }
+        .animate-data-flow-x {
+          animation: dataFlowX 15s linear infinite;
+        }
+        .animate-data-flow-y {
+          animation: dataFlowY 15s linear infinite;
+        }
       `}</style>
 
       {/* Global Animated Background */}
-      <KitchenParticles />
+      <SmartKitchenBackground />
 
       {/* ── Advanced TopNavBar ── */}
       <header
@@ -261,7 +343,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main style={{ paddingTop: '5rem' }}>
+      <main className="relative z-10 w-full" style={{ paddingTop: '5rem' }}>
 
         {/* ── Hero Section ── */}
         <section className="relative px-8 pt-24 pb-32 max-w-7xl mx-auto overflow-hidden text-center md:text-left">
@@ -296,9 +378,7 @@ export default function LandingPage() {
             </div>
 
             <div className="relative group">
-              <div className="absolute -inset-2 rounded-3xl blur-xl opacity-30 group-hover:opacity-50 transition duration-1000"
-                style={{ background: 'linear-gradient(135deg, #f97316, #fdba74)' }} />
-              <div className="relative kx-glass-panel rounded-2xl overflow-hidden shadow-2xl" style={{ border: '1px solid rgba(0,0,0,0.05)', background: '#ffffff' }}>
+              <div className="relative rounded-2xl overflow-hidden shadow-[0_30px_60px_rgba(15,23,42,0.12)]" style={{ border: '1px solid rgba(0,0,0,0.05)', background: '#ffffff' }}>
                 <div className="p-4 flex gap-4 items-center" style={{ background: '#f8fafc', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                   <div className="flex gap-1.5">
                     <div className="w-3 h-3 rounded-full bg-orange-400" />
@@ -308,52 +388,124 @@ export default function LandingPage() {
                   <div className="text-[10px] kx-label font-bold tracking-widest uppercase" style={{ color: '#94a3b8' }}>Live Dashboard — Kitchen View</div>
                 </div>
                 <div className="p-6 grid grid-cols-3 gap-4">
-                  {/* New */}
-                  <div className="space-y-4">
-                    <div className="text-[10px] font-bold tracking-wider uppercase mb-2 kx-label" style={{ color: '#f97316' }}>New (4)</div>
-                    <div className="p-4 rounded-xl relative overflow-hidden" style={{ background: '#fff', border: '1px solid rgba(249,115,22,0.2)', boxShadow: '0 4px 15px rgba(249,115,22,0.05)' }}>
-                      <div className="absolute top-0 left-0 w-1 h-full bg-orange-500 animate-pulse"></div>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-xs font-bold" style={{ color: '#f97316' }}>#1024</span>
-                        <span className="text-[10px] font-medium text-slate-400">2m ago</span>
+                  {/* New Orders */}
+                  <div className="space-y-4 flex flex-col h-full">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse"></span>
+                      <span className="text-[11px] font-bold tracking-wider uppercase text-slate-800">New Orders</span>
+                      <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-slate-800 text-white ml-auto">4</span>
+                    </div>
+                    <div className="rounded-xl overflow-hidden shadow-sm flex flex-col flex-1" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.05)', borderLeft: '4px solid #f59e0b' }}>
+                      <div className="px-3 pt-3 pb-1 flex justify-between items-start">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-black text-gray-900 text-2xl leading-none tracking-tight">12</span>
+                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">#1024</span>
+                          </div>
+                          <p className="text-gray-500 text-[10px] font-medium mt-1 truncate">Jane Doe</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          <span className="text-[10px] font-mono font-bold text-red-500 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                            <span className="material-symbols-outlined opacity-60" style={{ fontSize: '11px' }}>schedule</span>
+                            10:05
+                          </span>
+                          <span className="text-[8px] font-extrabold px-1.5 py-0.5 border bg-red-600 text-white border-red-300/40 shadow-sm shadow-red-500/30 rounded">URGENT</span>
+                        </div>
                       </div>
-                      <div className="text-sm font-bold text-slate-800">Truffle Risotto x2</div>
-                      <div className="text-[10px] mt-2 font-medium" style={{ color: '#64748b' }}>Table 12 • Dine-in</div>
+                      <div className="mx-3 border-t border-gray-100 mt-2 mb-2"></div>
+                      <div className="px-3 pb-2 space-y-1 max-h-20 overflow-hidden">
+                        <div className="flex justify-between items-center gap-1">
+                          <span className="text-gray-800 text-[11px] font-medium truncate leading-snug"><span className="text-orange-500 font-black mr-1">2×</span>Truffle Risotto</span>
+                          <span className="text-gray-400 text-[9px] font-semibold whitespace-nowrap">Rs.2400</span>
+                        </div>
+                      </div>
+                      <div className="px-3 py-2 flex items-center justify-between gap-2 bg-gray-50/50 border-t border-gray-100 mt-auto">
+                        <span className="text-gray-900 font-extrabold text-xs">Rs.2400</span>
+                        <button className="flex items-center gap-1 text-[9px] font-bold text-white px-2.5 py-1.5 rounded-lg shadow-sm w-full max-w-[80px]" style={{ background: 'linear-gradient(to right, #ea580c, #f97316)' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>check_circle</span> Accept
+                        </button>
+                      </div>
                     </div>
                   </div>
+
                   {/* Preparing */}
-                  <div className="space-y-4">
-                    <div className="text-[10px] font-bold tracking-wider uppercase mb-2 kx-label" style={{ color: '#64748b' }}>Preparing (2)</div>
-                    <div className="p-4 rounded-xl" style={{ background: '#f8fafc', border: '1px solid rgba(0,0,0,0.05)' }}>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-xs font-bold" style={{ color: '#0f172a' }}>#1022</span>
-                        <span className="text-[10px] font-medium text-slate-400">8m ago</span>
+                  <div className="space-y-4 flex flex-col h-full">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0"></span>
+                      <span className="text-[11px] font-bold tracking-wider uppercase text-slate-800">Preparing</span>
+                      <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-slate-800 text-white ml-auto">2</span>
+                    </div>
+                    <div className="rounded-xl overflow-hidden shadow-sm flex flex-col flex-1" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.05)', borderLeft: '4px solid #fb923c' }}>
+                      <div className="px-3 pt-3 pb-1 flex justify-between items-start">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-black text-gray-900 text-2xl leading-none tracking-tight">8</span>
+                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">#1022</span>
+                          </div>
+                          <p className="text-gray-500 text-[10px] font-medium mt-1 truncate">John Smith</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          <span className="text-[10px] font-mono font-bold text-amber-500 flex items-center gap-1">
+                            <span className="material-symbols-outlined opacity-60" style={{ fontSize: '11px' }}>schedule</span>
+                            8m
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-sm font-bold text-slate-800">Wagyu Ribeye</div>
-                      <div className="flex mt-3 gap-1">
-                        <div className="h-1.5 flex-1 rounded-full" style={{ background: '#f97316' }} />
-                        <div className="h-1.5 flex-1 rounded-full" style={{ background: '#e2e8f0' }} />
+                      <div className="mx-3 border-t border-gray-100 mt-2 mb-2"></div>
+                      <div className="px-3 pb-2 space-y-1 max-h-20 overflow-hidden">
+                        <div className="flex justify-between items-center gap-1">
+                          <span className="text-gray-800 text-[11px] font-medium truncate leading-snug"><span className="text-orange-500 font-black mr-1">1×</span>Wagyu Ribeye</span>
+                          <span className="text-gray-400 text-[9px] font-semibold whitespace-nowrap">Rs.3800</span>
+                        </div>
+                      </div>
+                      <div className="px-3 pt-1 pb-1.5">
+                        <div className="h-0.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-amber-400" style={{ width: '60%' }} />
+                        </div>
+                      </div>
+                      <div className="px-3 py-2 flex items-center justify-between gap-2 bg-gray-50/50 border-t border-gray-100 mt-auto">
+                        <span className="text-gray-900 font-extrabold text-xs">Rs.3800</span>
+                        <button className="flex items-center justify-center gap-1 text-[9px] font-bold text-white px-2.5 py-1.5 rounded-lg shadow-sm w-full max-w-[80px]" style={{ background: '#059669' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>check_circle</span> Serve
+                        </button>
                       </div>
                     </div>
                   </div>
-                  {/* Ready */}
-                  <div className="space-y-4">
-                    <div className="text-[10px] font-bold tracking-wider uppercase mb-2 kx-label text-emerald-600">Ready (1)</div>
-                    <div className="p-4 rounded-xl" style={{ background: '#f0fdf4', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-xs font-bold text-emerald-600">#1018</span>
-                        <span className="text-[10px] font-bold text-emerald-500">READY</span>
+
+                  {/* Served */}
+                  <div className="space-y-4 flex flex-col h-full">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                      <span className="text-[11px] font-bold tracking-wider uppercase text-slate-800">Served</span>
+                      <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-slate-800 text-white ml-auto">1</span>
+                    </div>
+                    <div className="rounded-xl overflow-hidden shadow-sm flex flex-col flex-1" style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.05)', borderLeft: '4px solid #34d399' }}>
+                      <div className="px-3 pt-3 pb-1 flex flex-col">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-black text-gray-900 text-2xl leading-none tracking-tight">4</span>
+                          <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">#1018</span>
+                        </div>
+                        <p className="text-gray-500 text-[10px] font-medium mt-1 truncate">Emma W.</p>
+                        <div className="mt-1 flex items-center gap-1 text-[9px] font-semibold text-emerald-600">
+                          <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>check_circle</span> Served Just now
+                        </div>
                       </div>
-                      <div className="text-sm font-bold text-slate-800">Lobster Bisque</div>
-                      <button
-                        className="mt-4 w-full py-2 text-[10px] font-bold rounded-lg uppercase tracking-wider transition-colors hover:bg-emerald-600 hover:text-white"
-                        style={{ background: '#10b981', color: '#fff' }}
-                      >Serve</button>
+                      <div className="mx-3 border-t border-gray-100 mt-2 mb-2"></div>
+                      <div className="px-3 pb-2 space-y-1 max-h-20 overflow-hidden">
+                        <div className="flex justify-between items-center gap-1">
+                          <span className="text-gray-800 text-[11px] font-medium truncate leading-snug"><span className="text-orange-500 font-black mr-1">1×</span>Lobster Bisque</span>
+                          <span className="text-gray-400 text-[9px] font-semibold whitespace-nowrap">Rs.1200</span>
+                        </div>
+                      </div>
+                      <div className="px-3 py-2 flex items-center justify-between gap-2 bg-gray-50/50 border-t border-gray-100 mt-auto">
+                        <span className="text-gray-900 font-extrabold text-xs">Rs.1200</span>
+                        <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded border border-emerald-100">✓ Done</span>
+                      </div>
                     </div>
                   </div>
                 </div>
                 <div className="relative h-56">
-                  <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent z-10"></div>
                   <img
                     className="w-full h-full object-cover mix-blend-multiply opacity-80 filter contrast-125"
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8X_AebDV5QSj-y3oontaAzcr6YvPhovQHxeVfxLMuz_tyZooT7yXp5o7zsCd7jgzqGwwhcjpj6aykiuK7cflzS-eNbBDGKlUbZWnOqRLvfC29lF8rPxhkwp6Dge7LMU0c9ET8FrLr46P-irX_MaXg8DsjQFORJDA1IDVue72_v1oFH92n_Hwusomo1aRNjs4wKwNZn8DJ5igzfWN6-yHgSuVVBoFFwL_b_8wSL4Xm1uJBpTt52gdPfwFhZu-qlHSN8ExFYEcaUx8"
@@ -404,7 +556,7 @@ export default function LandingPage() {
                   <span className="material-symbols-outlined text-3xl">qr_code_2</span>
                 </div>
                 <h3 className="kx-headline text-2xl font-bold mb-4">Contactless QR Ordering</h3>
-                <p className="text-[#475569] leading-relaxed">Let guests browse, order, and pay directly from their table. Intelligently designed to increase ticket sizes and reduce front-of-house bottlenecks.</p>
+                <p className="text-[#475569] leading-relaxed">Each table gets a unique QR code. Guests scan, browse your live menu, and place their order instantly — no app required. Orders flow straight to the kitchen the moment they submit.</p>
               </div>
               <div className="mt-10 pt-8 relative z-10" style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
                 <button
@@ -421,10 +573,10 @@ export default function LandingPage() {
                   <span className="material-symbols-outlined text-3xl">restaurant</span>
                 </div>
                 <h3 className="kx-headline text-3xl font-bold mb-4">Smart Kitchen Display (KDS)</h3>
-                <p className="leading-relaxed mb-10 text-slate-300">Route orders to specific stations, manage prep times with AI-driven sequencing, and completely eliminate paper waste and verbal miscommunications.</p>
+                <p className="leading-relaxed mb-10 text-slate-300">Every incoming order appears on a dedicated kitchen screen in real time. Color-coded by status — New, Preparing, Ready — so your kitchen team always knows exactly what to work on next.</p>
                 <div className="flex flex-wrap gap-4">
-                  <span className="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-white/20 bg-white/5">Multi-Station Sync</span>
-                  <span className="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-white/20 bg-white/5">Auto-Prioritization</span>
+                  <span className="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-white/20 bg-white/5">Real-Time Orders</span>
+                  <span className="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border border-white/20 bg-white/5">Color-Coded Status</span>
                 </div>
               </div>
               <div className="absolute right-0 bottom-0 top-0 w-1/2 translate-x-10 translate-y-10 group-hover:translate-x-4 group-hover:translate-y-4 transition-transform duration-700">
@@ -442,8 +594,8 @@ export default function LandingPage() {
                 <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center mb-8 text-[#f97316]">
                   <span className="material-symbols-outlined text-3xl">monitoring</span>
                 </div>
-                <h3 className="kx-headline text-3xl font-bold mb-4 text-[#0f172a]">Deep Owner Analytics</h3>
-                <p className="text-[#475569] leading-relaxed">Real-time revenue tracking, dish performance heatmaps, and staff efficiency metrics—all accessible from your pocket.</p>
+                <h3 className="kx-headline text-3xl font-bold mb-4 text-[#0f172a]">Owner Dashboard & Analytics</h3>
+                <p className="text-[#475569] leading-relaxed">One dashboard covers everything — live orders, revenue, menu management, QR code generation, staff records, and support. Everything your restaurant needs, in one place.</p>
               </div>
               <div className="hidden md:flex items-end gap-3 h-40">
                 {[40, 60, 45, 80, 55, 90, 70].map((h, i) => (
@@ -458,8 +610,8 @@ export default function LandingPage() {
               <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center mb-8 text-[#f97316]">
                 <span className="material-symbols-outlined text-3xl">security</span>
               </div>
-              <h3 className="kx-headline text-2xl font-bold mb-4 text-[#0f172a]">Granular Control</h3>
-              <p className="text-[#475569] leading-relaxed">Dedicated interfaces for Owners, Chefs, and Servers. Ensure everyone has exactly the data they need, and nothing more.</p>
+              <h3 className="kx-headline text-2xl font-bold mb-4 text-[#0f172a]">Role-Based Access</h3>
+              <p className="text-[#475569] leading-relaxed">Separate login portals for Owners, Kitchen Staff, and Central Admins. Every role sees only what they need — keeping your data secure and your team focused.</p>
             </div>
           </div>
         </section>
@@ -474,9 +626,9 @@ export default function LandingPage() {
                 <p className="mb-12 text-lg text-[#475569]">Getting your restaurant onto Khaja X is a matter of hours, not weeks. Our specialist engineering team handles the heavy lifting.</p>
                 <div className="space-y-12">
                   {[
-                    { num: '1', title: 'Instant Setup & Menu Sync', desc: 'Upload your existing menu. Our AI categorizes and optimizes it for digital ordering in minutes.' },
-                    { num: '2', title: 'Generate Smart QRs', desc: 'Deploy high-design QR codes unique to each table, zone, or takeaway station.' },
-                    { num: '3', title: 'Watch the Orders Flow', desc: 'Your kitchen springs to life. Orders appear instantly on KDS screens with precise timing.' },
+                    { num: '1', title: 'Set Up Your Menu', desc: 'Log into the Owner Dashboard and add your menu items, categories, prices, and photos. Your live digital menu is ready for customers in minutes.' },
+                    { num: '2', title: 'Generate Table QR Codes', desc: 'Create unique QR codes per table right from your Owner Dashboard. Print and place them — customers can start ordering immediately.' },
+                    { num: '3', title: 'Orders Flow in Real Time', desc: 'Customers scan the QR, browse your live menu, and place their order. It appears on your Kitchen Display and Owner Dashboard instantly.' },
                   ].map((step, i) => (
                     <div key={i} className="flex gap-6 relative group">
                       {i < 2 && <div className="absolute left-6 top-14 bottom-[-40px] w-0.5 hidden md:block bg-slate-200" />}
@@ -530,12 +682,12 @@ export default function LandingPage() {
                 <span className="text-5xl kx-headline font-bold text-[#0f172a]">$49</span><span className="font-medium text-[#64748b]">/mo</span>
               </div>
               <ul className="space-y-5 mb-12 flex-1">
-                {['QR Ordering (Up to 10 tables)', 'Basic Owner Dashboard', 'Email Support'].map((f, i) => (
+                {['QR Ordering (Up to 10 tables)', 'Kitchen Display System (KDS)', 'Owner Dashboard', 'QR Code Generator', 'Email Support'].map((f, i) => (
                   <li key={i} className="flex gap-4 text-[#0f172a] font-medium">
                     <span className="material-symbols-outlined text-[#10b981]">check_circle</span>{f}
                   </li>
                 ))}
-                {['Smart Inventory Sync', 'Multi-Kitchen Routing'].map((f, i) => (
+                {['Order History & Analytics', 'Central Admin (Multi-Branch)', 'Staff Management'].map((f, i) => (
                   <li key={i} className="flex gap-4 text-[#94a3b8] font-medium">
                     <span className="material-symbols-outlined text-slate-300">cancel</span>{f}
                   </li>
@@ -560,7 +712,7 @@ export default function LandingPage() {
                   <span className="text-5xl kx-headline font-bold text-[#0f172a]">$129</span><span className="font-medium text-[#64748b]">/mo</span>
                 </div>
                 <ul className="space-y-5 mb-12 flex-1">
-                  {['Unlimited QR Ordering & Tables', 'Full Kitchen Display System (KDS)', 'Inventory & Supplier Sync', 'Staff Performance Tracking', '24/7 Priority Support'].map((f, i) => (
+                  {['Unlimited Tables & QR Codes', 'Kitchen Display System (KDS)', 'Owner Dashboard & Analytics', 'Order History & Revenue Reports', 'Staff Management', 'Menu Management', 'Priority Support'].map((f, i) => (
                     <li key={i} className="flex gap-4 text-[#0f172a] font-medium">
                       <span className="material-symbols-outlined text-[#f97316]">check_circle</span>{f}
                     </li>
@@ -581,7 +733,7 @@ export default function LandingPage() {
                 <span className="text-5xl kx-headline font-bold text-[#0f172a]">Custom</span>
               </div>
               <ul className="space-y-5 mb-12 flex-1">
-                {['Multi-location HQ Dashboard', 'Open API Integration & White-label', 'Dedicated Success Manager', 'Custom Hardware Provisioning'].map((f, i) => (
+                {['Everything in Growth', 'Central Admin Dashboard', 'Multi-Branch Management', 'Super Admin Panel Access', 'Global Order Monitoring', 'Dedicated Support & Onboarding'].map((f, i) => (
                   <li key={i} className="flex gap-4 text-[#0f172a] font-medium">
                     <span className="material-symbols-outlined text-[#0f172a]">check_circle</span>{f}
                   </li>
@@ -727,7 +879,7 @@ export default function LandingPage() {
 
         <div className="max-w-7xl mx-auto px-8 pt-24 pb-12 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8 mb-20">
-            
+
             {/* Brand & Newsletter Column */}
             <div className="col-span-1 lg:col-span-4 pr-0 lg:pr-12">
               <div className="flex items-center gap-3 mb-8 cursor-pointer group w-max" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
@@ -742,9 +894,9 @@ export default function LandingPage() {
               <div className="space-y-3">
                 <label className="text-xs font-bold uppercase tracking-widest text-slate-400">Subscribe for Updates</label>
                 <div className="relative group/input">
-                  <input 
-                    type="email" 
-                    placeholder="name@restaurant.com" 
+                  <input
+                    type="email"
+                    placeholder="name@restaurant.com"
                     className="w-full bg-white/60 border border-slate-200 text-slate-800 rounded-xl px-4 py-3.5 pr-14 outline-none focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-50 transition-all font-medium placeholder-slate-400 shadow-sm"
                   />
                   <button className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-slate-900 text-white rounded-lg flex items-center justify-center hover:bg-orange-500 transition-colors outline-none shadow-sm group-hover/input:bg-orange-500">
@@ -756,9 +908,36 @@ export default function LandingPage() {
 
             {/* Links Columns */}
             {[
-              { title: 'Platform', links: ['Smart POS', 'QR Ordering', 'Kitchen Display', 'Deep Analytics', 'Waste Management'] },
-              { title: 'Resources', links: ['Help Center', 'API Documentation', 'Hardware Guide', 'Blog & Insights', 'Case Studies'] },
-              { title: 'Company', links: ['About Us', 'Careers', 'Contact Sales', 'Terms of Service', 'Privacy Policy'] },
+              {
+                title: 'Features',
+                links: [
+                  { label: 'QR Table Ordering', href: '#features' },
+                  { label: 'Kitchen Display (KDS)', href: '#features' },
+                  { label: 'Owner Analytics', href: '#features' },
+                  { label: 'Menu Management', href: '#how' },
+                  { label: 'Order Tracking', href: '#how' },
+                ]
+              },
+              {
+                title: 'Access Portals',
+                links: [
+                  { label: 'Owner Login', href: '/owner/login' },
+                  { label: 'Kitchen Staff Login', href: '/kitchen/login' },
+                  { label: 'Central Admin', href: '/central' },
+                  { label: 'Browse Menu', href: '/menu' },
+                  { label: 'Start Free Trial', href: '/owner/login' },
+                ]
+              },
+              {
+                title: 'Company',
+                links: [
+                  { label: 'How It Works', href: '#how' },
+                  { label: 'Pricing', href: '#pricing' },
+                  { label: 'Testimonials', href: '#' },
+                  { label: 'Contact Us', href: '#contact' },
+                  { label: 'FAQs', href: '#' },
+                ]
+              },
             ].map((col, i) => (
               <div key={i} className="col-span-1 lg:col-span-2 lg:ml-auto">
                 <h5 className="font-bold mb-8 text-[#0f172a] uppercase tracking-widest text-xs border-b border-slate-200/60 pb-4 inline-block">{col.title}</h5>
@@ -766,7 +945,7 @@ export default function LandingPage() {
                   {col.links.map((link, li) => (
                     <li key={li} className="group flex items-center">
                       <ChevronRight size={12} className="text-orange-500 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ease-out" />
-                      <a href="#" className="font-medium text-[#64748b] group-hover:text-[#f97316] group-hover:translate-x-2 transition-all duration-300 ease-out inline-block">{link}</a>
+                      <a href={link.href} className="font-medium text-[#64748b] group-hover:text-[#f97316] group-hover:translate-x-2 transition-all duration-300 ease-out inline-block">{link.label}</a>
                     </li>
                   ))}
                 </ul>
@@ -781,19 +960,28 @@ export default function LandingPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
               <span>All rights reserved.</span>
               <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-              <span className="flex items-center gap-1">Made with <Flame size={14} className="text-orange-500"/> in NY</span>
+              <span className="flex items-center gap-1">Smart Restaurant Platform <Flame size={14} className="text-orange-500 ml-1" /></span>
             </div>
-            
+
+            {/* Quick portal links */}
+            <div className="flex items-center gap-3">
+              <a href="/owner/login" className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-orange-600 hover:bg-orange-50 transition-all border border-transparent hover:border-orange-100">Owner Portal</a>
+              <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+              <a href="/kitchen/login" className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-orange-600 hover:bg-orange-50 transition-all border border-transparent hover:border-orange-100">Kitchen Login</a>
+              <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+              <a href="#contact" className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-orange-600 hover:bg-orange-50 transition-all border border-transparent hover:border-orange-100">Contact</a>
+            </div>
+
             {/* Social Icons */}
             <div className="flex items-center gap-3">
               {[
-                { name: 'International', icon: Globe },
+                { name: 'Website', icon: Globe },
                 { name: 'Community', icon: MessageCircle },
                 { name: 'Contact', icon: Mail }
               ].map((item, i) => (
-                <a 
-                  key={i} 
-                  href="#" 
+                <a
+                  key={i}
+                  href="#"
                   title={item.name}
                   className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-orange-500 hover:text-white hover:border-orange-500 hover:-translate-y-1 hover:shadow-[0_10px_20px_rgba(249,115,22,0.3)] transition-all duration-300"
                 >
