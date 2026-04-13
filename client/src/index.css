@@ -16,9 +16,9 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    /* Primary = brand rose-red */
-    --primary: 345 87% 50%;
-    /* #e11d48 */
+    /* Primary = brand orange */
+    --primary: 24.6 95% 53.1%;
+    /* #f97316 */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96.1%;
@@ -36,8 +36,8 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 345 87% 50%;
-    /* brand-red focus ring */
+    --ring: 24.6 95% 53.1%;
+    /* brand-orange focus ring */
 
     --radius: 0.75rem;
     /* rounded-xl default */
@@ -45,12 +45,12 @@
     /* Sidebar tokens */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 345 87% 50%;
+    --sidebar-primary: 24.6 95% 53.1%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 345 87% 50%;
+    --sidebar-ring: 24.6 95% 53.1%;
   }
 
   .dark {
@@ -63,7 +63,7 @@
     --popover: 222 47% 6%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 345 87% 55%;
+    --primary: 24.6 95% 53.1%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -80,16 +80,16 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 345 87% 55%;
+    --ring: 24.6 95% 53.1%;
 
     --sidebar-background: 222 47% 5%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 345 87% 55%;
+    --sidebar-primary: 24.6 95% 53.1%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 345 87% 55%;
+    --sidebar-ring: 24.6 95% 53.1%;
   }
 }
 
@@ -571,4 +571,44 @@
 .landing-page h3 {
   font-family: 'Space Grotesk', system-ui, sans-serif;
   font-optical-sizing: auto;
+}
+
+/* ── Khaja X Stitch Design System ─────────────────────── */
+.kx-glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+}
+
+.kx-text-gradient {
+  background: linear-gradient(135deg, #f97316 0%, #c2410c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.kx-btn-primary {
+  background: linear-gradient(135deg, #FFB3B6 0%, #E11D48 100%);
+}
+
+.kx-section {
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
